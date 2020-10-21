@@ -23,6 +23,8 @@ library(furrr)
 
 library(ggridges)
 
+options(dplyr.summarise.inform = FALSE)
+
 
 foos <- list.files(here("R"))
 
@@ -303,9 +305,15 @@ print(object.size(sims$sim), units = "Mb")
 
 ## assess conservation impacts
 
-assess_sim <- function(sim, thing = "fauna"){
+assess_sim <- function(sim, fauna,thing = "fauna"){
 
+  # thing = "fauna"
   # sim <- sims$sim[[1]]
+  #
+
+  ssb0s <- fauna %>%
+    map_dfc("ssb0",.id = "critter") %>%
+    pivot_longer(everything(), names_to = "critter", values_to = "ssb0")
 
   tmp <- sim %>% map(thing) %>%
     bind_rows(.id = "scenario") %>%
@@ -318,13 +326,15 @@ assess_sim <- function(sim, thing = "fauna"){
       percent_improved = mean(with_mpa > without_mpa)
     ) %>%
     ungroup() %>%
+    left_join(ssb0s, by = "critter") %>%
     mutate(abs_change = with_mpa - without_mpa,
-           percent_change = with_mpa / without_mpa - 1)
+           percent_change = with_mpa / without_mpa - 1,
+           percent_change_ssb0 = (with_mpa - without_mpa) / ssb0)
 }
 
 
 sims <- sims %>%
-  mutate(results = map(sim, assess_sim))
+  mutate(results = map2(sim, fauna, assess_sim))
 
 tmp <- sims %>%
   select(xid, mpa_size, results) %>%
@@ -334,6 +344,20 @@ tmp <- sims %>%
 tmp %>%
   filter(variable == "ssb", step > 0) %>%
   mutate(percent_change = pmin(2, percent_change)) %>%
+  ggplot() +
+  geom_vline(aes(xintercept = 0), linetype = 2, color = "red") +
+  ggridges::geom_density_ridges(aes(percent_change, factor(step), fill = step), stat = "binline", show.legend = FALSE, alpha = 0.75) +
+  facet_grid(mpa_size ~ critter, scales = "free_x") +
+  scale_x_continuous(labels = scales::percent,
+                     name = "Percent Change Caused by MPA",
+                     guide = guide_axis(n.dodge = 2)) +
+  scale_y_discrete("Yearly Histograms") +
+  labs(caption = "Rows equals percent of area in MPA")
+
+
+tmp %>%
+  filter(variable == "ssb", step > 0) %>%
+  mutate(percent_change_ssb0 = pmin(2, percent_change_ssb0)) %>%
   ggplot() +
   geom_vline(aes(xintercept = 0), linetype = 2, color = "red") +
   ggridges::geom_density_ridges(aes(percent_change, factor(step), fill = step), stat = "binline", show.legend = FALSE, alpha = 0.75) +
@@ -356,10 +380,6 @@ tmp %>%
                      guide = guide_axis(n.dodge = 2)) +
   scale_y_discrete("Yearly Histograms") +
   labs(caption = "Rows equals percent of area in MPA")
-
-
-
-
 
 
 ## assess fleet impacts
