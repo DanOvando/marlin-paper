@@ -1,3 +1,7 @@
+# custom things
+
+results/
+
 # History files
 .Rhistory
 .Rapp.history
@@ -38,3 +42,4 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 .Rproj.user
+

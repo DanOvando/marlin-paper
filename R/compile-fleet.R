@@ -94,7 +94,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
         ),
         `Carcharhinus longimanus` = Metier$new(
           critter = fauna$`Carcharhinus longimanus`,
-          price = -10,
+          price = 0,
           sel_form = "logistic",
           sel_start = .25,
           sel_delta = 0.01,

@@ -11,33 +11,48 @@
 # static modeling
 #
 #
+
+set.seed(42)
 library(tidyverse)
 
 library(marlin)
 
 library(here)
 
-library(trelliscopejs)
-
 library(furrr)
 
+library(ggridges)
 
 
 foos <- list.files(here("R"))
 
 walk(foos, ~ source(here("R", .x)))
 
-resolution <- 25 # resolution is in squared patches, so 20 implies a 20X20 system, i.e. 400 patches
+results_name <- "v0.5"
 
-years <- 20
+results_path <- here("results", results_name)
 
-seasons <- 4
+if (!dir.exists(results_path)){
+  dir.create(results_path, recursive = TRUE)
+
+  dir.create(file.path(results_path,"sims"))
+}
+
+draws <- 300
+
+resolution <- 20 # resolution is in squared patches, so 20 implies a 20X20 system, i.e. 400 patches
+
+years <- 40
+
+seasons <- 1
 
 time_step <- 1 / seasons
 
 workers <- 3
 
 steps <- years * seasons
+
+time_steps <- seq(0,years - 1, by = time_step)
 
 theme_set(marlin::theme_marlin())
 
@@ -49,73 +64,75 @@ plan(multisession, workers = workers)
 
 # use this space to develop the core building block of scenarios you're going to use
 
-hab0 <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
-  mutate(habitat =  dnorm(x, 5,5)) %>%
-  pivot_wider(names_from = y, values_from = habitat) %>%
-  select(-x) %>%
-  as.matrix()
-
-hab1 <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
-  mutate(habitat =  dnorm((x ^ 2 + y ^ 2), 300, 100)) %>%
-  pivot_wider(names_from = y, values_from = habitat) %>%
-  select(-x) %>%
-  as.matrix()
-
-hab2 <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
-  mutate(habitat =  dnorm(x, 20,5)) %>%
-  pivot_wider(names_from = y, values_from = habitat) %>%
-  select(-x) %>%
-  as.matrix()
-
-
-
-
-
-trait_frame <- expand_grid(
-  seasonal_habitat = list(hab0, hab1),
-  adult_movement = c(0, 5),
-  adult_movement_sigma = c(1, 10),
-  seasons = seasons,
-  init_explt = c(.1, .6),
-  rec_form = c(0, 3),
-  fec_form = c("power"),
-  weight_a = NA
-) %>%
-  mutate(xid = 1:nrow(.))
-
-
-
 fauna_frame <- tibble(
   scientific_name =  c(
-  "Thunnus obesus",
-  "Katsuwonus pelamis",
-  "Thunnus albacares",
-  "Kajikia audax",
-  "Carcharhinus longimanus"
-),
-trait = list(trait_frame)) %>%
-  unnest(cols = trait)
+    "Thunnus obesus",
+    "Katsuwonus pelamis",
+    "Thunnus albacares",
+    "Kajikia audax",
+    "Carcharhinus longimanus"
+  ),
+  xid = list(1:draws)) %>%
+  unnest(cols = xid)
 
 
-# create individual critters
+hab1 <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
+  mutate(habitat =  .2 * x) %>%
+  pivot_wider(names_from = y, values_from = habitat) %>%
+  select(-x) %>%
+  as.matrix()
 
+
+hab2 <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
+  mutate(habitat =  dnorm(x, 9,5)) %>%
+  pivot_wider(names_from = y, values_from = habitat) %>%
+  select(-x) %>%
+  as.matrix()
+
+
+generate_traits <- function(scientific_name){
+
+  trait_frame <- tibble(
+    seasonal_habitat = list(sample(list(hab1, hab2),1, replace = TRUE)),
+    adult_movement = sample(c(0, 5),1, replace = TRUE),
+    adult_movement_sigma = sample(c(1, 10), 1,replace = TRUE),
+    seasons = seasons,
+    init_explt = sample(c(.05,.1,.2), 1, replace = TRUE),
+    rec_form = sample(c(0,1,2,3),1, replace = TRUE),
+    fec_form = c("power"),
+    weight_a = NA
+  )
+
+}
 
 
 fauna_frame <- fauna_frame %>%
-  mutate(critter = furrr::future_pmap(
-    list(
-      scientific_name = scientific_name,
-      seasonal_habitat = seasonal_habitat,
-      adult_movement = adult_movement,
-      adult_movement_sigma = adult_movement_sigma,
-      rec_form = rec_form,
+  mutate(traits = map(scientific_name,generate_traits))
+
+create_random_critter <- function(scientific_name, traits,seasons){
+
+  critter <- marlin::create_critter(
+    scientific_name = scientific_name,
+    seasonal_habitat = list(traits$seasonal_habitat),
+    adult_movement = traits$adult_movement,
+    adult_movement_sigma = traits$adult_movement_sigma,
+    rec_form = traits$rec_form,
+    seasons = seasons,
+    init_explt = traits$init_explt
+  )
+
+}
+
+fauna_frame <- fauna_frame %>%
+  mutate(
+    critter = future_map2(
+      scientific_name,
+      traits,
+      create_random_critter,
       seasons = seasons,
-      init_explt = init_explt
-    ),
-    create_critter,
-    season_blocks = list(),
-    .progress = TRUE
-  ))
+      .progress = TRUE
+    )
+  )
 
 
 # aggregate into lists of fauna
@@ -187,59 +204,162 @@ sims$mpa[[1]] %>%
 #
 # run simulations ---------------------------------------------------------
 
+steps_to_keep <- c(0, time_steps[round(0.75 * length(time_steps))], max(time_steps))
+
+run_and_process <-
+  function(fauna,
+           fleet,
+           mpa,
+           steps_to_keep,
+           years,
+           seasons,
+           id,
+           keep_age = FALSE,
+           write_sim = FALSE,
+           results_path) {
+
+
+    # fauna <- sims$fauna[[1]]
+    #
+    # fleet <- sims$fleet[[1]]
+    #
+    # mpa <- sims$mpa[[1]]
+    #
+
+    sim_base <- simmar(fauna = fauna,
+                       fleets = fleet,
+                       years = years)
+
+    proc_sim_base <-
+      process_marlin(
+        sim = sim_base,
+        time_step =  fauna[[1]]$time_step,
+        steps_to_keep = steps_to_keep,
+        keep_age = keep_age
+      )
+
+
+    sim_mpa <- simmar(
+      fauna = fauna,
+      fleets = fleet,
+      years = years,
+      mpas = list(
+        locations = mpa,
+        mpa_year = floor(years * seasons * .5)
+      )
+    )
+    proc_sim_mpa <-
+      process_marlin(
+        sim = sim_mpa,
+        time_step =  fauna[[1]]$time_step,
+        steps_to_keep = steps_to_keep,
+        keep_age = keep_age
+      )
+
+    # plot_marlin(proc_sim_mpa, proc_sim_base) +
+    #   geom_vline(aes(xintercept = floor(years * seasons * .5)))
+
+    out <- list(with_mpa = proc_sim_mpa,
+                without_mpa = proc_sim_base)
+
+    if (write_sim){
+
+      readr::write_rds(out, file.path(results_path,"sims", paste0("sim_",id,".rds")))
+
+      out <- NA
+    }
+
+    return(out)
+
+  }
+
 a <- Sys.time()
 
 sims <- sims %>%
-  slice(1:3) %>%
-  mutate(sim = pmap(
+  # slice(1:3) %>%
+  mutate(sim = future_pmap(
     list(
       fauna = fauna,
-      fleets = fleet,
-      mpa = mpa
+      fleet = fleet,
+      mpa = mpa,
+      id = xid
     ),
-    ~  simmar(
-      fauna = ..1,
-      fleets = ..2,
-      years = years,
-      mpas = list(locations = ..3,
-                  mpa_year = floor(years * .5))
-    ),
-    year = years
+    run_and_process,
+    year = years,
+    steps_to_keep = steps_to_keep,
+    seasons = seasons,
+    write_sim = FALSE,
+    results_path = results_path,
+    .progress = TRUE
   ))
 
 Sys.time() - a
 
-
-sims <- sims %>%
-  mutate(processed_marlin = map(sim, ~process_marlin(.x, time_step = time_step)))
-
-
-# process_marlin(sim = sims$sim[[1]], time_step = time_step)
-
-
-sims <- sims %>%
-  mutate(ssb_plot = map_plot(processed_marlin, ~plot_marlin(.x, plot_var = "ssb")))
-
-trelliscopejs::trelliscope(
-  sims %>% select(-mpa, -sim, -processed_marlin, -target_fauna) %>% ungroup() %>% mutate(thing = 1:nrow(.)),
-  name = "thing",
-  panel_col = "ssb_plot"
-)
-
-
-# processed_marlin <- process_marlin(sim = sim, time_step = time_step)
-#
-# plot_marlin(processed_marlin)
-#
-# plot_marlin(processed_marlin, plot_var = "c")
-#
-# plot_marlin(processed_marlin, plot_var = "n", plot_type = "length", fauna = fauna)
-#
-# plot_marlin(processed_marlin, plot_var = "ssb", plot_type = "space")
-#
+print(object.size(sims$sim), units = "Mb")
 
 
 # process simulations -----------------------------------------------------
 
 
+## assess conservation impacts
 
+assess_sim <- function(sim, thing = "fauna"){
+
+  # sim <- sims$sim[[1]]
+
+  tmp <- sim %>% map(thing) %>%
+    bind_rows(.id = "scenario") %>%
+    pivot_longer(n:c, names_to = "variable", values_to = "value") %>%
+    pivot_wider(names_from = "scenario", values_from = "value") %>%
+    group_by(step, variable, critter) %>%
+    summarise(
+      with_mpa = sum(with_mpa),
+      without_mpa = sum(without_mpa),
+      percent_improved = mean(with_mpa > without_mpa)
+    ) %>%
+    ungroup() %>%
+    mutate(abs_change = with_mpa - without_mpa,
+           percent_change = with_mpa / without_mpa - 1)
+}
+
+
+sims <- sims %>%
+  mutate(results = map(sim, assess_sim))
+
+tmp <- sims %>%
+  select(xid, mpa_size, results) %>%
+  unnest(cols = results)
+
+
+tmp %>%
+  filter(variable == "ssb", step > 0) %>%
+  mutate(percent_change = pmin(2, percent_change)) %>%
+  ggplot() +
+  geom_vline(aes(xintercept = 0), linetype = 2, color = "red") +
+  ggridges::geom_density_ridges(aes(percent_change, factor(step), fill = step), stat = "binline", show.legend = FALSE, alpha = 0.75) +
+  facet_grid(mpa_size ~ critter, scales = "free_x") +
+  scale_x_continuous(labels = scales::percent,
+                     name = "Percent Change Caused by MPA",
+                     guide = guide_axis(n.dodge = 2)) +
+  scale_y_discrete("Yearly Histograms") +
+  labs(caption = "Rows equals percent of area in MPA")
+
+tmp %>%
+  filter(variable == "c", step > 0) %>%
+  mutate(percent_change = pmin(2, percent_change)) %>%
+  ggplot() +
+  geom_vline(aes(xintercept = 0), linetype = 2, color = "red") +
+  ggridges::geom_density_ridges(aes(percent_change, factor(step), fill = step), stat = "binline", show.legend = FALSE, alpha = 0.75) +
+  facet_grid(mpa_size ~ critter, scales = "free_x") +
+  scale_x_continuous(labels = scales::percent,
+                     name = "Percent Change Caused by MPA",
+                     guide = guide_axis(n.dodge = 2)) +
+  scale_y_discrete("Yearly Histograms") +
+  labs(caption = "Rows equals percent of area in MPA")
+
+
+
+
+
+
+## assess fleet impacts
