@@ -1,0 +1,134 @@
+---
+title: "The Role of MPAs in Bycatch Reduction"
+author: "Dan Ovando"
+date: "12/11/2020"
+output: 
+  bookdown::pdf_document2: default
+  bookdown::html_document2: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(here)
+library(bookdown)
+```
+
+
+
+Marine protected areas (MPAs) are a growing part of the marine conservation toolbox, with 7.4% of the world’s oceans currently protected and, and bodies such as the IUCN calling for 30% protection by 2030. Many of the largest of these MPAs are being implemented in the form of “blue-water” MPAs largely covering pelagic ecosystems, characterized by highly mobile species and fishing fleets using a diverse mix of static and dynamic ocean features. These systems operate very differently from the coastal areas where modern MPA design practices have been developed. Pelagic systems are also characterized by combinations of relatively abundant species targeted by fishing, such as most tuna stocks, and highly threatened species caught as incidental “by-catch” in targeted fishing operations, such as oceanic whitetip sharks. Blue-water MPAs are increasingly being proposed specifically to benefit these by-catch populations while minimizing losses or where possible providing benefits to fisheries. 
+
+Pelagic ecosystems present both opportunities and challenges for MPAs. The highly productive and mobile nature of targeted fisheries in these systems may mean that highly targeted MPAs can be designed that provide effective conservation at minimal fishery costs. Alternatively, if individual by-catch species do not share common habitat preferences or fishery vulnerability, protection in one area targeted to benefit one species may negatively impact another through effort displacement. Here, we use a case study motivated by the upcoming expansion of blue-water MPAs throughout the Federated States of Micronesia to assess the sensitivity of by-catch populations and targeted fisheries to MPA design and key life-history variables. 
+
+The outcome of MPAs for fishing and conservation are highly sensitive to a wide range of economic and ecological factors. In order to constrain the possible parameter space, we tune a simulation model based around best available knowledge of the species and fleets operating in the areas of the western central pacific ocean (WCPO) while allowing key unknowns to vary, in particular the nature of adult and larval movement, the degree of habitat overlap between different species, the economic incentives facing fishing fleets, and the design strategy used in MPA placement XX. Most conventional MPA design models are either static, single species, or both. We present a dynamic, multi-species simulation model that allows us to cohesively assess the impact of MPAs on a suite of by-catch and targeted species collectively affected by multiple fishing fleets. Our goal here is not to provide tactical recommendations on the design of blue-water MPAs throughout the WCPO, but rather to provide a strategic evaluation of the sensitivity of by-catch populations and targeted fisheries to key unknowns and design choices in MPA design. 
+
+
+We show 
+  - something about how when species are homogeneous in space, conservation gains are basically guaranteed except for constant catch scenearios, which need to be considered in tuna-type scenarios
+  - When we introduce heterogeneity in stock structure roughly reflective of distributions in the WCPO we do / do not begin to see tradeoffs in conservation outcomes among bycatch species
+    - quantify if there is a concave function to this
+  - Specific design paradigms are / are not more / less resilient to this issue
+  - Compare tradeoffs between MPA designs that minimze internal bycatch tradeoffs (there have to be none if MPA = 100%) and fishery outcomes
+
+We show that MPAs increased biomass of by-catch species in XX% of simulations, and decreased them in XX% of simulations. On average a 1% increase in by-catch species resulted in a XX% change in fishery catches… Outcomes were most sensitive to XX and XX, and least sensitive to XX and XX. We do not suggest that these same results would hold for other systems, but rather demonstrate the importance / resilience of MPAs to key uncertain variables. In particular for pelagic ecosystems, our work demonstrates the importance of considering the collective impacts of space, vulnerability, life history, and fleet dynamics in MPA design for conservation. 
+
+
+
+## Figures
+
+Are there or are there not tradeoffs in conservation and fisheries yields
+
+What are the explicit considerations of 
+
+Interesting considerations we do biodiversity MPAs we define biodiversity as system diversity and we put all the species in there, threatened bycatch species become the the focus and stated objective is ramp up the value of bycatch species . There might be instances where just the biodiversity base actually gets you a better outcome than . There might be overlap and not. 
+
+Dig into that mismatch 
+
+We can explore that mismatch between is the issue q and is the issue of spatial habitat 
+
+### Fig.1  Motivating figure - basically something like the shortfin mako example
+
+### Fig.2  Case study figure for WCPO: shows degree of overlap in species abundance in space and time, as well as a platform for some examples of MPA networks designed around different paradigms 
+
+### Fig.3 Tradeoff plots across species, though will need to put some thought into visualizing across species. But something to convey the idea of whether there are tradeoffs among species in the case study of the WCPO high seas style system. Interestingly, you know that if you closed 100% all benefit, so doing this along a gradient is interesting, are there tradeoffs at low sizes that disappear with higher? Actually you might expect a dome-shaped tradeoff, where there are no tradeoffs at low size since little displacement, largest tradeoffs in the middle where you maximize displacement but still haven’t maximized protection, and then no tradeoffs at the extreme where everything is protected. If you have a small enough number of species, say less than 10, then can do color / shape by species, mpa size on x axis, change in biomass on y axis, and connected lines for design paradigms. If not too busy, would be good to have a counterfactual where everything is the same except species are all homogeneously distributed 
+
+### Fig 4. Similar idea but, now bringing fishing in there. Maybe collapsing down a few axes, so you do like percent increase in total bycatch by total fishing, or some measure of collective benefit / loss, as a function of MPA size. Maybe highlight inflection points that seem to minimize fishery losses while also minimizing tradeoffs with bycatch
+
+### Fig 5 + Figures showing a few select “what if the world were different”, i.e. how important is movement rate, DD form, etc. 
+
+
+# Scraps
+
+What are the considerations of protection you need to make good decisions. It’s not always obvious how to design things to get the outcome you want. If we could make the case that something like closing the high seas is insufficient conservation management without conservation management inside EEZs / what is the 
+
+Need to do an optimization here, calculate the marginal value of added cells. 
+
+What’s this about?
+Pointing out a problem, which to make impactful would require making the case that there is a problem with current design strategies. e.g.. “MPAs are often designed like this (simple dispersive models with constant habitat, or MARXSAN style things), and doing that does/does not create problems
+A tactical evaluation. Picking a handful of high profile MPAs, parameterizing all the knowns as well as possible, iterating over unknowns, and see what the range of outcomes are. Cleaner, more impactful, but also opens it up (depending on the results) to a details fight about very specific modeling choices
+How plausible are losses? Maybe we drill down on this a bit. From a purely bycatch perspective, the usual questions of fisheries tradeoffs aren’t on the table (but can add to the discussion considerations of how much target fishing you give up). Given that then, while it’s possible that “targeted” interventions would work better (ignoring costs/enforcement, etc), there’s really no reason not to do MPAs. Unless, you actually end up concentrating fishing pressure outside on populations. So, we consider how plausible is it for that to really happen. Issue here is that seems likely to be pretty hand-wavey. Most likely that the vast majority of simulations will show positive impacts, but have no way of assigning probabilities to any one state of nature. 
+
+The Role of Blue-Water Marine Protected Areas in Bycatch Reduction
+
+What’s the question: How effective are Blue-Water MPAs in reducing fishing mortality of important pelagic bycatch species?
+
+Another angle. There’s going to be a lot of unknowns in designing BWMPA. How  much does not fully understanding a few key life history (e.g. movement) matter, and how much does the role that the species plays in the broader fleets portfolio matter
+
+Could simulate habitat from a multivariate normal, where you use the sigma to control how similar rasters are across species 
+
+Marine protected areas are increasingly proposed to protect biodiversity in pelagic systems. However, maby paradigms of mpa design come from coastal systems. Here we ask, how likely are blue-water MPAs to provide conservation benefits to bycatch species, and what are the key uncertainties underlying these outcomes? We begin with a general discussion of the ways in which traits of open-ocean systems might influence the conservation performance of BWMPAs. Given the massive parameter space, we then constrain ourselves to a styulized version of the western central pacitic ocean to ask, how feasible is it to provide broad protection of bycatch species through common MPA design paradigms in the context of this system. Our results demonstrate the critical importance of XX and XX in designing MPAs in pelagic systems, and highlight the potential risks of not accounting for XX. 
+Introductionhere
+
+Bycatch is a significant driver of population declines for many pelagic species
+Sharks, seabirds, mammals, etc
+MPAs increasingly turned to as a solution for conservation problems, etc. 
+MPA science is largely based on dynamics of coastal systems. Open-ocean ecosystems have very different dynamics that require dedicated research
+Burgess et al. (2018) estimated the reductions in fishing mortality needed to halt declines for a number of bycatch species
+Here we ask, what are the key drivers of bycatch conservation outcomes from MPAs?
+There are all of these species; you reduce fishing mortality. You can either do fisheries management, or you can do MPAs, let’s focus in on the MPA side. This could reduce fishing mortality, or it could do, and it depends on the dynamics of the species and the fleets. 
+When can MPAs reduce fishing mortality enough for bycatch species? And where can you go wrong?
+
+
+It doesn’t make any sense to ask “do MPAs help bycatch”: the question is obviously it depends. To quickly make this case, we’ll assume that a species is in need of recovery. We then do the simple mako example to show that effects of spatial closure depend on the overlap of habitat and the assumption of fleet dynamics, and provide some empirical evidence that in particular effort redistribution is not unlikely. 
+
+Determining the effect of an MPA network on bycatch then will also depend on trying to get close to a tactical model. But, this creates a problem for blue water systems in particular. Can make the argument that given the centrality of relatively static habitat features in coastal MPAs “protect the key habitats” might not be a bad strategy from a conservation strategy. But in highly mobile pelagic systems there (may be) a lot more variables in play. Where should researchers direct their attention? 
+
+To  reduce the parameter space, we constrain ourselves to a system where 1) we know the species involved 2) we have some sense of the relative depletion and value of the different species and 3) some basic life history of the species. We then vary commonly unknown parameters, particularly preferred habitats, spatial catchability, movement rates etc, and pair these simulations with different MPA designs, and examine the conservation outcomes for bycatch species. 
+
+What i don’t like about this
+
+There isn’t an “answer” to this: baring something like “changing the type of density dependence never had any effect greater than XX%”, for anything that on occasion has an impact the answer of “how much” will almost always depend on what else is going on. 
+
+So, it seems like there are two real angles of attack here
+
+Pointing out a problem, which to make impactful would require making the case that there is a problem with current design strategies. I.e. “MPAs are often designed like this (simple dispersive models with constant habitat, or MARXSAN style things), and doing that does/does not create problems
+A tactical evaluation. Picking a handful of high profile MPAs, parameterizing all the knownns as well as possible, iterating over unknowns, and see what the range of outcomes are. Cleaner, more impactful, but also opens it up (depending on the results) to a details fight about very specific modeling choices
+
+
+Methods
+
+Collect life history for key bycatch species and target species, cite Bradley et al. pulling together species distribution and threats etc. 
+Introduce marlin
+Parameterize marlin runs with “knowns” from life history of bycatch and target species
+Highlight key “unknowns” that we will iterate over, e.g. fleet models, density dependent movement, timing of density dependence etc
+Simulate effects of MPAs given reasonably realistic situations but iterating over key unknowns
+Evaluate the range of outcomes and key drivers of MPA effects
+I’m thinking we try and avoid a really specific case study but hard not to accidentally do one without making everything up…. 
+
+Results
+Range of likely changes in fishing-induced mortality for the species selected
+Key drivers of uncertainty in those outcomes, focusing on things that switch states from reduction to increase in mortality
+How common are conservation tradeoffs between bycatch species?
+Fishery impacts
+
+
+
+Discussion
+What does this say about BWMPAs and bycatch?
+Not going to get into design decisions here, depending how common tradeoffs are I think that will be the main focus
+Highlight any species that frequently induced tradeoffs
+Tee up future research
+MPAs in context of other management
+MPAs as risk reduction strategy
+Etc. 
+
