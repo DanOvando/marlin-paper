@@ -40,7 +40,7 @@ if (!dir.exists(results_path)){
 
 draws <- 300
 
-resolution <- 20 # resolution is in squared patches, so 20 implies a 20X20 system, i.e. 400 patches
+resolution <- 10 # resolution is in squared patches, so 20 implies a 20X20 system, i.e. 400 patches
 
 years <- 40
 
@@ -403,7 +403,8 @@ plot_marlin(proc_safety)
 space <- plot_marlin(proc_safety, plot_type = "space")
 
 sample_mpas <- place_mpa(target_fauna = "carcharhinus longimanus",
-                         size = 0.2, fauna = fauna_frame$fauna[[1]])
+                         size = 0.2, fauna = fauna_frame$fauna[[1]], placement_error = 0,
+                         place_randomly = FALSE)
 
 # sample_mpas <- place_mpa(target_fauna = "prionace glauca",
 #                          size = 0.2, fauna = fauna_frame$fauna[[1]])
@@ -462,7 +463,8 @@ mpa_sims <- mpa_sims %>%
       size = mpa_size
     ),
     place_mpa,
-    fauna = fauna_frame$fauna[[1]]
+    fauna = fauna_frame$fauna[[1]],
+    placement_error = 0
   )) %>%
   mutate(id = 1:nrow(.))
 
@@ -564,7 +566,7 @@ mpa_sims <- mpa_sims %>%
 
 diff <- Sys.time() - a
 
-(diff / nrow(sims)) * 60
+(diff / nrow(mpa_sims)) * 60
 
 # process MPA outcomes ----------------------------------------------------
 # deal with output of simulations
@@ -638,10 +640,10 @@ mpa_results %>%
   select(mpa_size, percent_change, critter, target_fauna, variable) %>%
   filter(variable %in% c("c","ssb")) %>%
   pivot_wider(names_from = "variable", values_from = percent_change) %>%
-  ggplot(aes(ssb, c, color = mpa_size, shape = target_fauna, linetype = target_fauna)) +
+  ggplot(aes(ssb, c, shape = target_fauna, linetype = target_fauna)) +
   geom_line() +
-  geom_point() +
-  facet_grid( ~ critter, scales = "free")
+  geom_point(aes(color = mpa_size)) +
+  facet_wrap( ~ critter, scales = "free")
 
 
 
