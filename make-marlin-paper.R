@@ -38,6 +38,8 @@ if (!dir.exists(results_path)){
   dir.create(file.path(results_path,"sims"))
 }
 
+safety_stop <- FALSE
+
 draws <- 300
 
 resolution <- 10 # resolution is in squared patches, so 20 implies a 20X20 system, i.e. 400 patches
@@ -394,6 +396,7 @@ fauna_frame <- fauna_frame %>%
 
 # make some plots
 
+if (safety_stop){
 safety_sim <- marlin::simmar(fauna = fauna_frame$fauna[[1]],
                              fleets = fauna_frame$fleet[[1]])
 proc_safety <- process_marlin(safety_sim, keep_age = FALSE)
@@ -426,6 +429,7 @@ plot_marlin(no_mpa = proc_safety, with_mpa = proc_safety_mpa, plot_var = "c")
 
 ggsave("test-space.pdf", plot = space, height = 20, width = 10)
 
+}
 # tune system -------------------------------------------------------------
 # tune the system (initial state, reference points, etc)
 
