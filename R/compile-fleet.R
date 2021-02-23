@@ -23,7 +23,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 79.9,
           sel_delta = .01,
           catchability = .1,
-          p_explt = 1,
+          p_explt = .98,
           sel_unit = "length"
         ),
         "katsuwonus pelamis" = Metier$new(
@@ -33,7 +33,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 65,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1,
+          p_explt = .01,
           sel_unit = "length"
 
         ),
@@ -44,7 +44,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 90,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .75,
+          p_explt = 0.28,
           sel_unit = "length"
 
         ),
@@ -55,7 +55,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 175,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9,
+          p_explt = .99,
           sel_unit = "length"
 
         ),
@@ -63,10 +63,10 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           critter = fauna$`carcharhinus longimanus`,
           price = 1.89,
           sel_form = "logistic",
-          sel_start = 50,
+          sel_start = 175,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9,
+          p_explt = .98,
           sel_unit = "length"
 
         ),
@@ -74,10 +74,10 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           critter = fauna$`istiompax indica`,
           price = 2.74,
           sel_form = "logistic",
-          sel_start = 50,
+          sel_start = 100,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9,
+          p_explt = .99,
           sel_unit = "length"
 
         ),
@@ -88,7 +88,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 150,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9,
+          p_explt = .95,
           sel_unit = "length"
 
         ),
@@ -96,10 +96,10 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           critter = fauna$`carcharhinus falciformis`,
           price = 2.16,
           sel_form = "logistic",
-          sel_start = 150,
+          sel_start = 200,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9,
+          p_explt = .79,
           sel_unit = "length"
 
         ),
@@ -110,7 +110,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 200,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9,
+          p_explt = .99,
           sel_unit = "length"
 
         ),
@@ -118,15 +118,15 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           critter = fauna$`isurus oxyrinchus`,
           price = 4.11,
           sel_form = "logistic",
-          sel_start = 125,
+          sel_start = 190,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9,
+          p_explt = .99,
           sel_unit = "length"
 
         )
       ),
-      base_effort =0
+      base_effort = resolution
     ),
     "purseseine" = create_fleet(
       list(
@@ -148,7 +148,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 100,
           sel_delta = .01,
           catchability = .1,
-          p_explt = 1e-3,
+          p_explt = 0.02,
           sel_unit = "length"
 
         ),
@@ -159,7 +159,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 50,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9,
+          p_explt = .99,
           sel_unit = "length"
 
         ),
@@ -170,7 +170,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 60,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .2,
+          p_explt = .72,
           sel_unit = "length"
 
         ),
@@ -181,7 +181,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 175,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1,
+          p_explt = .01,
           sel_unit = "length"
 
         ),
@@ -192,7 +192,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 160,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1,
+          p_explt = .02,
           sel_unit = "length"
 
         ),
@@ -203,7 +203,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 50,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1,
+          p_explt = .01,
           sel_unit = "length"
 
         ),
@@ -214,7 +214,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 1000,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = 1e-3,
+          p_explt = 0.05,
           sel_unit = "length"
 
         ),
@@ -222,10 +222,10 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           critter = fauna$`carcharhinus falciformis`,
           price = 2.16,
           sel_form = "logistic",
-          sel_start = .1,
+          sel_start = 150,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1,
+          p_explt = .21,
           sel_unit = "length"
 
         ),
@@ -236,7 +236,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 110,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .25,
+          p_explt = .01,
           sel_unit = "length"
 
         ),
@@ -247,12 +247,12 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_start = 190,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = 1e-3,
+          p_explt = 0.01,
           sel_unit = "length"
 
         )
       ),
-      base_effort = 0
+      base_effort = resolution
     )
   )
 

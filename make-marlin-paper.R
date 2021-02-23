@@ -1,4 +1,4 @@
-# Assesing Tradeoffs in the use of MPAs for Bycatch Reduction
+# Assessing Tradeoffs in the use of MPAs for Bycatch Reduction
 
 # setup -------------------------------------------------------------------
 
@@ -87,7 +87,7 @@ if (!file.exists(here("data","marlin-inputs.xlsx"))){
   marlin_inputs_path <- googledrive::drive_get("https://docs.google.com/spreadsheets/d/1eiJIxiDYZLQlBuSLy-yIofhbc-KfWBR9v4FpThgXrQ0/edit#gid=0&fvid=1954704204")
 
 
-  googledrive::drive_download(marlin_inputs_path, path = here("data","marlin-inputs.xlsx"))
+  googledrive::drive_download(marlin_inputs_path, path = here("data","marlin-inputs.xlsx"), overwrite = TRUE)
 
 }
 
@@ -357,13 +357,14 @@ create_critters <- function(sciname, habitat,seasons = 1, marlin_inputs){
     scientific_name = sciname,
     seasonal_habitat = hab,
     adult_movement = 1,
-    adult_movement_sigma = runif(1,min = 1, max = 30),
-    rec_form = sample(c(0,1,2,3),1, replace = TRUE),
+    adult_movement_sigma = runif(1, min = 10, max = 30),
+    rec_form = sample(c(0, 1, 2, 3), 1, replace = TRUE),
     seasons = seasons,
-    init_explt = mean(tmp_inputs$current_f, na.rm = TRUE),
-    steepness =  mean(tmp_inputs$steepness, na.rm = TRUE),
-    ssb0 = mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE)
-  )
+    init_explt = ifelse(is.nan(mean(tmp_inputs$current_f, na.rm = TRUE)),.1,mean(tmp_inputs$current_f, na.rm = TRUE)),
+    steepness =  ifelse(is.nan(mean(
+      tmp_inputs$steepness, na.rm = TRUE
+    )), 0.8, mean(tmp_inputs$steepness, na.rm = TRUE)),
+    ssb0 = ifelse(is.nan(mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE)),1e4,mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE)))
 
 
   # # later sub in a lookup table for this
@@ -411,11 +412,7 @@ fauna_frame <- fauna_frame %>%
 
 fauna_frame <- fauna_frame %>%
   ungroup() %>%
-  mutate(tmp = map(fauna, compile_fleet)) %>%
-  mutate(fleet = map2(fauna, tmp, marlin::tune_fleets, tune_type = tune_type))
-
-fleets <- tune_fleets(fauna_frame$fauna[[1]], fleets, tune_type = tune_type) # tunes the catchability by fleet to achieve target depletion
-
+  mutate(fleet = map(fauna, compile_fleet))
 
 
 
