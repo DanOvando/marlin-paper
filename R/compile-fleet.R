@@ -10,103 +10,123 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           critter = fauna$`thunnus obesus`,
           price = 10,
           sel_form = "logistic",
-          sel_start = 1,
+          sel_start = 100,
           sel_delta = .01,
           catchability = .1,
-          p_explt = .5
+          p_explt = .5,
+          sel_unit = "length"
         ),
         "thunnus alalunga" = Metier$new(
           critter = fauna$`thunnus alalunga`,
-          price = 5,
+          price = 4.57,
           sel_form = "logistic",
-          sel_start = 1,
+          sel_start = 79.9,
           sel_delta = .01,
           catchability = .1,
-          p_explt = .5
+          p_explt = .98,
+          sel_unit = "length"
         ),
         "katsuwonus pelamis" = Metier$new(
           critter = fauna$`katsuwonus pelamis`,
-          price = 1,
+          price = 1.36,
           sel_form = "logistic",
-          sel_start = 1,
+          sel_start = 65,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1
+          p_explt = .01,
+          sel_unit = "length"
+
         ),
         "thunnus albacares" = Metier$new(
           critter = fauna$`thunnus albacares`,
-          price = 15,
+          price = 7.52,
           sel_form = "logistic",
-          sel_start = 1,
+          sel_start = 90,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1
+          p_explt = 0.28,
+          sel_unit = "length"
+
         ),
         "kajikia audax" = Metier$new(
           critter = fauna$`kajikia audax`,
-          price = 5,
+          price = 5.16,
           sel_form = "logistic",
-          sel_start = .2,
+          sel_start = 175,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9
+          p_explt = .99,
+          sel_unit = "length"
+
         ),
         "carcharhinus longimanus" = Metier$new(
           critter = fauna$`carcharhinus longimanus`,
-          price = 0,
+          price = 1.89,
           sel_form = "logistic",
-          sel_start = .1,
+          sel_start = 175,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9
+          p_explt = .98,
+          sel_unit = "length"
+
         ),
         "istiompax indica" = Metier$new(
           critter = fauna$`istiompax indica`,
-          price = 5,
+          price = 2.74,
           sel_form = "logistic",
-          sel_start = .1,
+          sel_start = 100,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9
+          p_explt = .99,
+          sel_unit = "length"
+
         ),
         "makaira mazara" = Metier$new(
           critter = fauna$`makaira mazara`,
-          price = 5,
+          price = 3.74,
           sel_form = "logistic",
-          sel_start = .1,
+          sel_start = 150,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9
+          p_explt = .95,
+          sel_unit = "length"
+
         ),
         "carcharhinus falciformis" = Metier$new(
           critter = fauna$`carcharhinus falciformis`,
-          price = 0,
+          price = 2.16,
           sel_form = "logistic",
-          sel_start = .1,
+          sel_start = 200,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9
+          p_explt = .79,
+          sel_unit = "length"
+
         ),
         "prionace glauca" = Metier$new(
           critter = fauna$`prionace glauca`,
-          price = 0,
+          price = 10,
           sel_form = "logistic",
-          sel_start = .1,
+          sel_start = 200,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9
+          p_explt = .99,
+          sel_unit = "length"
+
         ),
         "isurus oxyrinchus" = Metier$new(
           critter = fauna$`isurus oxyrinchus`,
-          price = 0,
+          price = 4.11,
           sel_form = "logistic",
-          sel_start = .1,
+          sel_start = 190,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9
+          p_explt = .99,
+          sel_unit = "length"
+
         )
       ),
-      base_effort = resolution ^ 2
+      base_effort = resolution
     ),
     "purseseine" = create_fleet(
       list(
@@ -114,103 +134,125 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           critter = fauna$`thunnus obesus`,
           price = 1,
           sel_form = "logistic",
-          sel_start = .2,
+          sel_start = 50,
           sel_delta = .01,
           catchability = .1,
-          p_explt = .5
+          p_explt = .5,
+          sel_unit = "length"
+
         ),
         "thunnus alalunga" = Metier$new(
           critter = fauna$`thunnus alalunga`,
-          price = 1,
+          price = 4.57,
           sel_form = "logistic",
-          sel_start = .2,
+          sel_start = 100,
           sel_delta = .01,
           catchability = .1,
-          p_explt = .2
+          p_explt = 0.02,
+          sel_unit = "length"
+
         ),
         "katsuwonus pelamis" = Metier$new(
           critter = fauna$`katsuwonus pelamis`,
-          price = 5,
+          price = 1.36,
           sel_form = "logistic",
-          sel_start = 1,
+          sel_start = 50,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .9
+          p_explt = .99,
+          sel_unit = "length"
+
         ),
         "thunnus albacares" = Metier$new(
           critter = fauna$`thunnus albacares`,
-          price = 3,
+          price = 7.52,
           sel_form = "logistic",
-          sel_start = .2,
+          sel_start = 60,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1
+          p_explt = .72,
+          sel_unit = "length"
+
         ),
         "kajikia audax" = Metier$new(
           critter = fauna$`kajikia audax`,
-          price = 0,
+          price = 5.16,
           sel_form = "logistic",
-          sel_start = 2,
+          sel_start = 175,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1
+          p_explt = .01,
+          sel_unit = "length"
+
         ),
         "carcharhinus longimanus" = Metier$new(
           critter = fauna$`carcharhinus longimanus`,
-          price = 0,
-          sel_form = "logistic",
-          sel_start = .1,
+          price = 1.89,
+          sel_form = "dome",
+          sel_start = 160,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1
+          p_explt = .02,
+          sel_unit = "length"
+
         ),
         "istiompax indica" = Metier$new(
           critter = fauna$`istiompax indica`,
-          price = 5,
+          price = 2.74,
           sel_form = "logistic",
-          sel_start = .1,
+          sel_start = 50,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1
+          p_explt = .01,
+          sel_unit = "length"
+
         ),
         "makaira mazara" = Metier$new(
           critter = fauna$`makaira mazara`,
-          price = 5,
+          price = 3.74,
           sel_form = "logistic",
-          sel_start = .1,
+          sel_start = 1000,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1
+          p_explt = 0.05,
+          sel_unit = "length"
+
         ),
         "carcharhinus falciformis" = Metier$new(
           critter = fauna$`carcharhinus falciformis`,
-          price = 5,
+          price = 2.16,
           sel_form = "logistic",
-          sel_start = .1,
+          sel_start = 150,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1
+          p_explt = .21,
+          sel_unit = "length"
+
         ),
         "prionace glauca" = Metier$new(
           critter = fauna$`prionace glauca`,
           price = 5,
           sel_form = "logistic",
-          sel_start = .1,
+          sel_start = 110,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1
+          p_explt = .01,
+          sel_unit = "length"
+
         ),
         "isurus oxyrinchus" = Metier$new(
           critter = fauna$`isurus oxyrinchus`,
-          price = 0,
+          price = 4.11,
           sel_form = "logistic",
-          sel_start = .1,
+          sel_start = 190,
           sel_delta = 0.01,
           catchability = .1,
-          p_explt = .1
+          p_explt = 0.01,
+          sel_unit = "length"
+
         )
       ),
-      base_effort = resolution ^ 2
+      base_effort = resolution
     )
   )
 

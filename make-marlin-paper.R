@@ -1,4 +1,4 @@
-# Assesing Tradeoffs in the use of MPAs for Bycatch Reduction
+# Assessing Tradeoffs in the use of MPAs for Bycatch Reduction
 
 # setup -------------------------------------------------------------------
 
@@ -38,17 +38,19 @@ if (!dir.exists(results_path)){
   dir.create(file.path(results_path,"sims"))
 }
 
-draws <- 300
+safety_stop <- FALSE
 
-resolution <- 10 # resolution is in squared patches, so 20 implies a 20X20 system, i.e. 400 patches
+draws <- 20
+
+resolution <- 20 # resolution is in squared patches, so 20 implies a 20X20 system, i.e. 400 patches
 
 years <- 40
 
-seasons <- 1
+seasons <- 2
 
 time_step <- 1 / seasons
 
-workers <- 3
+workers <- round(parallel::detectCores() - 4)
 
 steps <- years * seasons
 
@@ -77,6 +79,20 @@ plan(multisession, workers = workers)
 #   overwrite = TRUE
 # )
 #
+
+# for now pulling in from dovando07@gmail.com account
+
+if (!file.exists(here("data","marlin-inputs.xlsx"))){
+
+  marlin_inputs_path <- googledrive::drive_get("https://docs.google.com/spreadsheets/d/1eiJIxiDYZLQlBuSLy-yIofhbc-KfWBR9v4FpThgXrQ0/edit#gid=0&fvid=1954704204")
+
+
+  googledrive::drive_download(marlin_inputs_path, path = here("data","marlin-inputs.xlsx"), overwrite = TRUE)
+
+}
+
+marlin_inputs <- readxl::read_xlsx(here("data","marlin-inputs.xlsx"), sheet = "inputs",na = c("NA",""))
+
 
 wcpfc_data <- read_csv(here("data","wcpfc_monthly.csv"))
 
@@ -313,63 +329,95 @@ habitat <- rough_habitat %>%
 # create core species ---------------------------------------------------
 
 # for now, generate a series of critter objects for each of the critters
-draws <- 1
 fauna_frame <- tibble(
   scientific_name =  unique(rough_habitat$species_sciname),
   xid = list(1:draws)) %>%
   unnest(cols = xid)
 
-
-generate_traits <- function(scientific_name, habitat){
-
-  # later sub in a lookup table for this
-  trait_frame <- tibble(
-    seasonal_habitat = list(habitat$data[[which(habitat$species_sciname == scientific_name)]]),
-    adult_movement = sample(c(0, 20),1, replace = TRUE),
-    adult_movement_sigma = sample(c(20), 1,replace = TRUE),
-    seasons = seasons,
-    init_explt = sample(c(.05,.1,.2), 1, replace = TRUE),
-    rec_form = sample(c(0,1,2,3),1, replace = TRUE),
-    fec_form = c("power"),
-    weight_a = NA
-  )
-
-}
+# so I think the most logical thing here is to make this a central location
+# to generate fauna objects, locking in place things that you can easily
+# pull from marlin_inputs, and randomizing others. That way you can easily
+# stick one "one" result, or generate a bunch of iterations varying in key unknowns
 
 
-fauna_frame <- fauna_frame %>%
-  mutate(traits = map(scientific_name,generate_traits, habitat = habitat))
+create_critters <- function(sciname, habitat,seasons = 1, marlin_inputs){
 
-create_random_critter <- function(scientific_name, traits,seasons){
+  # sciname <- marlin_inputs$scientific_name[[1]]
 
-  hab <- traits$seasonal_habitat[[1]] %>%
+    tmp_inputs <- marlin_inputs %>%
+    filter(scientific_name == sciname)
+
+  hab <- habitat$data[[which(habitat$species_sciname == sciname)]] %>%
     pivot_wider(names_from = y, values_from = habitat) %>%
     select(-x) %>%
     as.matrix()
 
+  seasonal_movement <- sample(c(1,0),1, replace = TRUE)
+
+  uniform_rec_hab <- sample(c(1,0),1, replace = TRUE)
+
+
+  # seasonal_movement <- 0
+  if (seasonal_movement == 1){
+
+    hab <- list(hab, t(hab))
+
+  } else {
+
+    hab <- list(hab, hab)
+  }
+
+  if (uniform_rec_hab){
+    recruit_habitat <- NA
+  } else {
+    recruit_habitat <- hab[[1]]
+  }
+
   critter <- marlin::create_critter(
-    scientific_name = scientific_name,
+    scientific_name = sciname,
     seasonal_habitat = hab,
-    adult_movement = traits$adult_movement,
-    adult_movement_sigma = traits$adult_movement_sigma,
-    rec_form = traits$rec_form,
+    adult_movement = 1,
+    adult_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
+    recruit_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
+    rec_form = sample(c(0, 1, 2, 3), 1, replace = TRUE),
     seasons = seasons,
-    init_explt = traits$init_explt
-  )
+    init_explt = ifelse(is.nan(mean(tmp_inputs$current_f, na.rm = TRUE)),.1,mean(tmp_inputs$current_f, na.rm = TRUE)),
+    steepness =  ifelse(is.nan(mean(
+      tmp_inputs$steepness, na.rm = TRUE
+    )), 0.8, mean(tmp_inputs$steepness, na.rm = TRUE)),
+    ssb0 = ifelse(is.nan(mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE)),1e4,mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE)))
+
+
+  # # later sub in a lookup table for this
+  # trait_frame <- tibble(
+  #   seasonal_habitat = list(habitat$data[[which(habitat$species_sciname == sciname)]]),
+  #   adult_movement = 1,
+  #   adult_movement_sigma = runif(1,min = 1, max = 30),
+  #   seasons = seasons,
+  #   init_explt = sample(c(.05,.1,.2), 1, replace = TRUE),
+  #   rec_form = sample(c(0,1,2,3),1, replace = TRUE),
+  #   fec_form = c("power"),
+  #   weight_a = NA
+  # )
 
 }
 
 
-
 fauna_frame <- fauna_frame %>%
-  mutate(
-    critter = map2(
-      scientific_name,
-      traits,
-      create_random_critter,
-      seasons = seasons
-    )
-  )
+  mutate(critter = map(scientific_name,create_critters, habitat = habitat,marlin_inputs = marlin_inputs,seasons = seasons))
+
+
+
+# fauna_frame <- fauna_frame %>%
+#   mutate(
+#     critter = map2(
+#       scientific_name,
+#       traits,
+#       create_random_critter,
+#       seasons = seasons
+#     )
+#   )
+
 
 
 # aggregate into lists of fauna
@@ -378,6 +426,13 @@ fauna_frame <- fauna_frame %>%
   group_by(xid) %>%
   nest() %>%
   mutate(fauna = map(data, ~.x$critter %>% set_names(.x$scientific_name)))
+
+check_pop_sizes <- map_dbl(fauna_frame$fauna[[1]],"ssb0")
+
+tibble(sciname = names(check_pop_sizes), ssb0 = check_pop_sizes) %>%
+  ggplot(aes(reorder(sciname, ssb0), ssb0))+
+  geom_col() +
+  coord_flip()
 
 
 
@@ -394,14 +449,17 @@ fauna_frame <- fauna_frame %>%
 
 # make some plots
 
+if (safety_stop){
 safety_sim <- marlin::simmar(fauna = fauna_frame$fauna[[1]],
-                             fleets = fauna_frame$fleet[[1]])
+                             fleets = fauna_frame$fleet[[1]],
+                             years = years)
 proc_safety <- process_marlin(safety_sim, keep_age = FALSE)
 
 plot_marlin(proc_safety)
 
-space <- plot_marlin(proc_safety, plot_type = "space")
-
+space <- (plot_marlin(proc_safety, plot_type = "space", steps_to_plot = 1) + labs(title = "Summer")) +
+  (plot_marlin(proc_safety, plot_type = "space", steps_to_plot = 1.5) + labs(title = "Winter")) & theme(strip.text = element_text(size = 6))
+space
 sample_mpas <- place_mpa(target_fauna = "carcharhinus longimanus",
                          size = 0.2, fauna = fauna_frame$fauna[[1]], placement_error = 0,
                          place_randomly = FALSE)
@@ -416,7 +474,8 @@ sample_mpas %>%
 safety_mpa_sim <- marlin::simmar(fauna = fauna_frame$fauna[[1]],
                              fleets = fauna_frame$fleet[[1]],
                              mpas = list(locations = sample_mpas,
-                                         mpa_year = floor(years * .5)))
+                                         mpa_year = floor(years * .5)),
+                             years = years)
 
 proc_safety_mpa <- process_marlin(safety_mpa_sim, keep_age = FALSE)
 
@@ -426,6 +485,7 @@ plot_marlin(no_mpa = proc_safety, with_mpa = proc_safety_mpa, plot_var = "c")
 
 ggsave("test-space.pdf", plot = space, height = 20, width = 10)
 
+}
 # tune system -------------------------------------------------------------
 # tune the system (initial state, reference points, etc)
 
@@ -444,6 +504,8 @@ ggsave("test-space.pdf", plot = space, height = 20, width = 10)
 #
 #   for any one run, do your MPA optimization for a specified number of cells. And if eventually you want to look at a range of sizes, then actually going through all cells makes sense and storing the marginal contribution of each cell, so that that way you have a library to create MPAs of arbitrary size off of
 
+run_mpa_experiment <- function(fauna, fleet, placement_error = 0, random_mpas = FALSE){
+
 
 mpa_sims <-
   expand_grid(
@@ -451,29 +513,31 @@ mpa_sims <-
       "carcharhinus longimanus",
       unique(rough_habitat$species_sciname[rough_habitat$bycatch])
     ),
-    mpa_size = seq(0, 1, by = .1),
-    random_mpas = c(FALSE)
+    mpa_size = seq(0, 1, by = .05),
+    random_mpas = c(random_mpas)
   )
 
 
+# hmm will need to adjust this so placement is scenario specific
 mpa_sims <- mpa_sims %>%
   mutate(mpa = pmap(
     list(
       target_fauna = target_fauna,
-      size = mpa_size
+      size = mpa_size,
+      place_randomly = random_mpas
     ),
     place_mpa,
-    fauna = fauna_frame$fauna[[1]],
-    placement_error = 0
+    fauna = fauna,
+    placement_error = placement_error
   )) %>%
   mutate(id = 1:nrow(.))
 
 #
 #
-i = 5
-mpa_sims$mpa[[i]] %>%
-  ggplot(aes(x,y,fill = mpa)) +
-  geom_tile()
+# i = 3
+# mpa_sims$mpa[[i]] %>%
+#   ggplot(aes(x,y,fill = mpa)) +
+#   geom_tile()
 
 steps_to_keep <- c(max(time_steps))
 
@@ -516,7 +580,7 @@ run_and_process <-
       years = years,
       mpas = list(
         locations = mpa,
-        mpa_year = floor(years * seasons * .5)
+        mpa_year = floor(years * .5)
       )
     )
     proc_sim_mpa <-
@@ -526,9 +590,9 @@ run_and_process <-
         steps_to_keep = steps_to_keep,
         keep_age = keep_age
       )
-
-    # plot_marlin(proc_sim_mpa, proc_sim_base) +
-    #   geom_vline(aes(xintercept = floor(years * seasons * .5)))
+# browser()
+#     plot_marlin(proc_sim_mpa, proc_sim_base) +
+#       geom_vline(aes(xintercept = floor(years * seasons * .5)))
 
     out <- list(with_mpa = proc_sim_mpa,
                 without_mpa = proc_sim_base)
@@ -556,21 +620,14 @@ mpa_sims <- mpa_sims %>%
     run_and_process,
     year = years,
     steps_to_keep = steps_to_keep,
-    fauna = fauna_frame$fauna[[1]],
-    fleet = fauna_frame$fleet[[1]],
+    fauna = fauna,
+    fleet = fleet,
     seasons = seasons,
     write_sim = FALSE,
     results_path = results_path,
     .progress = TRUE
   ))
 
-diff <- Sys.time() - a
-
-(diff / nrow(mpa_sims)) * 60
-
-# process MPA outcomes ----------------------------------------------------
-# deal with output of simulations
-#
 
 assess_sim <- function(sim, fauna,thing = "fauna"){
 
@@ -601,7 +658,24 @@ assess_sim <- function(sim, fauna,thing = "fauna"){
 
 
 mpa_sims <- mpa_sims %>%
-  mutate(results = map(sim, assess_sim, fauna = fauna_frame$fauna[[1]]))
+  mutate(results = map(sim, assess_sim, fauna = fauna))
+
+
+} # close run_mpa_experiment
+
+
+fauna_frame <- fauna_frame %>%
+  mutate(experiment = map2(fauna, fleet, run_mpa_experiment,
+                           placement_error = 0.5))
+
+# diff <- Sys.time() - a
+
+# (diff / nrow(mpa_sims)) * 60
+
+# process MPA outcomes ----------------------------------------------------
+# deal with output of simulations
+#
+
 
 
 # results -----------------------------------------------------------------
@@ -612,40 +686,113 @@ mpa_sims <- mpa_sims %>%
 
 
 
-mpa_results <-  mpa_sims %>%
-  select(target_fauna, mpa_size, results) %>%
+a = critter_lookup %>%
+  left_join(rough_habitat %>% select(species_commonname, bycatch) %>% unique)
+
+
+mpa_results <-  fauna_frame %>%
+  select(xid, experiment) %>%
+  unnest(cols = experiment) %>%
+  select(xid,target_fauna, mpa_size, results) %>%
   unnest(cols = results) %>%
-  mutate(target_fauna = map_chr(target_fauna, ~paste(.x, collapse = ",")))
+  mutate(target_fauna = map_chr(target_fauna, ~paste(.x, collapse = ","))) %>%
+  left_join(a, by = c("critter" = "species_sciname")) %>%
+  mutate(bycatch = ifelse(bycatch == TRUE, "Bycatch Species","Target Species"))
+
+mpa_strategy <- c(
+  `carcharhinus longimanus` = "MPAs for OWT Shark",
+  `prionace glauca,carcharhinus longimanus,isurus oxyrinchus,carcharhinus falciformis` = "MPAs for All Bycatch"
+)
+
+
 
 mpa_results %>%
   filter(variable == "ssb") %>%
-  ggplot(aes(mpa_size, percent_change_ssb0, color = critter)) +
+  ggplot(aes(
+    mpa_size,
+    percent_change_ssb0,
+    color = species_commonname,
+    group = interaction(xid,species_commonname,bycatch)
+  )) +
   geom_hline(aes(yintercept = 0)) +
-  geom_line() +
-  facet_wrap(~target_fauna) +
+  geom_line(size = 1.5, alpha = 0.25) +
+  facet_grid( bycatch~ target_fauna, labeller = labeller(target_fauna = mpa_strategy), scales = "free_y") +
   scale_x_continuous(name = "MPA Size", labels = scales::percent) +
-  scale_y_continuous(name = "% of SSB0 Change", labels = scales::percent)
+  scale_y_continuous(name = "% of SSB0 Change", labels = scales::percent) +
+  scale_color_discrete(name = "Species") +
+  scale_linetype(name = '') +
+  theme(axis.text = element_text(size = 8),
+        axis.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+
+
+mpa_strategy <- c(
+  `carcharhinus longimanus` = "MPAs for OWT Shark",
+  `prionace glauca,carcharhinus longimanus,isurus oxyrinchus,carcharhinus falciformis` = "MPAs for All Bycatch"
+)
 
 
 mpa_results %>%
   filter(variable == "c") %>%
-  ggplot(aes(mpa_size, percent_change, color = critter)) +
-  geom_line() +
-  facet_wrap(~target_fauna) +
+  ggplot(aes(
+    mpa_size,
+    percent_change,
+    color = species_commonname,
+    group = interaction(xid,species_commonname,bycatch)
+  )) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_line(size = 1, alpha = 0.25) +
+  facet_wrap(bycatch ~ target_fauna, labeller = labeller(target_fauna = mpa_strategy)) +
   scale_x_continuous(name = "MPA Size", labels = scales::percent) +
-  scale_y_continuous(name = "% Change in Catch", labels = scales::percent)
+  scale_y_continuous(name = "% Change in Catch", labels = scales::percent) +
+  scale_color_discrete(name = "Species") +
+  scale_linetype(name = '') +
+  theme(axis.text = element_text(size = 8),
+        axis.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
 
+
+
+mpa_strategy <- c("MPAs for OWT Shark" = "carcharhinus longimanus" ,
+                  "MPAs for All Bycatch" = "prionace glauca,carcharhinus longimanus,isurus oxyrinchus,carcharhinus falciformis")
 
 mpa_results %>%
-  select(mpa_size, percent_change, critter, target_fauna, variable) %>%
-  filter(variable %in% c("c","ssb")) %>%
+  mutate(target_fauna = as.factor(target_fauna)) %>%
+  mutate(target_fauna = fct_recode(target_fauna,!!!mpa_strategy)) %>%
+  select(mpa_size,
+         percent_change,
+         species_commonname,
+         target_fauna,
+         variable,
+         xid) %>%
+  filter(variable %in% c("c", "ssb")) %>%
   pivot_wider(names_from = "variable", values_from = percent_change) %>%
   ggplot(aes(ssb, c, shape = target_fauna, linetype = target_fauna)) +
-  geom_line() +
-  geom_point(aes(color = mpa_size)) +
-  facet_wrap( ~ critter, scales = "free")
+  geom_vline(aes(xintercept = 0)) +
+  geom_hline(aes(yintercept = 0)) +
+  # geom_line() +
+  geom_point(aes(color = mpa_size), size = 2) +
+  facet_wrap(~ species_commonname, scales = "free") +
+  scale_y_continuous(name = "% Change in Catch", labels = scales::percent) +
+  scale_x_continuous(name = "% of SSB0 Change", labels = scales::percent) +
+  theme(
+    axis.text = element_text(size = 8),
+    axis.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  ) +
+  scale_colour_viridis_b(
+    name = "MPA Size",
+    labels = scales::percent,
+    guide = guide_colorbar(barwidth = unit(9, "lines"))
+  ) +
+  scale_shape(name = "") +
+  scale_linetype(name = "")
 
 
 
 
+
+a %>% knitr::kable() %>% kableExtra::kable_paper()
 

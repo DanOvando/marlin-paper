@@ -12,7 +12,7 @@ place_mpa <-
            placement_error = 0,
            seed = 42,
            place_randomly = FALSE) {
-    # target_fauna <- c("bigeye", "yellowfin")
+    # target_fauna <- c("carcharhinus longimanus")
 
     # size <- 0.1
 
@@ -24,6 +24,7 @@ place_mpa <-
       pivot_longer(-patch, names_to = "critter", values_to = "n") %>%
       group_by(patch) %>%
       summarise(n = sum(n))
+
 
     if (placement_error > 0) {
       set.seed(seed)
@@ -59,12 +60,17 @@ place_mpa <-
       mutate(mpa = patch %in% mpa_locs) %>%
       select(x, y, mpa)
 
-
-
+    # mpas <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
+    #   mutate(patch = 1:nrow(.)) %>%
+    #   mutate(mpa = patch %in% mpa_locs,
+    #          n = nps$n)
+    #
+    #
+    #
     # mpas %>%
     #   ggplot(aes(x,y,fill = mpa)) +
     #   geom_tile()
-    #
+
 
     return(mpas)
 
