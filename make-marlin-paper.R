@@ -40,17 +40,17 @@ if (!dir.exists(results_path)){
 
 safety_stop <- FALSE
 
-draws <- 300
+draws <- 20
 
 resolution <- 20 # resolution is in squared patches, so 20 implies a 20X20 system, i.e. 400 patches
 
 years <- 40
 
-seasons <- 1
+seasons <- 2
 
 time_step <- 1 / seasons
 
-workers <- parallel::detectCores() / 2
+workers <- round(parallel::detectCores() - 4)
 
 steps <- years * seasons
 
@@ -329,7 +329,6 @@ habitat <- rough_habitat %>%
 # create core species ---------------------------------------------------
 
 # for now, generate a series of critter objects for each of the critters
-draws <- 1
 fauna_frame <- tibble(
   scientific_name =  unique(rough_habitat$species_sciname),
   xid = list(1:draws)) %>%
@@ -353,11 +352,33 @@ create_critters <- function(sciname, habitat,seasons = 1, marlin_inputs){
     select(-x) %>%
     as.matrix()
 
+  seasonal_movement <- sample(c(1,0),1, replace = TRUE)
+
+  uniform_rec_hab <- sample(c(1,0),1, replace = TRUE)
+
+
+  # seasonal_movement <- 0
+  if (seasonal_movement == 1){
+
+    hab <- list(hab, t(hab))
+
+  } else {
+
+    hab <- list(hab, hab)
+  }
+
+  if (uniform_rec_hab){
+    recruit_habitat <- NA
+  } else {
+    recruit_habitat <- hab[[1]]
+  }
+
   critter <- marlin::create_critter(
     scientific_name = sciname,
     seasonal_habitat = hab,
     adult_movement = 1,
-    adult_movement_sigma = runif(1, min = 10, max = 30),
+    adult_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
+    recruit_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
     rec_form = sample(c(0, 1, 2, 3), 1, replace = TRUE),
     seasons = seasons,
     init_explt = ifelse(is.nan(mean(tmp_inputs$current_f, na.rm = TRUE)),.1,mean(tmp_inputs$current_f, na.rm = TRUE)),
@@ -398,12 +419,20 @@ fauna_frame <- fauna_frame %>%
 #   )
 
 
+
 # aggregate into lists of fauna
 
 fauna_frame <- fauna_frame %>%
   group_by(xid) %>%
   nest() %>%
   mutate(fauna = map(data, ~.x$critter %>% set_names(.x$scientific_name)))
+
+check_pop_sizes <- map_dbl(fauna_frame$fauna[[1]],"ssb0")
+
+tibble(sciname = names(check_pop_sizes), ssb0 = check_pop_sizes) %>%
+  ggplot(aes(reorder(sciname, ssb0), ssb0))+
+  geom_col() +
+  coord_flip()
 
 
 
@@ -422,13 +451,15 @@ fauna_frame <- fauna_frame %>%
 
 if (safety_stop){
 safety_sim <- marlin::simmar(fauna = fauna_frame$fauna[[1]],
-                             fleets = fauna_frame$fleet[[1]])
+                             fleets = fauna_frame$fleet[[1]],
+                             years = years)
 proc_safety <- process_marlin(safety_sim, keep_age = FALSE)
 
 plot_marlin(proc_safety)
 
-space <- plot_marlin(proc_safety, plot_type = "space")
-
+space <- (plot_marlin(proc_safety, plot_type = "space", steps_to_plot = 1) + labs(title = "Summer")) +
+  (plot_marlin(proc_safety, plot_type = "space", steps_to_plot = 1.5) + labs(title = "Winter")) & theme(strip.text = element_text(size = 6))
+space
 sample_mpas <- place_mpa(target_fauna = "carcharhinus longimanus",
                          size = 0.2, fauna = fauna_frame$fauna[[1]], placement_error = 0,
                          place_randomly = FALSE)
@@ -443,7 +474,8 @@ sample_mpas %>%
 safety_mpa_sim <- marlin::simmar(fauna = fauna_frame$fauna[[1]],
                              fleets = fauna_frame$fleet[[1]],
                              mpas = list(locations = sample_mpas,
-                                         mpa_year = floor(years * .5)))
+                                         mpa_year = floor(years * .5)),
+                             years = years)
 
 proc_safety_mpa <- process_marlin(safety_mpa_sim, keep_age = FALSE)
 
@@ -472,6 +504,8 @@ ggsave("test-space.pdf", plot = space, height = 20, width = 10)
 #
 #   for any one run, do your MPA optimization for a specified number of cells. And if eventually you want to look at a range of sizes, then actually going through all cells makes sense and storing the marginal contribution of each cell, so that that way you have a library to create MPAs of arbitrary size off of
 
+run_mpa_experiment <- function(fauna, fleet, placement_error = 0, random_mpas = FALSE){
+
 
 mpa_sims <-
   expand_grid(
@@ -480,28 +514,30 @@ mpa_sims <-
       unique(rough_habitat$species_sciname[rough_habitat$bycatch])
     ),
     mpa_size = seq(0, 1, by = .05),
-    random_mpas = c(FALSE)
+    random_mpas = c(random_mpas)
   )
 
 
+# hmm will need to adjust this so placement is scenario specific
 mpa_sims <- mpa_sims %>%
   mutate(mpa = pmap(
     list(
       target_fauna = target_fauna,
-      size = mpa_size
+      size = mpa_size,
+      place_randomly = random_mpas
     ),
     place_mpa,
-    fauna = fauna_frame$fauna[[1]],
-    placement_error = 0
+    fauna = fauna,
+    placement_error = placement_error
   )) %>%
   mutate(id = 1:nrow(.))
 
 #
 #
-i = 3
-mpa_sims$mpa[[i]] %>%
-  ggplot(aes(x,y,fill = mpa)) +
-  geom_tile()
+# i = 3
+# mpa_sims$mpa[[i]] %>%
+#   ggplot(aes(x,y,fill = mpa)) +
+#   geom_tile()
 
 steps_to_keep <- c(max(time_steps))
 
@@ -584,21 +620,14 @@ mpa_sims <- mpa_sims %>%
     run_and_process,
     year = years,
     steps_to_keep = steps_to_keep,
-    fauna = fauna_frame$fauna[[1]],
-    fleet = fauna_frame$fleet[[1]],
+    fauna = fauna,
+    fleet = fleet,
     seasons = seasons,
     write_sim = FALSE,
     results_path = results_path,
     .progress = TRUE
   ))
 
-diff <- Sys.time() - a
-
-(diff / nrow(mpa_sims)) * 60
-
-# process MPA outcomes ----------------------------------------------------
-# deal with output of simulations
-#
 
 assess_sim <- function(sim, fauna,thing = "fauna"){
 
@@ -629,7 +658,24 @@ assess_sim <- function(sim, fauna,thing = "fauna"){
 
 
 mpa_sims <- mpa_sims %>%
-  mutate(results = map(sim, assess_sim, fauna = fauna_frame$fauna[[1]]))
+  mutate(results = map(sim, assess_sim, fauna = fauna))
+
+
+} # close run_mpa_experiment
+
+
+fauna_frame <- fauna_frame %>%
+  mutate(experiment = map2(fauna, fleet, run_mpa_experiment,
+                           placement_error = 0.5))
+
+# diff <- Sys.time() - a
+
+# (diff / nrow(mpa_sims)) * 60
+
+# process MPA outcomes ----------------------------------------------------
+# deal with output of simulations
+#
+
 
 
 # results -----------------------------------------------------------------
@@ -643,13 +689,15 @@ mpa_sims <- mpa_sims %>%
 a = critter_lookup %>%
   left_join(rough_habitat %>% select(species_commonname, bycatch) %>% unique)
 
-mpa_results <-  mpa_sims %>%
-  select(target_fauna, mpa_size, results) %>%
+
+mpa_results <-  fauna_frame %>%
+  select(xid, experiment) %>%
+  unnest(cols = experiment) %>%
+  select(xid,target_fauna, mpa_size, results) %>%
   unnest(cols = results) %>%
   mutate(target_fauna = map_chr(target_fauna, ~paste(.x, collapse = ","))) %>%
   left_join(a, by = c("critter" = "species_sciname")) %>%
   mutate(bycatch = ifelse(bycatch == TRUE, "Bycatch Species","Target Species"))
-
 
 mpa_strategy <- c(
   `carcharhinus longimanus` = "MPAs for OWT Shark",
@@ -664,11 +712,11 @@ mpa_results %>%
     mpa_size,
     percent_change_ssb0,
     color = species_commonname,
-    linetype = bycatch
+    group = interaction(xid,species_commonname,bycatch)
   )) +
   geom_hline(aes(yintercept = 0)) +
-  geom_line(size = 1.5) +
-  facet_wrap( ~ target_fauna, labeller = labeller(target_fauna = mpa_strategy)) +
+  geom_line(size = 1.5, alpha = 0.25) +
+  facet_grid( bycatch~ target_fauna, labeller = labeller(target_fauna = mpa_strategy), scales = "free_y") +
   scale_x_continuous(name = "MPA Size", labels = scales::percent) +
   scale_y_continuous(name = "% of SSB0 Change", labels = scales::percent) +
   scale_color_discrete(name = "Species") +
@@ -690,11 +738,11 @@ mpa_results %>%
     mpa_size,
     percent_change,
     color = species_commonname,
-    linetype = bycatch
+    group = interaction(xid,species_commonname,bycatch)
   )) +
   geom_hline(aes(yintercept = 0)) +
-  geom_line(size = 1.5) +
-  facet_wrap( ~ target_fauna, labeller = labeller(target_fauna = mpa_strategy)) +
+  geom_line(size = 1, alpha = 0.25) +
+  facet_wrap(bycatch ~ target_fauna, labeller = labeller(target_fauna = mpa_strategy)) +
   scale_x_continuous(name = "MPA Size", labels = scales::percent) +
   scale_y_continuous(name = "% Change in Catch", labels = scales::percent) +
   scale_color_discrete(name = "Species") +
@@ -705,29 +753,40 @@ mpa_results %>%
 
 
 
-mpa_strategy <- c(
-  "MPAs for OWT Shark" = "carcharhinus longimanus" ,
-  "MPAs for All Bycatch" = "prionace glauca,carcharhinus longimanus,isurus oxyrinchus,carcharhinus falciformis"
-)
+mpa_strategy <- c("MPAs for OWT Shark" = "carcharhinus longimanus" ,
+                  "MPAs for All Bycatch" = "prionace glauca,carcharhinus longimanus,isurus oxyrinchus,carcharhinus falciformis")
 
 mpa_results %>%
   mutate(target_fauna = as.factor(target_fauna)) %>%
-  mutate(target_fauna = fct_recode(target_fauna, !!!mpa_strategy)) %>%
-  select(mpa_size, percent_change, species_commonname, target_fauna, variable) %>%
-  filter(variable %in% c("c","ssb")) %>%
+  mutate(target_fauna = fct_recode(target_fauna,!!!mpa_strategy)) %>%
+  select(mpa_size,
+         percent_change,
+         species_commonname,
+         target_fauna,
+         variable,
+         xid) %>%
+  filter(variable %in% c("c", "ssb")) %>%
   pivot_wider(names_from = "variable", values_from = percent_change) %>%
   ggplot(aes(ssb, c, shape = target_fauna, linetype = target_fauna)) +
-  geom_line() +
+  geom_vline(aes(xintercept = 0)) +
+  geom_hline(aes(yintercept = 0)) +
+  # geom_line() +
   geom_point(aes(color = mpa_size), size = 2) +
-  facet_wrap( ~ species_commonname, scales = "free") +
+  facet_wrap(~ species_commonname, scales = "free") +
   scale_y_continuous(name = "% Change in Catch", labels = scales::percent) +
   scale_x_continuous(name = "% of SSB0 Change", labels = scales::percent) +
-  theme(axis.text = element_text(size = 8),
-        axis.title = element_text(size = 14),
-        legend.text = element_text(size = 12),
-        legend.position = "top",
-        legend.direction = "horizontal") +
-  scale_colour_viridis_b(name = "MPA Size", labels = scales::percent, guide = guide_colorbar(barwidth = unit(9, "lines"))) +
+  theme(
+    axis.text = element_text(size = 8),
+    axis.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  ) +
+  scale_colour_viridis_b(
+    name = "MPA Size",
+    labels = scales::percent,
+    guide = guide_colorbar(barwidth = unit(9, "lines"))
+  ) +
   scale_shape(name = "") +
   scale_linetype(name = "")
 
