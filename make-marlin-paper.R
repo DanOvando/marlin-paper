@@ -96,6 +96,8 @@ plan(multisession, workers = workers)
 
 if (!file.exists(here("data","marlin-inputs.xlsx"))){
 
+  dir.create("data")
+  
   marlin_inputs_path <- googledrive::drive_get("https://docs.google.com/spreadsheets/d/1eiJIxiDYZLQlBuSLy-yIofhbc-KfWBR9v4FpThgXrQ0/edit#gid=0&fvid=1954704204")
 
 

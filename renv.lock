@@ -1,6 +1,6 @@
 {
   "R": {
-    "Version": "4.0.2",
+    "Version": "4.0.3",
     "Repositories": [
       {
         "Name": "CRAN",
@@ -44,10 +44,10 @@
     },
     "KernSmooth": {
       "Package": "KernSmooth",
-      "Version": "2.23-18",
+      "Version": "2.23-17",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "9e703ad8bf0e99f3691f05da32dfe68b"
+      "Hash": "bbff70c8c0357b5b88238c83f680fcd3"
     },
     "MASS": {
       "Package": "MASS",
@@ -195,16 +195,16 @@
     },
     "boot": {
       "Package": "boot",
-      "Version": "1.3-27",
+      "Version": "1.3-25",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "d9778c960792721e8433daaf3db8f16a"
+      "Hash": "bd51734a754b6c2baf28b2d1ebc11e91"
     },
     "brew": {
       "Package": "brew",
       "Version": "1.0-6",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "92a5f887f9ae3035ac7afde22ba73ee9"
     },
     "brio": {
@@ -237,16 +237,16 @@
     },
     "class": {
       "Package": "class",
-      "Version": "7.3-18",
+      "Version": "7.3-17",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "15ef288688a6919417ade6251deea2b3"
+      "Hash": "9267f5dab59a4ef44229858a142bded1"
     },
     "classInt": {
       "Package": "classInt",
       "Version": "0.4-3",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "17bdfa3c51df4a6c82484d13b11fb380"
     },
     "cli": {
@@ -316,7 +316,7 @@
       "Package": "crosstalk",
       "Version": "1.1.0.1",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "ae55f5d7c02f0ab43c58dd050694f2b4"
     },
     "crul": {
@@ -498,7 +498,7 @@
       "Package": "ggridges",
       "Version": "0.5.2",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "b5c4e55a3856dff3c05595630a40edfc"
     },
     "gh": {
@@ -512,14 +512,14 @@
       "Package": "git2r",
       "Version": "0.27.1",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "531a82d1beed1f545beb25f4f5945bf7"
     },
     "globals": {
       "Package": "globals",
       "Version": "0.13.1",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "3eb799a11cf9d28314691e44a2eaaa14"
     },
     "glue": {
@@ -596,7 +596,7 @@
       "Package": "httr",
       "Version": "1.4.2",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "a525aba14184fec243f9eaec62fbed43"
     },
     "igraph": {
@@ -659,7 +659,7 @@
       "Package": "later",
       "Version": "1.1.0.1",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "d0a62b247165aabf397fded504660d8a"
     },
     "lattice": {
@@ -673,7 +673,7 @@
       "Package": "lazyeval",
       "Version": "0.2.2",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "d908914ae53b04d4c0c0fd72ecc35370"
     },
     "lifecycle": {
@@ -687,7 +687,7 @@
       "Package": "listenv",
       "Version": "0.8.0",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "0bde42ee282efb18c7c4e63822f5b4f7"
     },
     "lme4": {
@@ -722,8 +722,8 @@
       "Package": "marlin",
       "Version": "0.1.0.9000",
       "Source": "GitHub",
-      "Remotes": "james-thorson/FishLife",
       "RemoteType": "github",
+      "Remotes": "james-thorson/FishLife",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "marlin",
       "RemoteUsername": "danovando",
@@ -756,7 +756,7 @@
       "Package": "minqa",
       "Version": "1.2.4",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "eaee7d2a6f3ed4491df868611cb064cc"
     },
     "modelr": {
@@ -798,7 +798,7 @@
       "Package": "nloptr",
       "Version": "1.2.2.2",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "2737faeee353704efec5afa1e943dd64"
     },
     "openssl": {
@@ -882,7 +882,7 @@
       "Package": "promises",
       "Version": "1.1.1",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "a8730dcbdd19f9047774909f0ec214a4"
     },
     "ps": {
@@ -917,7 +917,7 @@
       "Package": "rcmdcheck",
       "Version": "1.3.3",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "ed95895886dab6d2a584da45503555da"
     },
     "readr": {
@@ -945,7 +945,7 @@
       "Package": "rematch2",
       "Version": "2.1.2",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "76c9e04c712a05848ae7a23d2f170a40"
     },
     "remotes": {
@@ -987,7 +987,7 @@
       "Package": "rex",
       "Version": "1.2.0",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "093584b944440c5cd07a696b3c8e0e4c"
     },
     "rfishbase": {
@@ -1036,7 +1036,7 @@
       "Package": "roxygen2",
       "Version": "7.1.1",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "fcd94e00cc409b25d07ca50f7bf339f5"
     },
     "rprojroot": {
@@ -1064,7 +1064,7 @@
       "Package": "rversions",
       "Version": "2.0.2",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "0ec41191f744d0f5afad8c6f35cc36e4"
     },
     "rvest": {
@@ -1092,7 +1092,7 @@
       "Package": "sessioninfo",
       "Version": "1.1.1",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "308013098befe37484df72c39cf90d6e"
     },
     "sf": {
@@ -1218,7 +1218,7 @@
       "Package": "units",
       "Version": "0.6-7",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "4a3df844d6d35ca2ba2b7ba95446b955"
     },
     "urltools": {
@@ -1323,7 +1323,7 @@
       "Package": "xopen",
       "Version": "1.0.0",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "6c85f015dee9cc7710ddd20f86881f58"
     },
     "yaml": {
