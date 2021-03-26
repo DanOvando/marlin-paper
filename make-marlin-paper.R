@@ -2,6 +2,14 @@
 
 # setup -------------------------------------------------------------------
 
+# idea: define a centroid of habitat and a CV around that for each species and use that to tune the scenarios..
+# like manually creats random centroids that avoid each other... then increase the CV, such that there really is no key habitat when they... no I don't like that
+#
+# what if you randomly sample the centroid for each species, where when the cv of the sampling is low, most species have the same centroid, and as that icnreases you get more and more different centroids for each species.... that's a better idea.. centroid by gindinf the index of center cell as a default starting position
+#
+# iterate over cv of the centroid,
+# and then cv around the centroid
+
 set.seed(42)
 library(tidyverse)
 
@@ -21,6 +29,8 @@ library(gamm4)
 
 library(sf)
 
+library(mvtnorm)
+
 options(dplyr.summarise.inform = FALSE)
 
 
@@ -37,6 +47,8 @@ if (!dir.exists(results_path)){
 
   dir.create(file.path(results_path,"sims"))
 }
+
+run_experiments <- TRUE
 
 safety_stop <- FALSE
 
@@ -339,72 +351,235 @@ fauna_frame <- tibble(
 # pull from marlin_inputs, and randomizing others. That way you can easily
 # stick one "one" result, or generate a bunch of iterations varying in key unknowns
 
+# so you need to break the experiment in two. First you generate blocks of critters, where that can be combinations of
+# habitat heterogeneity, larval / adult habitat overlap, seasonal movement etc. Create that
+# Then, join that to a frame of MPA simulations, where yousimulate MPA sizes with different prioritizations
 
-create_critters <- function(sciname, habitat,seasons = 1, marlin_inputs){
 
-  # sciname <- marlin_inputs$scientific_name[[1]]
+# for now let's leave the life history stuff out of it... and then once you have a sense of timing for this decide on how many iterations to do of each
+experiments <- expand_grid(sigma_centroid = seq(.25 * resolution,resolution, by = 5),
+                           sigma_hab = c(20,5),
+                              ontogenetic_shift = c(TRUE,FALSE),
+                              seasonal_movement = c(TRUE,FALSE)) %>%
+  mutate(xid = 1:nrow(.))
 
+
+test <- habitat$data[[1]] %>%
+  mutate(test = x * y)
+
+test %>%
+  ggplot(aes(x,y,fill = test)) +
+  geom_tile() +
+  scale_fill_viridis_c()
+
+
+distance <-
+  tidyr::expand_grid(x = 1:resolution, y = 1:resolution) %>%
+  mutate(c_x = 20, c_y = 6) %>%
+  mutate(distance = sqrt((c_x - x)^2 + (c_y -y)^2)) %>%
+  mutate(habitat = dnorm(distance,0,20))
+
+distance %>%
+  ggplot(aes(x,y,fill = habitat)) +
+  geom_tile() +
+  scale_fill_viridis_c()
+
+
+
+# function to assign habitat for each species based on
+
+critters <- rough_habitat %>%
+  select(species_sciname, bycatch) %>%
+  unique() %>%
+  rename(scientific_name = species_sciname)
+
+
+# there has to be a better way of doign this...
+#
+
+base_habitat <- habitat$data[[which(habitat$species_commonname == "skipjack tuna")]]
+
+
+create_critter_habitats <-
+  function(sigma_centroid,
+           sigma_hab = 0.2,
+           base_centroid = c(resolution / 2, resolution / 2) ,
+           critters,
+           resolution) {
+    # base_centroid <- c(10,10)
+    # sigma_hab = .2
+
+    # sigma_block <- 0.1
+
+    # bycatch_corr <- -1
+
+
+    base_layer <-
+      tidyr::expand_grid(x = 1:resolution, y = 1:resolution)
+
+
+    centroid_index <-
+      which(base_layer$x == base_centroid[1] &
+              base_layer$y == base_centroid[2])
+
+    critters <- critters %>%
+      arrange((bycatch))
+
+    critters$centroid <-
+      pmin(nrow(base_layer), pmax(1, round(
+        rnorm(nrow(critters), centroid_index, sigma_centroid)
+      )))
+
+    critters$habitat <- vector(mode = "list", length = nrow(critters))
+
+    for (i in 1:nrow(critters)) {
+      tmp <- base_layer
+
+      tmp <- base_layer %>%
+        mutate(c_x = base_layer$x[critters$centroid[i]],
+               c_y = base_layer$y[critters$centroid[i]]) %>%
+        mutate(distance = sqrt((c_x - x) ^ 2 + (c_y - y) ^ 2)) %>%
+        mutate(habitat = dnorm(distance, 0, sigma_hab))
+
+
+
+
+      tmp$habitat <- tmp$habitat - min(tmp$habitat)
+
+      # tmp %>%
+      #   ggplot(aes(x, y, fill = habitat)) +
+      #   geom_tile() +
+      #   scale_fill_viridis_c()
+      #
+
+      critters$habitat[[i]] <-  tmp
+
+
+    }
+
+
+    # (critters$habitat[[1]] %>%
+    #     ggplot(aes(x,y,fill = habitat))+
+    #     geom_tile() +
+    #     scale_fill_viridis_c()) +
+    #   (critters$habitat[[10]] %>%
+    #      ggplot(aes(x,y,fill = habitat))+
+    #      geom_tile() +
+    #      scale_fill_viridis_c())
+
+    return(critters)
+  }
+
+
+
+
+experiments <- experiments %>%
+  mutate(
+    habitats = map2(
+      sigma_centroid,
+      sigma_hab,
+      create_critter_habitats,
+      critters = critters,
+      resolution = resolution
+    )
+  ) %>%
+  unnest(cols = habitats)
+
+experiments$habitat[[3]] %>%
+  ggplot(aes(x, y, fill = habitat)) +
+  geom_tile() +
+  scale_fill_viridis_c()
+
+
+create_critters <-
+  function(sciname,
+           habitat,
+           seasons = 1,
+           marlin_inputs,
+           seasonal_movement = FALSE,
+           ontogenetic_shift = FALSE) {
+    # sciname <- marlin_inputs$scientific_name[[1]]
+    #
+    # habitat <- experiments$habitat[[1]]
+    #
     tmp_inputs <- marlin_inputs %>%
-    filter(scientific_name == sciname)
+      filter(scientific_name == sciname)
 
-  hab <- habitat$data[[which(habitat$species_sciname == sciname)]] %>%
-    pivot_wider(names_from = y, values_from = habitat) %>%
-    select(-x) %>%
-    as.matrix()
+    hab <- habitat %>%
+      pivot_wider(names_from = y, values_from = habitat) %>%
+      select(-x) %>%
+      as.matrix()
 
-  seasonal_movement <- sample(c(1,0),1, replace = TRUE)
+    # seasonal_movement <- sample(c(1, 0), 1, replace = TRUE)
 
-  uniform_rec_hab <- sample(c(1,0),1, replace = TRUE)
+    # uniform_rec_hab <- sample(c(1, 0), 1, replace = TRUE)
 
 
-  # seasonal_movement <- 0
-  if (seasonal_movement == 1){
+    # seasonal_movement <- 0
+    if (seasonal_movement) {
+      hab <- list(hab,-hab - (min(-hab)))
 
-    hab <- list(hab, t(hab))
+    } else {
+      hab <- list(hab, hab)
+    }
 
-  } else {
+    rec_form <-  sample(c(0, 1, 2, 3), 1, replace = TRUE)
 
-    hab <- list(hab, hab)
+    if (ontogenetic_shift) {
+      recruit_habitat <-
+        -hab[[1]] - min(-hab[[1]]) # place recruits in different places than adults
+
+      # set recruitment form to allow for recruit habitat
+      #
+      rec_form <- 0
+    } else {
+      recruit_habitat <- NA
+    }
+
+    critter <- marlin::create_critter(
+      scientific_name = sciname,
+      seasonal_habitat = hab,
+      adult_movement = 1,
+      adult_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
+      recruit_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
+      rec_form = rec_form,
+      seasons = seasons,
+      init_explt = ifelse(is.nan(
+        mean(tmp_inputs$current_f, na.rm = TRUE)
+      ), .1, mean(tmp_inputs$current_f, na.rm = TRUE)),
+      steepness =  ifelse(is.nan(
+        mean(tmp_inputs$steepness, na.rm = TRUE)
+      ), 0.8, mean(tmp_inputs$steepness, na.rm = TRUE)),
+      ssb0 = ifelse(is.nan(
+        mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE)
+      ), 1e4, mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE))
+    )
+
+
+    # # later sub in a lookup table for this
+    # trait_frame <- tibble(
+    #   seasonal_habitat = list(habitat$data[[which(habitat$species_sciname == sciname)]]),
+    #   adult_movement = 1,
+    #   adult_movement_sigma = runif(1,min = 1, max = 30),
+    #   seasons = seasons,
+    #   init_explt = sample(c(.05,.1,.2), 1, replace = TRUE),
+    #   rec_form = sample(c(0,1,2,3),1, replace = TRUE),
+    #   fec_form = c("power"),
+    #   weight_a = NA
+    # )
+
   }
 
-  if (uniform_rec_hab){
-    recruit_habitat <- NA
-  } else {
-    recruit_habitat <- hab[[1]]
-  }
 
-  critter <- marlin::create_critter(
-    scientific_name = sciname,
-    seasonal_habitat = hab,
-    adult_movement = 1,
-    adult_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
-    recruit_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
-    rec_form = sample(c(0, 1, 2, 3), 1, replace = TRUE),
-    seasons = seasons,
-    init_explt = ifelse(is.nan(mean(tmp_inputs$current_f, na.rm = TRUE)),.1,mean(tmp_inputs$current_f, na.rm = TRUE)),
-    steepness =  ifelse(is.nan(mean(
-      tmp_inputs$steepness, na.rm = TRUE
-    )), 0.8, mean(tmp_inputs$steepness, na.rm = TRUE)),
-    ssb0 = ifelse(is.nan(mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE)),1e4,mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE)))
-
-
-  # # later sub in a lookup table for this
-  # trait_frame <- tibble(
-  #   seasonal_habitat = list(habitat$data[[which(habitat$species_sciname == sciname)]]),
-  #   adult_movement = 1,
-  #   adult_movement_sigma = runif(1,min = 1, max = 30),
-  #   seasons = seasons,
-  #   init_explt = sample(c(.05,.1,.2), 1, replace = TRUE),
-  #   rec_form = sample(c(0,1,2,3),1, replace = TRUE),
-  #   fec_form = c("power"),
-  #   weight_a = NA
-  # )
-
-}
-
-
-fauna_frame <- fauna_frame %>%
-  mutate(critter = map(scientific_name,create_critters, habitat = habitat,marlin_inputs = marlin_inputs,seasons = seasons))
+experiments <- experiments %>%
+  mutate(critter = pmap(
+    list(sciname = scientific_name,
+         habitat = habitat,
+         ontogenetic_shift = ontogenetic_shift,
+         seasonal_movement = seasonal_movement),
+    create_critters,
+    marlin_inputs = marlin_inputs,
+    seasons = seasons))
 
 
 
@@ -422,12 +597,12 @@ fauna_frame <- fauna_frame %>%
 
 # aggregate into lists of fauna
 
-fauna_frame <- fauna_frame %>%
+experiments <- experiments %>%
   group_by(xid) %>%
   nest() %>%
   mutate(fauna = map(data, ~.x$critter %>% set_names(.x$scientific_name)))
 
-check_pop_sizes <- map_dbl(fauna_frame$fauna[[1]],"ssb0")
+check_pop_sizes <- map_dbl(experiments$fauna[[1]],"ssb0")
 
 tibble(sciname = names(check_pop_sizes), ssb0 = check_pop_sizes) %>%
   ggplot(aes(reorder(sciname, ssb0), ssb0))+
@@ -439,7 +614,7 @@ tibble(sciname = names(check_pop_sizes), ssb0 = check_pop_sizes) %>%
 # create fleets -----------------------------------------------------------
 # create fleet objects
 
-fauna_frame <- fauna_frame %>%
+experiments <- experiments %>%
   ungroup() %>%
   mutate(fleet = map(fauna, compile_fleet))
 
@@ -450,8 +625,8 @@ fauna_frame <- fauna_frame %>%
 # make some plots
 
 if (safety_stop){
-safety_sim <- marlin::simmar(fauna = fauna_frame$fauna[[1]],
-                             fleets = fauna_frame$fleet[[1]],
+safety_sim <- marlin::simmar(fauna = experiments$fauna[[1]],
+                             fleets = experiments$fleet[[1]],
                              years = years)
 proc_safety <- process_marlin(safety_sim, keep_age = FALSE)
 
@@ -460,9 +635,14 @@ plot_marlin(proc_safety)
 space <- (plot_marlin(proc_safety, plot_type = "space", steps_to_plot = 1) + labs(title = "Summer")) +
   (plot_marlin(proc_safety, plot_type = "space", steps_to_plot = 1.5) + labs(title = "Winter")) & theme(strip.text = element_text(size = 6))
 space
-sample_mpas <- place_mpa(target_fauna = "carcharhinus longimanus",
-                         size = 0.2, fauna = fauna_frame$fauna[[1]], placement_error = 0,
-                         place_randomly = FALSE)
+
+sample_mpas <- place_mpa(
+  target_fauna = "carcharhinus longimanus",
+  size = 0.2,
+  fauna = experiments$fauna[[1]],
+  placement_error = 0,
+  place_randomly = FALSE
+)
 
 # sample_mpas <- place_mpa(target_fauna = "prionace glauca",
 #                          size = 0.2, fauna = fauna_frame$fauna[[1]])
@@ -471,11 +651,13 @@ sample_mpas %>%
   ggplot(aes(x,y,fill = mpa)) +
   geom_tile()
 
-safety_mpa_sim <- marlin::simmar(fauna = fauna_frame$fauna[[1]],
-                             fleets = fauna_frame$fleet[[1]],
-                             mpas = list(locations = sample_mpas,
-                                         mpa_year = floor(years * .5)),
-                             years = years)
+safety_mpa_sim <- marlin::simmar(
+  fauna = experiments$fauna[[1]],
+  fleets = experiments$fleet[[1]],
+  mpas = list(locations = sample_mpas,
+              mpa_year = floor(years * .5)),
+  years = years
+)
 
 proc_safety_mpa <- process_marlin(safety_mpa_sim, keep_age = FALSE)
 
@@ -504,7 +686,7 @@ ggsave("test-space.pdf", plot = space, height = 20, width = 10)
 #
 #   for any one run, do your MPA optimization for a specified number of cells. And if eventually you want to look at a range of sizes, then actually going through all cells makes sense and storing the marginal contribution of each cell, so that that way you have a library to create MPAs of arbitrary size off of
 
-run_mpa_experiment <- function(fauna, fleet, placement_error = 0, random_mpas = FALSE){
+run_mpa_experiment <- function(fauna, fleet, placement_error = 0, random_mpas = FALSE, xid){
 
 
 mpa_sims <-
@@ -660,17 +842,31 @@ assess_sim <- function(sim, fauna,thing = "fauna"){
 mpa_sims <- mpa_sims %>%
   mutate(results = map(sim, assess_sim, fauna = fauna))
 
+print(xid)
 
 } # close run_mpa_experiment
 
+# a <- experiments
+a <- Sys.time()
+nrow(experiments)
+if (run_experiments){
 
-fauna_frame <- fauna_frame %>%
-  mutate(experiment = map2(fauna, fleet, run_mpa_experiment,
-                           placement_error = 0.5))
+  experiments <- experiments %>%
+    mutate(experiment = pmap(
+      list(fauna = fauna, fleet = fleet,
+           xid = xid),
+      run_mpa_experiment,
+      placement_error = 0
+    ))
 
-# diff <- Sys.time() - a
+diff <- Sys.time() - a
 
-# (diff / nrow(mpa_sims)) * 60
+write_rds(experiments, file = file.path(results_path, "experiements.rds"))
+} else {
+
+  experiments <- read_rds(file = file.path(results_path, "experiements.rds"))
+}
+# (diff / nrow(experiments)) * 60
 
 # process MPA outcomes ----------------------------------------------------
 # deal with output of simulations
@@ -690,7 +886,7 @@ a = critter_lookup %>%
   left_join(rough_habitat %>% select(species_commonname, bycatch) %>% unique)
 
 
-mpa_results <-  fauna_frame %>%
+mpa_results <-  experiments %>%
   select(xid, experiment) %>%
   unnest(cols = experiment) %>%
   select(xid,target_fauna, mpa_size, results) %>%
@@ -795,4 +991,9 @@ mpa_results %>%
 
 
 a %>% knitr::kable() %>% kableExtra::kable_paper()
+
+
+
+# now run WCPO-esque case study with the actual habitats ------------------
+
 

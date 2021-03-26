@@ -14,7 +14,13 @@ library(here)
 library(bookdown)
 ```
 
+what dooes the overlap tradeoff curve look like? 
 
+Suppose you close off 30% of an area in an MPA
+
+Then plot conservation outcome on y-axis, degree of overlap between target and bycatch species on the x axis. When overlap is one, conservation benefit should be maxed. Then overlap is perfeclty anticorrelated, if effort concentrates, conservation should be at some negative minimum. If concentration doesn't happen, then conservation effect should be zero. If overlap is uncorrelated... unclear?
+
+If there is perfect overlap, then improvement in coservation outcome should be a straight positive function of area protected. If there is no overlap, then 
 
 Marine protected areas (MPAs) are a growing part of the marine conservation toolbox, with 7.4% of the world’s oceans currently protected and, and bodies such as the IUCN calling for 30% protection by 2030. Many of the largest of these MPAs are being implemented in the form of “blue-water” MPAs largely covering pelagic ecosystems, characterized by highly mobile species and fishing fleets using a diverse mix of static and dynamic ocean features. These systems operate very differently from the coastal areas where modern MPA design practices have been developed. Pelagic systems are also characterized by combinations of relatively abundant species targeted by fishing, such as most tuna stocks, and highly threatened species caught as incidental “by-catch” in targeted fishing operations, such as oceanic whitetip sharks. Blue-water MPAs are increasingly being proposed specifically to benefit these by-catch populations while minimizing losses or where possible providing benefits to fisheries. 
 
