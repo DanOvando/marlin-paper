@@ -31,6 +31,8 @@ library(sf)
 
 library(mvtnorm)
 
+library(patchwork)
+
 options(dplyr.summarise.inform = FALSE)
 
 
@@ -62,7 +64,7 @@ seasons <- 2
 
 time_step <- 1 / seasons
 
-workers <- round(parallel::detectCores() - 4)
+workers <- round(parallel::detectCores() - 8)
 
 steps <- years * seasons
 
@@ -72,7 +74,7 @@ theme_set(marlin::theme_marlin())
 
 tune_type <- "explt"
 
-plan(multisession, workers = workers)
+plan(multicore, workers = workers)
 
 
 # create distributions for species ----------------------------------------
@@ -359,7 +361,7 @@ fauna_frame <- tibble(
 
 
 # for now let's leave the life history stuff out of it... and then once you have a sense of timing for this decide on how many iterations to do of each
-experiments <- expand_grid(sigma_centroid = seq(.25 * resolution,resolution, by = 5),
+experiments <- expand_grid(sigma_centroid = seq(.25 * resolution,resolution^2 / 2, length.out = 5),
                            sigma_hab = c(20,5),
                               ontogenetic_shift = c(TRUE,FALSE),
                               seasonal_movement = c(TRUE,FALSE)) %>%
@@ -393,7 +395,8 @@ distance %>%
 critters <- rough_habitat %>%
   select(species_sciname, bycatch) %>%
   unique() %>%
-  rename(scientific_name = species_sciname)
+  rename(scientific_name = species_sciname) %>% 
+  mutate(centroid =NA)
 
 
 # there has to be a better way of doign this...
@@ -441,7 +444,8 @@ create_critter_habitats <-
         mutate(c_x = base_layer$x[critters$centroid[i]],
                c_y = base_layer$y[critters$centroid[i]]) %>%
         mutate(distance = sqrt((c_x - x) ^ 2 + (c_y - y) ^ 2)) %>%
-        mutate(habitat = dnorm(distance, 0, sigma_hab))
+        mutate(habitat = dnorm(distance, 0, sigma_hab)) %>% 
+        select(x,y,habitat)
 
 
 
@@ -502,8 +506,9 @@ create_critters <-
            ontogenetic_shift = FALSE) {
     # sciname <- marlin_inputs$scientific_name[[1]]
     #
-    # habitat <- experiments$habitat[[1]]
     #
+    
+    # habitat <- experiments$habitat[[1]]
     tmp_inputs <- marlin_inputs %>%
       filter(scientific_name == sciname)
 
@@ -627,8 +632,8 @@ experiments <- experiments %>%
 # make some plots
 
 if (safety_stop){
-safety_sim <- marlin::simmar(fauna = experiments$fauna[[1]],
-                             fleets = experiments$fleet[[1]],
+safety_sim <- marlin::simmar(fauna = experiments$fauna[[19]],
+                             fleets = experiments$fleet[[19]],
                              years = years)
 proc_safety <- process_marlin(safety_sim, keep_age = FALSE)
 
@@ -840,11 +845,13 @@ assess_sim <- function(sim, fauna,thing = "fauna"){
            percent_change_ssb0 = (with_mpa - without_mpa) / ssb0)
 }
 
+print(xid)
+
 
 mpa_sims <- mpa_sims %>%
   mutate(results = map(sim, assess_sim, fauna = fauna))
 
-print(xid)
+return(mpa_sims)
 
 } # close run_mpa_experiment
 
