@@ -1,140 +1,780 @@
 ---
 title: "The Role of MPAs in Bycatch Reduction"
-author: "Dan Ovando"
-date: "12/11/2020"
+author:
+    - Daniel Ovando
+    - Darcy Bradley
+    - Echelle Burns
+    - Lennon Thomas
+date: "`r Sys.Date()`"
 output: 
   bookdown::pdf_document2: default
   bookdown::html_document2: default
+editor_options: 
+  markdown: 
+    wrap: 72
+bibliography: references.bib
+params:
+  run_name: ["v0.5"]
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
-library(tidyverse)
-library(here)
-library(bookdown)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, include = FALSE)
+
+source(here::here("scripts", "00_setup.R"))
+
+theme_set(marlin::theme_marlin())
+
 ```
 
-what dooes the overlap tradeoff curve look like? 
+```{r load-results}
+experiments <- read_rds(file = file.path(results_path, "experiements.rds"))
 
-Suppose you close off 30% of an area in an MPA
+critter_lookup <- read_rds(file = file.path(results_path, 'critter-lookup.rds'))
 
-Then plot conservation outcome on y-axis, degree of overlap between target and bycatch species on the x axis. When overlap is one, conservation benefit should be maxed. Then overlap is perfeclty anticorrelated, if effort concentrates, conservation should be at some negative minimum. If concentration doesn't happen, then conservation effect should be zero. If overlap is uncorrelated... unclear?
+rough_habitat <- read_rds(file = file.path(results_path, "rough-habitat.rds"))
 
-If there is perfect overlap, then improvement in coservation outcome should be a straight positive function of area protected. If there is no overlap, then 
-
-Marine protected areas (MPAs) are a growing part of the marine conservation toolbox, with 7.4% of the world’s oceans currently protected and, and bodies such as the IUCN calling for 30% protection by 2030. Many of the largest of these MPAs are being implemented in the form of “blue-water” MPAs largely covering pelagic ecosystems, characterized by highly mobile species and fishing fleets using a diverse mix of static and dynamic ocean features. These systems operate very differently from the coastal areas where modern MPA design practices have been developed. Pelagic systems are also characterized by combinations of relatively abundant species targeted by fishing, such as most tuna stocks, and highly threatened species caught as incidental “by-catch” in targeted fishing operations, such as oceanic whitetip sharks. Blue-water MPAs are increasingly being proposed specifically to benefit these by-catch populations while minimizing losses or where possible providing benefits to fisheries. 
-
-Pelagic ecosystems present both opportunities and challenges for MPAs. The highly productive and mobile nature of targeted fisheries in these systems may mean that highly targeted MPAs can be designed that provide effective conservation at minimal fishery costs. Alternatively, if individual by-catch species do not share common habitat preferences or fishery vulnerability, protection in one area targeted to benefit one species may negatively impact another through effort displacement. Here, we use a case study motivated by the upcoming expansion of blue-water MPAs throughout the Federated States of Micronesia to assess the sensitivity of by-catch populations and targeted fisheries to MPA design and key life-history variables. 
-
-The outcome of MPAs for fishing and conservation are highly sensitive to a wide range of economic and ecological factors. In order to constrain the possible parameter space, we tune a simulation model based around best available knowledge of the species and fleets operating in the areas of the western central pacific ocean (WCPO) while allowing key unknowns to vary, in particular the nature of adult and larval movement, the degree of habitat overlap between different species, the economic incentives facing fishing fleets, and the design strategy used in MPA placement XX. Most conventional MPA design models are either static, single species, or both. We present a dynamic, multi-species simulation model that allows us to cohesively assess the impact of MPAs on a suite of by-catch and targeted species collectively affected by multiple fishing fleets. Our goal here is not to provide tactical recommendations on the design of blue-water MPAs throughout the WCPO, but rather to provide a strategic evaluation of the sensitivity of by-catch populations and targeted fisheries to key unknowns and design choices in MPA design. 
+a = critter_lookup %>%
+  left_join(rough_habitat %>% select(species_commonname, bycatch) %>% unique)
 
 
-We show 
-  - something about how when species are homogeneous in space, conservation gains are basically guaranteed except for constant catch scenearios, which need to be considered in tuna-type scenarios
-  - When we introduce heterogeneity in stock structure roughly reflective of distributions in the WCPO we do / do not begin to see tradeoffs in conservation outcomes among bycatch species
-    - quantify if there is a concave function to this
-  - Specific design paradigms are / are not more / less resilient to this issue
-  - Compare tradeoffs between MPA designs that minimze internal bycatch tradeoffs (there have to be none if MPA = 100%) and fishery outcomes
-
-We show that MPAs increased biomass of by-catch species in XX% of simulations, and decreased them in XX% of simulations. On average a 1% increase in by-catch species resulted in a XX% change in fishery catches… Outcomes were most sensitive to XX and XX, and least sensitive to XX and XX. We do not suggest that these same results would hold for other systems, but rather demonstrate the importance / resilience of MPAs to key uncertain variables. In particular for pelagic ecosystems, our work demonstrates the importance of considering the collective impacts of space, vulnerability, life history, and fleet dynamics in MPA design for conservation. 
+scenes <- experiments %>%
+  select(xid, data) %>%
+  unnest(cols = data) %>%
+  select(xid:seasonal_movement) %>%
+  unique()
 
 
+mpa_results <-  experiments %>%
+  select(xid, experiment) %>%
+  unnest(cols = experiment) %>%
+  select(xid,target_fauna, mpa_size, results) %>%
+  unnest(cols = results) %>%
+  mutate(target_fauna = map_chr(target_fauna, ~paste(.x, collapse = ","))) %>%
+  left_join(a, by = c("critter" = "species_sciname")) %>%
+  left_join(scenes, by = "xid") %>%
+  mutate(bycatch = ifelse(bycatch == TRUE, "Bycatch Species","Target Species"))
 
-## Figures
+mpa_strategy <- c(
+  `carcharhinus longimanus` = "MPAs for OWT Shark",
+  `prionace glauca,carcharhinus longimanus,isurus oxyrinchus,carcharhinus falciformis` = "MPAs for All Bycatch"
+)
 
-Are there or are there not tradeoffs in conservation and fisheries yields
 
-What are the explicit considerations of 
 
-Interesting considerations we do biodiversity MPAs we define biodiversity as system diversity and we put all the species in there, threatened bycatch species become the the focus and stated objective is ramp up the value of bycatch species . There might be instances where just the biodiversity base actually gets you a better outcome than . There might be overlap and not. 
+ssb_traj_plot <- mpa_results %>%
+  filter(variable == "ssb") %>%
+  ggplot(aes(
+    mpa_size,
+    percent_change_ssb0,
+    color = species_commonname,
+    group = interaction(xid,species_commonname,bycatch)
+  )) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_line(size = 1.5, alpha = 0.25) +
+  facet_grid( bycatch~ target_fauna, labeller = labeller(target_fauna = mpa_strategy), scales = "free_y") +
+  scale_x_continuous(name = "MPA Size", labels = scales::percent) +
+  scale_y_continuous(name = "% of SSB0 Change", labels = scales::percent) +
+  scale_color_discrete(name = "Species") +
+  scale_linetype(name = '') +
+  theme(axis.text = element_text(size = 8),
+        axis.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
 
-Dig into that mismatch 
 
-We can explore that mismatch between is the issue q and is the issue of spatial habitat 
 
-### Fig.1  Motivating figure - basically something like the shortfin mako example
+mpa_strategy <- c(
+  `carcharhinus longimanus` = "MPAs for OWT Shark",
+  `prionace glauca,carcharhinus longimanus,isurus oxyrinchus,carcharhinus falciformis` = "MPAs for All Bycatch"
+)
 
-### Fig.2  Case study figure for WCPO: shows degree of overlap in species abundance in space and time, as well as a platform for some examples of MPA networks designed around different paradigms 
 
-### Fig.3 Tradeoff plots across species, though will need to put some thought into visualizing across species. But something to convey the idea of whether there are tradeoffs among species in the case study of the WCPO high seas style system. Interestingly, you know that if you closed 100% all benefit, so doing this along a gradient is interesting, are there tradeoffs at low sizes that disappear with higher? Actually you might expect a dome-shaped tradeoff, where there are no tradeoffs at low size since little displacement, largest tradeoffs in the middle where you maximize displacement but still haven’t maximized protection, and then no tradeoffs at the extreme where everything is protected. If you have a small enough number of species, say less than 10, then can do color / shape by species, mpa size on x axis, change in biomass on y axis, and connected lines for design paradigms. If not too busy, would be good to have a counterfactual where everything is the same except species are all homogeneously distributed 
+catch_traj_plot <- mpa_results %>%
+  filter(variable == "c") %>%
+  ggplot(aes(
+    mpa_size,
+    percent_change,
+    color = species_commonname,
+    group = interaction(xid,species_commonname,bycatch)
+  )) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_line(size = 1, alpha = 0.25) +
+  facet_wrap(bycatch ~ target_fauna, labeller = labeller(target_fauna = mpa_strategy)) +
+  scale_x_continuous(name = "MPA Size", labels = scales::percent) +
+  scale_y_continuous(name = "% Change in Catch", labels = scales::percent) +
+  scale_color_discrete(name = "Species") +
+  scale_linetype(name = '') +
+  theme(axis.text = element_text(size = 8),
+        axis.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+
+
+
+mpa_strategy <- c("MPAs for OWT Shark" = "carcharhinus longimanus" ,
+                  "MPAs for All Bycatch" = "prionace glauca,carcharhinus longimanus,isurus oxyrinchus,carcharhinus falciformis")
+
+tradeoff_frontier_plot <- mpa_results %>%
+  mutate(target_fauna = as.factor(target_fauna)) %>%
+  mutate(target_fauna = fct_recode(target_fauna,!!!mpa_strategy)) %>%
+  select(mpa_size,
+         percent_change,
+         species_commonname,
+         target_fauna,
+         variable,
+         xid) %>%
+  filter(variable %in% c("c", "ssb")) %>%
+  pivot_wider(names_from = "variable", values_from = percent_change) %>%
+  ggplot(aes(ssb, c, shape = target_fauna, linetype = target_fauna)) +
+  geom_vline(aes(xintercept = 0)) +
+  geom_hline(aes(yintercept = 0)) +
+  # geom_line() +
+  geom_point(aes(color = mpa_size), size = 2) +
+  facet_wrap(~ species_commonname, scales = "free") +
+  scale_y_continuous(name = "% Change in Catch", labels = scales::percent) +
+  scale_x_continuous(name = "% of SSB0 Change", labels = scales::percent) +
+  theme(
+    axis.text = element_text(size = 8),
+    axis.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.position = "top",
+    legend.direction = "horizontal"
+  ) +
+  scale_colour_viridis_b(
+    name = "MPA Size",
+    labels = scales::percent,
+    guide = guide_colorbar(barwidth = unit(9, "lines"))
+  ) +
+  scale_shape(name = "") +
+  scale_linetype(name = "")
+
+
+
+
+
+a %>% knitr::kable() %>% kableExtra::kable_paper()
+
+
+# what is interesting
+#
+#
+# proportion stocks benefiting / losing as a functino of MPA size and spatial homogeneity
+#
+
+any_ssb_loss_plot <- mpa_results %>%
+  mutate(target_fauna = as.factor(target_fauna)) %>%
+  mutate(target_fauna = fct_recode(target_fauna,!!!mpa_strategy)) %>%
+  filter(variable == "ssb") %>%
+  group_by(mpa_size, sigma_centroid, seasonal_movement, target_fauna) %>%
+  summarise(percent_improve = mean(percent_change >= 0),
+            percent_lose = 1 - percent_improve) %>%
+  ggplot(aes(mpa_size, percent_lose, color = factor(sigma_centroid))) +
+  geom_line(size = 1.5) +
+  geom_hline(aes(yintercept = 0)) +
+  scale_color_viridis_d(name = "Heterogeneity in Adult Habitat") +
+  scale_x_continuous(labels = scales::percent, name = 'Area in MPA') +
+  scale_y_continuous(labels = scales::percent, name = "Sims where MPA reduces SSB") +
+  facet_grid(target_fauna~seasonal_movement, labeller = label_both) +
+  theme(legend.position = "top")
+
+
+signif_ssb_loss_plot <- mpa_results %>%
+  mutate(target_fauna = as.factor(target_fauna)) %>%
+  mutate(target_fauna = fct_recode(target_fauna,!!!mpa_strategy)) %>%
+  filter(variable == "ssb") %>%
+  group_by(mpa_size, sigma_centroid, seasonal_movement, target_fauna) %>%
+  summarise(percent_improve = mean(percent_change >= .1),
+            percent_lose = mean(percent_change <= -.1)) %>%
+  ggplot(aes(mpa_size, percent_lose, color = factor(sigma_centroid))) +
+  geom_line(size = 1.5) +
+  geom_hline(aes(yintercept = 0)) +
+  scale_color_viridis_d(name = "Heterogeneity in Adult Habitat") +
+  scale_x_continuous(labels = scales::percent, name = 'Area in MPA') +
+  scale_y_continuous(labels = scales::percent, name = "Sims where SSB Decreaes by more than 10%") +
+  facet_grid(target_fauna~seasonal_movement, labeller = label_both) +
+  theme(legend.position = "top")
+
+signif_ssb_gain_plot <- mpa_results %>%
+  mutate(target_fauna = as.factor(target_fauna)) %>%
+  mutate(target_fauna = fct_recode(target_fauna,!!!mpa_strategy)) %>%
+  filter(variable == "ssb") %>%
+  group_by(mpa_size, sigma_centroid, seasonal_movement, target_fauna) %>%
+  summarise(percent_improve = mean(percent_change >= .1),
+            percent_lose = mean(percent_change <= -.1)) %>%
+  ggplot(aes(mpa_size, percent_improve, color = factor(sigma_centroid))) +
+  geom_line(size = 1.5) +
+  geom_hline(aes(yintercept = 0)) +
+  scale_color_viridis_d(name = "Heterogeneity in Adult Habitat") +
+  scale_x_continuous(labels = scales::percent, name = 'Area in MPA') +
+  scale_y_continuous(labels = scales::percent, name = "Sims where MPAs increase by more htan 10%") +
+  facet_grid(target_fauna~seasonal_movement, labeller = label_both) +
+  theme(legend.position = "top")
+
+
+
+mean_ssb_traj_plot <- mpa_results %>%
+  mutate(target_fauna = as.factor(target_fauna)) %>%
+  mutate(target_fauna = fct_recode(target_fauna,!!!mpa_strategy)) %>%
+  filter(variable == "ssb") %>%
+  group_by(mpa_size, sigma_centroid, seasonal_movement, target_fauna) %>%
+  summarise(net_percent_change = weighted.mean(percent_change,ssb0)) %>%
+  ggplot(aes(mpa_size, net_percent_change, color = factor(sigma_centroid))) +
+  geom_line(size = 1.5) +
+  geom_hline(aes(yintercept = 0)) +
+  scale_color_viridis_d(name = "Heterogeneity in Adult Habitat") +
+  scale_x_continuous(labels = scales::percent, name = 'Area in MPA') +
+  scale_y_continuous(labels = scales::percent, name = "% Change SSB") +
+  facet_grid(target_fauna~seasonal_movement, labeller = label_both) +
+  theme(legend.position = "top")
+
+
+
+total_ssb_traj_plot <- mpa_results %>%
+  mutate(target_fauna = as.factor(target_fauna)) %>%
+  mutate(target_fauna = fct_recode(target_fauna,!!!mpa_strategy)) %>%
+  filter(variable == "ssb") %>%
+  group_by(mpa_size, sigma_centroid, seasonal_movement, target_fauna) %>%
+  summarise(net_change = sum(abs_change)) %>%
+  ggplot(aes(mpa_size, net_change, color = factor(sigma_centroid))) +
+  geom_line(size = 1.5) +
+  geom_hline(aes(yintercept = 0)) +
+  scale_color_viridis_d(name = "Heterogeneity in Adult Habitat") +
+  scale_x_continuous(labels = scales::percent, name = 'Area in MPA') +
+  scale_y_continuous(name = "Net Change in SSB") +
+  facet_grid(target_fauna~seasonal_movement, labeller = label_both) +
+  theme(legend.position = "top")
+
+
+signif_bycatch_ssb_loss_plot <- mpa_results %>%
+  filter(bycatch == "Bycatch Species") %>%
+  mutate(target_fauna = as.factor(target_fauna)) %>%
+  mutate(target_fauna = fct_recode(target_fauna,!!!mpa_strategy)) %>%
+  filter(variable == "ssb") %>%
+  group_by(mpa_size, sigma_centroid, seasonal_movement, target_fauna) %>%
+  summarise(percent_improve = mean(percent_change >= 0),
+            percent_lose = 1 - percent_improve) %>%
+  ggplot(aes(mpa_size, percent_lose, color = factor(sigma_centroid))) +
+  geom_line(size = 1.5) +
+  geom_hline(aes(yintercept = 0)) +
+  scale_color_viridis_d(name = "Heterogeneity in Adult Habitat") +
+  scale_x_continuous(labels = scales::percent, name = 'Area in MPA') +
+  scale_y_continuous(labels = scales::percent, name = "Sims where MPA reduces SSB") +
+  facet_grid(target_fauna~seasonal_movement, labeller = label_both) +
+  theme(legend.position = "top")
+
+
+catch_loss_plot <- mpa_results %>%
+  mutate(target_fauna = as.factor(target_fauna)) %>%
+  mutate(target_fauna = fct_recode(target_fauna,!!!mpa_strategy)) %>%
+  filter(variable == "c") %>%
+  group_by(mpa_size, sigma_centroid, seasonal_movement, target_fauna) %>%
+  summarise(percent_improve = mean(percent_change >= 0),
+            percent_lose = 1 - percent_improve) %>%
+  ggplot(aes(mpa_size, percent_lose, color = factor(sigma_centroid))) +
+  geom_line(size = 1.5) +
+  geom_hline(aes(yintercept = 0)) +
+  scale_color_viridis_d(name = "Heterogeneity in Adult Habitat") +
+  scale_x_continuous(labels = scales::percent, name = 'Area in MPA') +
+  scale_y_continuous(labels = scales::percent, name = "Sims where MPA reduces Catch") +
+  facet_grid(target_fauna~seasonal_movement, labeller = label_both) +
+  theme(legend.position = "top")
+
+signif_catch_loss_plot <- mpa_results %>%
+  mutate(target_fauna = as.factor(target_fauna)) %>%
+  mutate(target_fauna = fct_recode(target_fauna,!!!mpa_strategy)) %>%
+  filter(variable == "c") %>%
+  group_by(mpa_size, sigma_centroid, seasonal_movement, target_fauna) %>%
+  summarise(percent_improve = mean(percent_change >= .1),
+            percent_lose = mean(percent_change <= -.1)) %>%
+  ggplot(aes(mpa_size, percent_lose, color = factor(sigma_centroid))) +
+  geom_line(size = 1.5) +
+  geom_hline(aes(yintercept = 0)) +
+  scale_color_viridis_d(name = "Heterogeneity in Adult Habitat") +
+  scale_x_continuous(labels = scales::percent, name = 'Area in MPA') +
+  scale_y_continuous(labels = scales::percent, name = "Sims where MPA reduces Catch by more than 10%") +
+  facet_grid(target_fauna~seasonal_movement, labeller = label_both) +
+  theme(legend.position = "top")
+
+
+signif_catch_gain_plot <- mpa_results %>%
+  mutate(target_fauna = as.factor(target_fauna)) %>%
+  mutate(target_fauna = fct_recode(target_fauna,!!!mpa_strategy)) %>%
+  filter(variable == "c") %>%
+  group_by(mpa_size, sigma_centroid, seasonal_movement, target_fauna) %>%
+  summarise(percent_improve = mean(percent_change > .1),
+            percent_lose = mean(percent_change < -.1)) %>%
+  ggplot(aes(mpa_size, percent_improve, color = factor(sigma_centroid))) +
+  geom_line(size = 1.5) +
+  geom_hline(aes(yintercept = 0)) +
+  scale_color_viridis_d(name = "Heterogeneity in Adult Habitat") +
+  scale_x_continuous(labels = scales::percent, name = 'Area in MPA') +
+  scale_y_continuous(labels = scales::percent, name = "Sims where MPA incease Catch by >10%") +
+  facet_grid(target_fauna~seasonal_movement, labeller = label_both) +
+  theme(legend.position = "top")
+
+
+```
+
+
+# Introduction
+
+Marine protected areas (MPAs) are a growing part of the marine
+conservation toolbox, with 7.4% of the world's oceans currently
+protected and, and bodies such as the IUCN calling for 30% protection by
+2030. Many of the largest of these MPAs are being implemented in the
+form of "blue-water" MPAs largely covering pelagic ecosystems,
+characterized by highly mobile species and fishing fleets using a
+diverse mix of static and dynamic ocean features. These systems operate
+very differently from the coastal areas where modern MPA design
+practices have been developed. Pelagic systems are also characterized by
+combinations of relatively abundant species targeted by fishing, such as
+most tuna stocks, and highly threatened species caught as incidental
+"by-catch" in targeted fishing operations, such as oceanic whitetip
+sharks. Blue-water MPAs are increasingly being proposed specifically to
+benefit these by-catch populations while minimizing losses or where
+possible providing benefits to fisheries.
+
+While the effect of MPAs on fisheries yields is a continuously debated
+topic, the conservation impacts of MPAs have received less attention of
+late, due in part perhaps to the perceived obvious nature of the
+problem: if you prevent fishing of a species within an area, there will
+be more of that species in that area, and so the conservation benefits
+of MPAs will increase with MPA size. \@hastings2017 clearly illustrates
+this idea. Using a simple two-species two-patch analytical model, they
+derive conditions under which MPAs can solve the "weak-stock" problem in
+which a less productive species is incidentally exploited by a fleet
+targeting a more valuable and productive stock.
+
+However, as @hastings2017 point out, their results depend on a very
+specific set of assumptions, namely that 1) adults are perfectly
+sedentary 2) the target and bycatch species overlap perfectly in terms
+of habitat xx....The authors suggest that the impact of these
+assumptions should be tested in scenarios under which they are unlikely
+to apply. We build on \@hastings2017 ..xx sort of... theirs is about
+yield and we don't talk about that much yet... though we can xx to
+consider the role of MPAs in protecting bycatch species in pelagic
+ecosystems.
+
+The core models underpinning MPA science have largely been based on
+stylized versions of near-shore reef-style xx what to call that, like
+coral / rocky / kelp forest, etc xx systems, where multiple species
+often share common habitat, and adults have reasonable site fidelity
+while larvae are broadly dispersed. Pelagic ecosystems have vastly
+different dynamics than coastal seas [@game2009; @lubchenco2003],
+characterized by highly migratory species specialized to take advantage
+of highly dynamic ocean features such as eddies currents while also
+utilizing static features such as seamounts. Pelagic ecosystems also
+support both coastal domestic fishing industries along with highly
+mobile international high-seas fishing operations. Given these dynamics,
+it remains unclear how many of the lessons from coastal MPA science are
+applicable to pelagic ecosystems [\@ovando2021XX].
+
+Pelagic ecosystems present both opportunities and challenges for MPAs.
+The highly productive and mobile nature of targeted fisheries in these
+systems may mean that highly targeted MPAs can be designed that provide
+effective conservation at minimal fishery costs. Strategic protection of
+key aggregation locations may enhance depleted pelagic fisheries [xx
+that Indian ocean study I can't remember right now]. xx big question
+here: how focused do we want this paper to be? is it just about
+conservation tradeoffs or lack thereof with bycatch species, or is about
+the net conservation and fishery effects of BWMPAs. I'm inclined the
+former to tee-up the later xx. Alternatively, if individual bycatch
+species do not share common habitat preferences or fishery
+vulnerability, protection in one area targeted to benefit one species
+may negatively impact another through effort displacement [e.g.
+@abbott2012].
+
+Here, we use a case study motivated by the global expansion of
+blue-water MPAs to assess the sensitivity of bycatch populations and
+targeted fisheries to MPA design and key life-history variables... and
+what else?
+
+-   Case study of WCPO?
+
+-   Comparison to input / output controls
+
+-   Comparison to DOM?
+
+Our goal here is not to provide tactical recommendations on the design
+of blue-water MPAs, but rather to provide a strategic evaluation of the
+sensitivity of bycatch populations and targeted fisheries to key
+unknowns and design choices in MPA planning.
+
+<!-- The outcome of MPAs for fishing and conservation are highly sensitive to -->
+
+<!-- a wide range of economic and ecological factors. In order to constrain -->
+
+<!-- the possible parameter space, we tune a simulation model based around -->
+
+<!-- best available knowledge of the species and fleets operating in the -->
+
+<!-- areas of the western central pacific ocean (WCPO) while allowing key -->
+
+<!-- unknowns to vary, in particular the nature of adult and larval movement, -->
+
+<!-- the degree of habitat overlap between different species, the economic -->
+
+<!-- incentives facing fishing fleets, and the design strategy used in MPA -->
+
+<!-- placement XX. Most conventional MPA design models are either static, -->
+
+<!-- single species, or both. We present a dynamic, multi-species simulation -->
+
+<!-- model that allows us to cohesively assess the impact of MPAs on a suite -->
+
+<!-- of by-catch and targeted species collectively affected by multiple -->
+
+<!-- fishing fleets.  -->
+
+<!-- We show - something about how when species are homogeneous in space, -->
+
+<!-- conservation gains are basically guaranteed except for constant catch -->
+
+<!-- scenearios, which need to be considered in tuna-type scenarios - When we -->
+
+<!-- introduce heterogeneity in stock structure roughly reflective of -->
+
+<!-- distributions in the WCPO we do / do not begin to see tradeoffs in -->
+
+<!-- conservation outcomes among bycatch species - quantify if there is a -->
+
+<!-- concave function to this - Specific design paradigms are / are not more -->
+
+<!-- / less resilient to this issue - Compare tradeoffs between MPA designs -->
+
+<!-- that minimze internal bycatch tradeoffs (there have to be none if MPA = -->
+
+<!-- 100%) and fishery outcomes -->
+
+<!-- We show that MPAs increased biomass of by-catch species in XX% of -->
+
+<!-- simulations, and decreased them in XX% of simulations. On average a 1% -->
+
+<!-- increase in by-catch species resulted in a XX% change in fishery -->
+
+<!-- catches... Outcomes were most sensitive to XX and XX, and least -->
+
+<!-- sensitive to XX and XX. We do not suggest that these same results would -->
+
+<!-- hold for other systems, but rather demonstrate the importance / -->
+
+<!-- resilience of MPAs to key uncertain variables. In particular for pelagic -->
+
+<!-- ecosystems, our work demonstrates the importance of considering the -->
+
+<!-- collective impacts of space, vulnerability, life history, and fleet -->
+
+<!-- dynamics in MPA design for conservation. -->
+
+# Methods
+
+@hastings2017 employed a simply model to derive conditions under which
+MPAs would benefit bycatch species. However they also pointed out that
+even small increases in model complexity quickly make analytical
+solutions to the effects of MPAs intractable. As such, we based our
+analysis on a spatially explicit, multi-species, multi-fleet,
+bio-economic model we call
+[`marlin`](https://github.com/DanOvando/marlin). Models of MPAs span a
+wide range of complexity, from simple analytical tools to end-to-end
+ecosystem models [@fulton2015]. `marlin` follows a "models of
+intermediate complexity" (MICE) philosophy [@plagányi2014] targeted
+specifically around the role of technical interactions across species.
+Many MPA models model the impacts of MPAs on a single-species level [@ovando2021XX]. This can be useful for for example examining the ways in which species-specific life history traits interact with fleet dynamics to influence MPA outcomes. However, bycatch problems are driven by technical interactions, in which fishing effort for a target species incidentally captures another species xx how do we want to talk about this in here? Like usually incidentally, but clearly sometimes people try and catch sharks too xx. `marlin` accounts for this by allowing the user to simulate an arbitrary number of fleets capable of catching an arbitrary number of species in a spatial area. Different fleets can place different economic value on different species, while also having species-specific selectivity functions. This allows us to simulate bycatch dynamics of MPAs in pelagic ecosystems. 
+
+## `marlin`
+
+Lots of equations. 
+
+## Simulation Experiments
+
+Given the complexity of the operating model used here, a complete sensitivity analysis across all parameters is not practical. Instead, we focus on the role of XX key attributes of pelagic ecosystems: the degree of spatial overlap between populations, the presence of seasonal migrations, and the potential for ontogenetic shifts in habitat use. 
+
+### Habitat Overlap
+
+We simulate habitat overlap through two parameters: the standard deviation of the habitat centroid for each species $\sigma_c$, and the the dispersion of the species around its centroid $\sigma_d$. When $\sigma_c$ is low, all species share a common habitat. As $\sigma_c$ inscreases, the variance in the centroid of each of the simulated species increases. 
+
+We simulate seasonal movement by breaking the year into two seasons. We then set the adult habitat in season two as the negative inverse of the habitat in season one
+
+We simulate ontogenetic movement by allowing for separate habitat layers for recruits and adults. We then simulate a scenario where recruitment habitat is the negative inverse of adult habitat, such that recruits primarily arive in one area of the system, and then move to another area as they grow. 
+
+etc. 
+
+## comparison to...
+
+For each scenario, could then compare that MPA to the amount of yield
+lost / bycatch gained by constraining effort / catch...
+
+# Results
+
+
+## Conservation Outcomes
+
+
+
+```{r traj-plot, include=TRUE, fig.cap="Trajectoris of percent change in spawning stock biomass as a function of MPA size. Color indicates separate species, each line is a different simulation."}
+
+ssb_traj_plot + 
+  guides(color = FALSE)
+
+
+```
+```{r ssb-plot,fig.cap="Percent of simulations that resulted in any decrease in spawning stock biomass as a function of seasonal movement, habitat heterogeneity, and MPA design.", include=TRUE}
+any_ssb_loss_plot
+```
+
+
+```{r signif-ssb-plot, fig.cap= "Percent of simulations that resulted in decreases of 10% or more in spawning stock biomass as a function of seasonal movement, habitat heterogeneity, and MPA design.", include=TRUE}
+signif_ssb_loss_plot
+```
+
+
+## Yield Outcomes
+
+
+
+```{r catch-plot,fig.cap="Percent of simulations that resulted in any decrease in catch as a function of seasonal movement, habitat heterogeneity, and MPA design.", include=TRUE}
+catch_loss_plot
+```
+
+```{r signif-catch-plot, fig.cap= "Percent of simulations that resulted in decreases of 10% or more in catch as a function of seasonal movement, habitat heterogeneity, and MPA design.", include=TRUE}
+signif_catch_loss_plot
+```
+
+## Value of Information
+
+I think this would be one of the easiest and interesting: how good does you habitat knowledge have to be to minimize tradeoffs?
+
+
+## Tradeoffs
+
+```{r tradeoff-plot, fig.cap= "Tradeoff frontier of catch and spawning stock biomass as a function of MPA size and MPA design. Each point represents a different simulation", include=TRUE}
+tradeoff_frontier_plot
+```
+
+
+## Sensitivy to...
+
+
+Summary (hopefully statistical) of sensitivity of outcome to different parameters? But hard to know if there's really the sample size for that
+
+## Case Study Of...
+
+
+
+# Discussion
+
+XX stress a key difference: may other papers on this are static, in that
+they just some up displacement on different layers, rather than
+addressing dynamic respones over tim xx
+
+We show....
+  - sensitivity of both conservation and fishery outcomes to pelagic realism and design choices
+  - compared to targeted / dynamic intervention... 
+  - value of information would be great... 
+  
+**what is novel????**
+  
+Contrast to coastal MPA theoretical work
+  - @hastings2017
+  - @ovando2021
+  - @white2010
+  - not quite sure what to do about points raised in @fulton2011a
+    - to what extent has this been done...
+    
+The paragraph from @fulton2011a that broke me...
+
+"
+Spatial management was insufficient as the dominant management lever because it proves quite difficult to strike the balance between protecting areas that are of a size sufficient to produce any conservation benefit and providing sufficient fishing grounds to sustain an econom- ically viable industry (which is not possible in many fisheries if closures on the order of 70–80% or more are imposed, Fulton et al. 2007). More- over, Savina etal. (2008) found that effort displaced by closures potentially undermines any benefits coming from the zoning. For instance, strong improvements in diversity (by nearly 20%) under heavy fishing pressure occurred if effort outside a marine protected area (MPA) was controlled. However, without effort control, there was a significant (>20%) drop in overall diversity. Fulton et al. (2007), Savina et al. (2008), Smith et al. (2010) and unpublished work associated with Horne et al. (2010) all found that while spatial management appears to be an effective means of satisfying conservation objectives con- cerning habitat and restoring age-structures of less mobile species, benefits from closures for individual species depend on its trophic position, degree of mobility, geographical distribution and extent of ontogenetic shifts in habitat use and depth (highly mobile or prey species do not benefit in the way that more site attached or predatory species do)."
+
+Lots of studies have shown that lots of things matter, can we provide guidance on which things are priorities?
+
+Where does this fit in context of @smith2021? One important difference is that they point out differences in effectiveness, where effectiveness is still almost always positive, since they just measure leatherbacks. So theri fig 5, there are a few cases where leatherback catches actually go up, but it's rare. So, extending to multiple species and keeping track off all of them shows it's even harder
+
+How does this contrast with the the large and growing dynamic ocean management lit?
+  - By definition, with perfect information dynamic $\geq$ static spatial controls
+  - DOM literature is mostly static, tracks displacemento onto static abundance / risk layers
+  - Doesn't allow for dynamic impacts, for example fleet adjustments based on updated economic surface, or short-term costs for long-term benefits (can overstate costs?)
+  - Dynamic model allows for delta between dynamic policies, e.g. Fmsy vs DOM
+    - analytical models a la hastings have value but do / don't stand up to realism
+
+Presentation of the model as a MICE model for MSP
+  - reasonable parameterizable
+  - flexible
+  - fast
+  
+
+Focus of debate has been on fisheries and yields. As MPAs move to pelagic systems though, we show that conservation outcomes also depend on correctly identifying ecological state / design decisions etc. 
+  
+
+# References
+
+::: {#refs}
+:::
+
+## Figure Ideas
+
+Are there or are there not tradeoffs in conservation and fisheries
+yields
+
+What are the explicit considerations of
+
+Interesting considerations we do biodiversity MPAs we define
+biodiversity as system diversity and we put all the species in there,
+threatened bycatch species become the the focus and stated objective is
+ramp up the value of bycatch species . There might be instances where
+just the biodiversity base actually gets you a better outcome than .
+There might be overlap and not.
+
+Dig into that mismatch
+
+We can explore that mismatch between is the issue q and is the issue of
+spatial habitat
+
+### Fig.1 Motivating figure - basically something like the shortfin mako example
+
+### Fig.2 Case study figure for WCPO: shows degree of overlap in species abundance in space and time, as well as a platform for some examples of MPA networks designed around different paradigms
+
+### Fig.3 Tradeoff plots across species, though will need to put some thought into visualizing across species. But something to convey the idea of whether there are tradeoffs among species in the case study of the WCPO high seas style system. Interestingly, you know that if you closed 100% all benefit, so doing this along a gradient is interesting, are there tradeoffs at low sizes that disappear with higher? Actually you might expect a dome-shaped tradeoff, where there are no tradeoffs at low size since little displacement, largest tradeoffs in the middle where you maximize displacement but still haven't maximized protection, and then no tradeoffs at the extreme where everything is protected. If you have a small enough number of species, say less than 10, then can do color / shape by species, mpa size on x axis, change in biomass on y axis, and connected lines for design paradigms. If not too busy, would be good to have a counterfactual where everything is the same except species are all homogeneously distributed
 
 ### Fig 4. Similar idea but, now bringing fishing in there. Maybe collapsing down a few axes, so you do like percent increase in total bycatch by total fishing, or some measure of collective benefit / loss, as a function of MPA size. Maybe highlight inflection points that seem to minimize fishery losses while also minimizing tradeoffs with bycatch
 
-### Fig 5 + Figures showing a few select “what if the world were different”, i.e. how important is movement rate, DD form, etc. 
-
+### Fig 5 + Figures showing a few select "what if the world were different", i.e. how important is movement rate, DD form, etc.
 
 # Scraps
 
-What are the considerations of protection you need to make good decisions. It’s not always obvious how to design things to get the outcome you want. If we could make the case that something like closing the high seas is insufficient conservation management without conservation management inside EEZs / what is the 
+What are the considerations of protection you need to make good
+decisions. It's not always obvious how to design things to get the
+outcome you want. If we could make the case that something like closing
+the high seas is insufficient conservation management without
+conservation management inside EEZs / what is the
 
-Need to do an optimization here, calculate the marginal value of added cells. 
+Need to do an optimization here, calculate the marginal value of added
+cells.
 
-What’s this about?
-Pointing out a problem, which to make impactful would require making the case that there is a problem with current design strategies. e.g.. “MPAs are often designed like this (simple dispersive models with constant habitat, or MARXSAN style things), and doing that does/does not create problems
-A tactical evaluation. Picking a handful of high profile MPAs, parameterizing all the knowns as well as possible, iterating over unknowns, and see what the range of outcomes are. Cleaner, more impactful, but also opens it up (depending on the results) to a details fight about very specific modeling choices
-How plausible are losses? Maybe we drill down on this a bit. From a purely bycatch perspective, the usual questions of fisheries tradeoffs aren’t on the table (but can add to the discussion considerations of how much target fishing you give up). Given that then, while it’s possible that “targeted” interventions would work better (ignoring costs/enforcement, etc), there’s really no reason not to do MPAs. Unless, you actually end up concentrating fishing pressure outside on populations. So, we consider how plausible is it for that to really happen. Issue here is that seems likely to be pretty hand-wavey. Most likely that the vast majority of simulations will show positive impacts, but have no way of assigning probabilities to any one state of nature. 
+What's this about? Pointing out a problem, which to make impactful would
+require making the case that there is a problem with current design
+strategies. e.g.. "MPAs are often designed like this (simple dispersive
+models with constant habitat, or MARXSAN style things), and doing that
+does/does not create problems A tactical evaluation. Picking a handful
+of high profile MPAs, parameterizing all the knowns as well as possible,
+iterating over unknowns, and see what the range of outcomes are.
+Cleaner, more impactful, but also opens it up (depending on the results)
+to a details fight about very specific modeling choices How plausible
+are losses? Maybe we drill down on this a bit. From a purely bycatch
+perspective, the usual questions of fisheries tradeoffs aren't on the
+table (but can add to the discussion considerations of how much target
+fishing you give up). Given that then, while it's possible that
+"targeted" interventions would work better (ignoring costs/enforcement,
+etc), there's really no reason not to do MPAs. Unless, you actually end
+up concentrating fishing pressure outside on populations. So, we
+consider how plausible is it for that to really happen. Issue here is
+that seems likely to be pretty hand-wavey. Most likely that the vast
+majority of simulations will show positive impacts, but have no way of
+assigning probabilities to any one state of nature.
 
 The Role of Blue-Water Marine Protected Areas in Bycatch Reduction
 
-What’s the question: How effective are Blue-Water MPAs in reducing fishing mortality of important pelagic bycatch species?
+What's the question: How effective are Blue-Water MPAs in reducing
+fishing mortality of important pelagic bycatch species?
 
-Another angle. There’s going to be a lot of unknowns in designing BWMPA. How  much does not fully understanding a few key life history (e.g. movement) matter, and how much does the role that the species plays in the broader fleets portfolio matter
+Another angle. There's going to be a lot of unknowns in designing BWMPA.
+How much does not fully understanding a few key life history (e.g.
+movement) matter, and how much does the role that the species plays in
+the broader fleets portfolio matter
 
-Could simulate habitat from a multivariate normal, where you use the sigma to control how similar rasters are across species 
+Could simulate habitat from a multivariate normal, where you use the
+sigma to control how similar rasters are across species
 
-Marine protected areas are increasingly proposed to protect biodiversity in pelagic systems. However, maby paradigms of mpa design come from coastal systems. Here we ask, how likely are blue-water MPAs to provide conservation benefits to bycatch species, and what are the key uncertainties underlying these outcomes? We begin with a general discussion of the ways in which traits of open-ocean systems might influence the conservation performance of BWMPAs. Given the massive parameter space, we then constrain ourselves to a styulized version of the western central pacitic ocean to ask, how feasible is it to provide broad protection of bycatch species through common MPA design paradigms in the context of this system. Our results demonstrate the critical importance of XX and XX in designing MPAs in pelagic systems, and highlight the potential risks of not accounting for XX. 
-Introductionhere
+Marine protected areas are increasingly proposed to protect biodiversity
+in pelagic systems. However, maby paradigms of mpa design come from
+coastal systems. Here we ask, how likely are blue-water MPAs to provide
+conservation benefits to bycatch species, and what are the key
+uncertainties underlying these outcomes? We begin with a general
+discussion of the ways in which traits of open-ocean systems might
+influence the conservation performance of BWMPAs. Given the massive
+parameter space, we then constrain ourselves to a styulized version of
+the western central pacitic ocean to ask, how feasible is it to provide
+broad protection of bycatch species through common MPA design paradigms
+in the context of this system. Our results demonstrate the critical
+importance of XX and XX in designing MPAs in pelagic systems, and
+highlight the potential risks of not accounting for XX. Introductionhere
 
-Bycatch is a significant driver of population declines for many pelagic species
-Sharks, seabirds, mammals, etc
-MPAs increasingly turned to as a solution for conservation problems, etc. 
-MPA science is largely based on dynamics of coastal systems. Open-ocean ecosystems have very different dynamics that require dedicated research
-Burgess et al. (2018) estimated the reductions in fishing mortality needed to halt declines for a number of bycatch species
-Here we ask, what are the key drivers of bycatch conservation outcomes from MPAs?
-There are all of these species; you reduce fishing mortality. You can either do fisheries management, or you can do MPAs, let’s focus in on the MPA side. This could reduce fishing mortality, or it could do, and it depends on the dynamics of the species and the fleets. 
-When can MPAs reduce fishing mortality enough for bycatch species? And where can you go wrong?
+Bycatch is a significant driver of population declines for many pelagic
+species Sharks, seabirds, mammals, etc MPAs increasingly turned to as a
+solution for conservation problems, etc. MPA science is largely based on
+dynamics of coastal systems. Open-ocean ecosystems have very different
+dynamics that require dedicated research Burgess et al. (2018) estimated
+the reductions in fishing mortality needed to halt declines for a number
+of bycatch species Here we ask, what are the key drivers of bycatch
+conservation outcomes from MPAs? There are all of these species; you
+reduce fishing mortality. You can either do fisheries management, or you
+can do MPAs, let's focus in on the MPA side. This could reduce fishing
+mortality, or it could do, and it depends on the dynamics of the species
+and the fleets. When can MPAs reduce fishing mortality enough for
+bycatch species? And where can you go wrong?
 
+It doesn't make any sense to ask "do MPAs help bycatch": the question is
+obviously it depends. To quickly make this case, we'll assume that a
+species is in need of recovery. We then do the simple mako example to
+show that effects of spatial closure depend on the overlap of habitat
+and the assumption of fleet dynamics, and provide some empirical
+evidence that in particular effort redistribution is not unlikely.
 
-It doesn’t make any sense to ask “do MPAs help bycatch”: the question is obviously it depends. To quickly make this case, we’ll assume that a species is in need of recovery. We then do the simple mako example to show that effects of spatial closure depend on the overlap of habitat and the assumption of fleet dynamics, and provide some empirical evidence that in particular effort redistribution is not unlikely. 
+Determining the effect of an MPA network on bycatch then will also
+depend on trying to get close to a tactical model. But, this creates a
+problem for blue water systems in particular. Can make the argument that
+given the centrality of relatively static habitat features in coastal
+MPAs "protect the key habitats" might not be a bad strategy from a
+conservation strategy. But in highly mobile pelagic systems there (may
+be) a lot more variables in play. Where should researchers direct their
+attention?
 
-Determining the effect of an MPA network on bycatch then will also depend on trying to get close to a tactical model. But, this creates a problem for blue water systems in particular. Can make the argument that given the centrality of relatively static habitat features in coastal MPAs “protect the key habitats” might not be a bad strategy from a conservation strategy. But in highly mobile pelagic systems there (may be) a lot more variables in play. Where should researchers direct their attention? 
+To reduce the parameter space, we constrain ourselves to a system where
+1) we know the species involved 2) we have some sense of the relative
+depletion and value of the different species and 3) some basic life
+history of the species. We then vary commonly unknown parameters,
+particularly preferred habitats, spatial catchability, movement rates
+etc, and pair these simulations with different MPA designs, and examine
+the conservation outcomes for bycatch species.
 
-To  reduce the parameter space, we constrain ourselves to a system where 1) we know the species involved 2) we have some sense of the relative depletion and value of the different species and 3) some basic life history of the species. We then vary commonly unknown parameters, particularly preferred habitats, spatial catchability, movement rates etc, and pair these simulations with different MPA designs, and examine the conservation outcomes for bycatch species. 
+What i don't like about this
 
-What i don’t like about this
-
-There isn’t an “answer” to this: baring something like “changing the type of density dependence never had any effect greater than XX%”, for anything that on occasion has an impact the answer of “how much” will almost always depend on what else is going on. 
+There isn't an "answer" to this: baring something like "changing the
+type of density dependence never had any effect greater than XX%", for
+anything that on occasion has an impact the answer of "how much" will
+almost always depend on what else is going on.
 
 So, it seems like there are two real angles of attack here
 
-Pointing out a problem, which to make impactful would require making the case that there is a problem with current design strategies. I.e. “MPAs are often designed like this (simple dispersive models with constant habitat, or MARXSAN style things), and doing that does/does not create problems
-A tactical evaluation. Picking a handful of high profile MPAs, parameterizing all the knownns as well as possible, iterating over unknowns, and see what the range of outcomes are. Cleaner, more impactful, but also opens it up (depending on the results) to a details fight about very specific modeling choices
-
+Pointing out a problem, which to make impactful would require making the
+case that there is a problem with current design strategies. I.e. "MPAs
+are often designed like this (simple dispersive models with constant
+habitat, or MARXSAN style things), and doing that does/does not create
+problems A tactical evaluation. Picking a handful of high profile MPAs,
+parameterizing all the knownns as well as possible, iterating over
+unknowns, and see what the range of outcomes are. Cleaner, more
+impactful, but also opens it up (depending on the results) to a details
+fight about very specific modeling choices
 
 Methods
 
-Collect life history for key bycatch species and target species, cite Bradley et al. pulling together species distribution and threats etc. 
-Introduce marlin
-Parameterize marlin runs with “knowns” from life history of bycatch and target species
-Highlight key “unknowns” that we will iterate over, e.g. fleet models, density dependent movement, timing of density dependence etc
-Simulate effects of MPAs given reasonably realistic situations but iterating over key unknowns
-Evaluate the range of outcomes and key drivers of MPA effects
-I’m thinking we try and avoid a really specific case study but hard not to accidentally do one without making everything up…. 
+Collect life history for key bycatch species and target species, cite
+Bradley et al. pulling together species distribution and threats etc.
+Introduce marlin Parameterize marlin runs with "knowns" from life
+history of bycatch and target species Highlight key "unknowns" that we
+will iterate over, e.g. fleet models, density dependent movement, timing
+of density dependence etc Simulate effects of MPAs given reasonably
+realistic situations but iterating over key unknowns Evaluate the range
+of outcomes and key drivers of MPA effects I'm thinking we try and avoid
+a really specific case study but hard not to accidentally do one without
+making everything up....
 
-Results
-Range of likely changes in fishing-induced mortality for the species selected
-Key drivers of uncertainty in those outcomes, focusing on things that switch states from reduction to increase in mortality
-How common are conservation tradeoffs between bycatch species?
-Fishery impacts
+Results Range of likely changes in fishing-induced mortality for the
+species selected Key drivers of uncertainty in those outcomes, focusing
+on things that switch states from reduction to increase in mortality How
+common are conservation tradeoffs between bycatch species? Fishery
+impacts
 
-
-
-Discussion
-What does this say about BWMPAs and bycatch?
-Not going to get into design decisions here, depending how common tradeoffs are I think that will be the main focus
-Highlight any species that frequently induced tradeoffs
-Tee up future research
-MPAs in context of other management
-MPAs as risk reduction strategy
-Etc. 
-
+Discussion What does this say about BWMPAs and bycatch? Not going to get
+into design decisions here, depending how common tradeoffs are I think
+that will be the main focus Highlight any species that frequently
+induced tradeoffs Tee up future research MPAs in context of other
+management MPAs as risk reduction strategy Etc.
