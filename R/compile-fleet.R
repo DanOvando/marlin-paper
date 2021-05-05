@@ -124,6 +124,16 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           p_explt = .99,
           sel_unit = "length"
 
+        ),
+        "xiphias gladius" = Metier$new(
+          critter = fauna$`xiphias gladius`,
+          price = 7.47,
+          sel_form = "logistic",
+          sel_start = 150,
+          sel_delta = 0.01,
+          catchability = .1,
+          p_explt = .99,
+          sel_unit = "length"
         )
       ),
       base_effort = resolution
@@ -250,6 +260,16 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           p_explt = 0.01,
           sel_unit = "length"
 
+        ),
+        "xiphias gladius" = Metier$new(
+          critter = fauna$`xiphias gladius`,
+          price = 7.47,
+          sel_form = "logistic",
+          sel_start = 999,
+          sel_delta = 0.01,
+          catchability = .1,
+          p_explt = .01,
+          sel_unit = "length"
         )
       ),
       base_effort = resolution

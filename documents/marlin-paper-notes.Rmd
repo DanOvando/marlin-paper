@@ -1,0 +1,67 @@
+---
+title: "marlin-paper-notes"
+author: "Dan Ovando"
+date: "4/14/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+what dooes the overlap tradeoff curve look like? 
+
+Suppose you close off 30% of an area in an MPA
+
+Then plot conservation outcome on y-axis, degree of overlap between target and bycatch species on the x axis. When overlap is one, conservation benefit should be maxed. Then overlap is perfeclty anticorrelated, if effort concentrates, conservation should be at some negative minimum. If concentration doesn't happen, then conservation effect should be zero. If overlap is uncorrelated... unclear?
+
+MPA literature has been dominated by single-species model covering homogemous habitat without any technical interactions across multiple fleets and species. 
+
+@hastings2017 assumes that adults are stationary, larvae are perfectly mixed, age structure can be ignored, density dependence at time of settlement. Same harvest rate outside reserve. 
+
+static spatial, dynamic spatial , input / output controls, gear
+
+If there is perfect overlap, then improvement in coservation outcome should be a straight positive function of area protected. If there is no overlap, then 
+
+
+# what's the angle?
+
+Smith et al and references therein make the basic case pretty damn clear: when species move a lot and when habitats overlap, static MPAs don't work as well as dynamic. There are other nuances in there but that kind of summarizes a lot of it
+
+so what are the specific angles this paper can take
+
+- When do static closures go from "less effective" to "not effective"
+
+Those papers point out "less effective" since max species = 2 to 4. But, we're seeing here that non-trivial case of net loss? But is it really non-trivial? like 15% of simulations with more than 10%? though that number is a lot bigger if you're basically asking "did it help"
+
+So that's certainly an angle that's unexplored here. 
+
+
+- Yet another comparison to active fisheries management
+
+Tying more directly to fisheries management, compare to say a TAE, in terms of units bycatch saved per unit of target catch lost 
+
+Could also do the dynamic comparison, though that one is a bit boring to me since it's sort of self evident, so question is the wedge?
+
+Could also ask something about how much would gear efficiency have to change, though it feels like that would be so detail derived it would be hard to make general
+
+- Value of information
+
+
+
+
+- A more tactical evaluation
+
+Lean in a bit more to an area and specific existing or proposed MPAs with best estimates of bycatch risk / target fleets in space. 
+
+The cleanest to what we have now, but also the most contentious / work. If we go with actual MPAs, really need to dial in the species and fleets, which we're pretty close to do be honest, but also the habitats etc. 
+
+Though there is a more general question like "what's the best outcome you could get for bycatch with static closures in a place that looks like the WCPO". Or rather what design gets you the best outcome. Now you'd have to put a constraint on that, say total catches can't decline by more than xx%?
+
+Hmm I like this one sort of
+
+- incentives piece around bycatch
+incentive to fish and incentive to protect
+
+So this isn't the odd rare turtle, these are valuable sharks
+
