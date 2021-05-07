@@ -166,6 +166,66 @@ write_rds(casestudy, file = file.path(results_path, "casestudy.rds"))
 
 
 }
+
+
+# optimize network --------------------------------------------------------
+
+stop()
+if (optimize_casestudy == TRUE){
+
+  optimized_networks <- tibble(alpha = c(0, .33, .66,1))
+
+  fauna <- casestudy$fauna[[1]]
+
+  fleets <- casestudy$fleet[[1]]
+
+  optimized_networks <- optimized_networks %>%
+    mutate(
+      network = purrr::pmap(
+        list(alpha = alpha),
+        optimize_mpa,
+        fauna = casestudy$fauna[[1]],
+        fleets = casestudy$fleet[[1]],
+        max_prop_mpa = 1,
+        prop_sampled = 0.2,
+        resolution = resolution,
+      workers = 6
+      ))
+
+
+  #
+  # check <- optimized_networks %>%
+  #   mutate(outcomes = map(network,"outcomes")) %>%
+  #   unnest(cols = outcomes)
+  #
+  # check %>%
+  #   ggplot(aes(p_protected, econ, color = factor(alpha))) +
+  #   geom_line() +
+  #   facet_wrap(~critter, scales = "free_y")
+  #
+  # check <- optimized_networks %>%
+  #   mutate(network = map(network,"mpa_network")) %>%
+  #   unnest(cols = network)
+  #
+  # check %>%
+  #   ggplot(aes(x,y,fill = mpa)) +
+  #   geom_tile() +
+  #   facet_grid(alpha ~ p_protected)
+  #
+
+write_rds(optimized_networks, file = file.path(results_path,"optimized_networks.rds"))
+} else {
+
+  optimized_networks <-
+    read_rds(file = file.path(results_path, "optimized_networks.rds"))
+
+
+}
+
+
+# process results ---------------------------------------------------------
+
+
 scenes <- casestudy %>%
   select(xid, data) %>%
   unnest(cols = data) %>%

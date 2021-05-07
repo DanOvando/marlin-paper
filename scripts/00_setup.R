@@ -11,7 +11,7 @@ library(ggridges)
 
 library(googledrive)
 
-library(data.table)
+# library(data.table)
 
 library(gamm4)
 
@@ -38,15 +38,17 @@ if (!dir.exists(results_path)){
   dir.create(file.path(results_path,"sims"))
 }
 
-run_experiments <- TRUE
+run_experiments <- FALSE
 
-run_casestudy <- TRUE
+run_casestudy <- FALSE
 
 safety_stop <- FALSE
 
+optimize_casestudy <- TRUE
+
 draws <- 20
 
-resolution <- 20 # resolution is in squared patches, so 20 implies a 20X20 system, i.e. 400 patches
+resolution <- 10 # resolution is in squared patches, so 20 implies a 20X20 system, i.e. 400 patches
 
 years <- 40
 
