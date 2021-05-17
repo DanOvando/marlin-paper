@@ -14,27 +14,28 @@
 optimize_mpa <-
   function(fauna,
            fleets,
+           starting_conditions = NA,
            alpha = 0.33,
            max_prop_mpa = 1,
            resolution,
            prop_sampled = .2,
            workers = 6) {
-    workers <- 1
+    # workers <- 6
     future::plan(future::multisession, workers = workers)
 
     on.exit(future::plan(future::sequential))
 
-    fauna <- casestudy$fauna[[1]]
-
-    fleets <- casestudy$fleet[[1]]
-
-    alpha <- 0
-
-    percent_mpa <- 0.3
-
-    prop_sampled <- 0.2
-
-    max_prop_mpa <-  1
+    # fauna <- casestudy$fauna[[1]]
+    #
+    # fleets <- casestudy$fleet[[1]]
+    #
+    # alpha <- 0
+    #
+    # percent_mpa <- 0.3
+    #
+    # prop_sampled <- 0.2
+    #
+    # max_prop_mpa <-  1
 
     patches <- resolution ^ 2
 
@@ -56,7 +57,7 @@ optimize_mpa <-
       vector(mode = "list", length = max_patches_protected)
 
     calc_objective_function <-
-      function(candidate_patch, fauna, fleets, mpas) {
+      function(candidate_patch, fauna, fleets, mpas,starting_conditions) {
         tmp_mpas <- mpas
 
         tmp_mpas$mpa[tmp_mpas$patch %in% candidate_patch] <- TRUE
@@ -66,7 +67,8 @@ optimize_mpa <-
           fleets = fleets,
           years = years,
           mpas = list(locations = tmp_mpas,
-                      mpa_year = 1)
+                      mpa_year = 1),
+          initial_conditions = starting_conditions[[1]]
         )
 
         res <-
@@ -98,7 +100,8 @@ optimize_mpa <-
           fauna = fauna,
           fleets = fleets,
           mpas = mpas,
-          # .options = furrr_options(seed = 42),
+          starting_conditions = starting_conditions,
+          .options = furrr_options(seed = 42),
           .progress = FALSE
         )
       # Sys.time() - a
@@ -131,7 +134,8 @@ optimize_mpa <-
         fleets = fleets,
         years = years,
         mpas = list(locations = mpas,
-                    mpa_year = 1)
+                    mpa_year = 1),
+        initial_conditions = starting_conditions[[1]]
       )
 
       res <-
@@ -172,7 +176,8 @@ optimize_mpa <-
 
     tmp_result <- simmar(fauna = fauna,
                          fleets = fleets,
-                         years = years)
+                         years = years,
+                         initial_conditions = starting_conditions[[1]])
 
     res <-
       tmp_result[[length(tmp_result)]] # for now, just calculate in the final timestep
@@ -251,10 +256,10 @@ optimize_mpa <-
              mpa = mpa_network) %>%
       unnest(cols = mpa)
 
-    # mpa_anim %>%
+    # out_mpa_network %>%
     #   ggplot(aes(x,y,fill = mpa)) +
     #   geom_tile() +
-    #   transition_states(p_protected)
+    #   facet_wrap( ~ p_protected)
 
 
     return(list(

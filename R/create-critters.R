@@ -31,7 +31,10 @@ create_critters <-
       hab <- list(hab, hab)
     }
 
-    rec_form <-  sample(c(0, 1, 2, 3), 1, replace = TRUE)
+    # rec_form <-  sample(c(0, 1, 2, 3), 1, replace = TRUE)
+
+    rec_form <- 1 # sample(c(0, 1, 2, 3), 1, replace = TRUE)
+
 
     if (ontogenetic_shift) {
       recruit_habitat <-
@@ -41,20 +44,21 @@ create_critters <-
       #
       rec_form <- 0
     } else {
-      recruit_habitat <- NA
+      recruit_habitat <- hab[[1]]
     }
 
     critter <- marlin::create_critter(
       scientific_name = sciname,
       seasonal_habitat = hab,
-      adult_movement = 1,
+      recruit_habitat = recruit_habitat,
+      adult_movement = 0,
       adult_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
       recruit_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
       rec_form = rec_form,
       seasons = seasons,
       init_explt = ifelse(is.nan(
         mean(tmp_inputs$current_f, na.rm = TRUE)
-      ), .1, mean(tmp_inputs$current_f, na.rm = TRUE)),
+      ), .4, mean(tmp_inputs$current_f, na.rm = TRUE)),
       steepness =  ifelse(is.nan(
         mean(tmp_inputs$steepness, na.rm = TRUE)
       ), 0.8, mean(tmp_inputs$steepness, na.rm = TRUE)),

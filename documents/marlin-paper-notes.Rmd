@@ -118,3 +118,5 @@ OK, this is actually coming together! You should run the same design / knowledge
 But, that begs the question of, is it an inevitable tradeoff, or just a case of poor design. That requires optimization. But, optimization is very computationally intensive. To examine this point then, we repeated the exercies, but with a specific case study where we hold habitat as constant, but redo the exercise conditional on constant habitat. We can then see to what extent tradeoofs persist, and ideally come up with some way of comparing the case study habitats to the metric of habitat heterogeneity in the full simulations. Case study also demonstrates that its a real thing: not making up the idea of different habitat use
 
 This might actually be a cool paper. Proc B?
+
+Idea: what ig instead of local or global, you have a parameter that says how many metapopulations there are. 1 says global density dependence, patches says one per patch. you then divide up the patches in equal aquares based on that, and calculate density dependence on that level. 

@@ -1,161 +1,164 @@
-run_mpa_experiment <- function(fauna, fleet, placement_error = 0, random_mpas = FALSE, xid){
+run_mpa_experiment <-
+  function(placement_strategy = "depletion",
+           starting_conditions,
+           proc_starting_conditions,
+           prop_mpa = 0.3,
+           prop_species = 1,
+           fauna,
+           fleets,
+           placement_error = 0,
+           prop_critters_considered,
+           random_mpas = FALSE,
+           resolution) {
 
 
-  mpa_sims <-
-    expand_grid(
-      target_fauna = list(
-        "carcharhinus longimanus",
-        unique(marlin_inputs$scientific_name[marlin_inputs$bycatch])
-      ),
-      mpa_size = seq(0, 1, by = .05),
-      random_mpas = c(random_mpas)
-    )
+    n_mpa <- round(prop_mpa * resolution^2)
 
+    # assign objective score to each cell
 
-  # hmm will need to adjust this so placement is scenario specific
-  mpa_sims <- mpa_sims %>%
-    mutate(mpa = pmap(
-      list(
-        target_fauna = target_fauna,
-        size = mpa_size,
-        place_randomly = random_mpas
-      ),
-      place_mpa,
-      fauna = fauna,
-      placement_error = placement_error
-    )) %>%
-    mutate(id = 1:nrow(.))
+    critters_considered <- sample(names(fauna), round(prop_critters_considered * n_distinct(names(fauna))), replace = FALSE)
 
-  #
-  #
-  # i = 3
-  # mpa_sims$mpa[[i]] %>%
-  #   ggplot(aes(x,y,fill = mpa)) +
-  #   geom_tile()
+    if (placement_strategy == "depletion"){
 
-  steps_to_keep <- c(max(time_steps))
+      # place MPAs in proportion to depletion-weighted spawning stock biomass
+      depletion <-
+        (1 - (map_df(starting_conditions[[1]], ~ sum(.x$ssb_p_a) / .x$ssb0))) %>%  # depletion of each species
+        pivot_longer(everything(), names_to = "critter", values_to = "weight")
 
-  run_and_process <-
-    function(fauna,
-             fleet,
-             mpa,
-             steps_to_keep,
-             years,
-             seasons,
-             id,
-             keep_age = FALSE,
-             write_sim = FALSE,
-             results_path) {
+      priorities <- proc_starting_conditions$fauna %>%
+        left_join(depletion, by = "critter") %>%
+        filter(critter %in% critters_considered) %>%
+        group_by(critter) %>%
+        mutate(patch_weight = ssb / sum(ssb) * weight) %>%
+        group_by(patch) %>%
+        summarise(patch_weight = sum(patch_weight)) %>%
+        ungroup() %>%
+        mutate(patch_weight = patch_weight * rlnorm(nrow(.), 0, placement_error)) %>%
+        arrange(desc(patch_weight))
 
-
-      # fauna <- sims$fauna[[1]]
-      #
-      # fleet <- sims$fleet[[1]]
-      #
-      # mpa <- sims$mpa[[1]]
-      #
-
-      sim_base <- simmar(fauna = fauna,
-                         fleets = fleet,
-                         years = years)
-
-      proc_sim_base <-
-        process_marlin(
-          sim = sim_base,
-          time_step =  fauna[[1]]$time_step,
-          steps_to_keep = steps_to_keep,
-          keep_age = keep_age
-        )
-
-
-      sim_mpa <- simmar(
-        fauna = fauna,
-        fleets = fleet,
-        years = years,
-        mpas = list(
-          locations = mpa,
-          mpa_year = floor(years * .5)
-        )
-      )
-      proc_sim_mpa <-
-        process_marlin(
-          sim = sim_mpa,
-          time_step =  fauna[[1]]$time_step,
-          steps_to_keep = steps_to_keep,
-          keep_age = keep_age
-        )
       # browser()
-      #     plot_marlin(proc_sim_mpa, proc_sim_base) +
-      #       geom_vline(aes(xintercept = floor(years * seasons * .5)))
+      # priorities %>%
+      #   ggplot(aes(patch_weight, patch_weight2)) +
+      #   geom_point()
 
-      out <- list(with_mpa = proc_sim_mpa,
-                  without_mpa = proc_sim_base)
+    } else if (placement_strategy == "rate"){
 
-      if (write_sim){
+      # place in proportino to depletion weighted catch relative to total catch. So, cells in which most of the catch comes from really depleted species, higher priority
 
-        readr::write_rds(out, file.path(results_path,"sims", paste0("sim_",id,".rds")))
+      depletion <-
+        (1 - (map_df(starting_conditions[[1]], ~ sum(.x$ssb_p_a) / .x$ssb0))) %>%  # depletion of each species
+        pivot_longer(everything(), names_to = "critter", values_to = "weight")
 
-        out <- NA
-      }
+      priorities <- proc_starting_conditions$fauna %>%
+        left_join(depletion, by = "critter") %>%
+        filter(critter %in% critters_considered) %>%
+        group_by(patch) %>%
+        summarise(patch_weight = sum(c * weight) / sum(c)) %>%
+        ungroup() %>%
+        mutate(patch_weight = patch_weight * rlnorm(nrow(.), 0, placement_error)) %>%
+        arrange(desc(patch_weight))
 
-      return(out)
 
+      # priorities %>%
+      #   ggplot(aes(patch_weight, patch_weight2)) +
+      #   geom_point()
+
+
+    } else if (placement_strategy == "avoid_fishing"){
+
+      priorities <- proc_starting_conditions$fauna %>%
+        filter(critter %in% critters_considered) %>%
+        group_by(patch) %>%
+        summarise(patch_weight = sum(c)) %>%
+        ungroup() %>%
+        mutate(patch_weight = patch_weight * rlnorm(nrow(.), 0, placement_error)) %>%
+        arrange(patch_weight)
+
+
+
+    } else if (placement_strategy == "target_fishing"){
+
+      priorities <- proc_starting_conditions$fauna %>%
+        filter(critter %in% critters_considered) %>%
+        group_by(patch) %>%
+        summarise(patch_weight = sum(c)) %>%
+        ungroup() %>%
+        mutate(patch_weight = patch_weight * rlnorm(nrow(.), 0, placement_error)) %>%
+        arrange(desc(patch_weight))
+
+
+    } else if (placement_strategy == "area"){
+
+      priorities <- proc_starting_conditions$fauna %>%
+        group_by(patch) %>%
+        summarise(patch_weight = unique(patch)) %>%
+        arrange((patch_weight))
+
+
+    } else {
+      stop("invalid placement strategy")
     }
 
-  a <- Sys.time()
 
-  mpa_sims <- mpa_sims %>%
-    # slice(1:3) %>%
-    mutate(sim = future_pmap(
-      list(
-        mpa = mpa,
-        id = id
-      ),
-      run_and_process,
-      year = years,
-      steps_to_keep = steps_to_keep,
+    # place MPA
+
+    if (n_mpa > 0){
+    mpa_locs <- priorities$patch[1:n_mpa]
+    } else {
+      mpa_locs <- -999
+    }
+
+    mpas <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
+      mutate(patch = 1:nrow(.)) %>%
+      mutate(mpa = patch %in% mpa_locs)
+
+    # mpas %>%
+    #   ggplot(aes(x,y,fill = mpa)) +
+    #   geom_tile()
+
+
+    # run MPA simulation
+
+
+    mpa_sim <- simmar(
       fauna = fauna,
-      fleet = fleet,
-      seasons = seasons,
-      write_sim = FALSE,
-      results_path = results_path,
-      .progress = TRUE
-    ))
+      fleets = fleets,
+      years = years,
+      mpas = list(locations = mpas,
+                  mpa_year = 1),
+      initial_conditions = starting_conditions[[1]]
+    )
 
+    # process results
 
-  assess_sim <- function(sim, fauna,thing = "fauna"){
+    # outcomes <- process_marlin(mpa_sim, steps_to_keep = last(names(mpa_sim)),time_step = fauna[[1]]$time_step, keep_age = FALSE)
 
-    # thing = "fauna"
-    # sim <- sims$sim[[1]]
     #
+    # plot_marlin(outcomes)
 
-    ssb0s <- fauna %>%
-      map_dfc("ssb0",.id = "critter") %>%
-      pivot_longer(everything(), names_to = "critter", values_to = "ssb0")
+    biodiv <-
+      (map_df(mpa_sim[[length(mpa_sim)]], ~ sum(.x$ssb_p_a) / .x$ssb0)) %>%
+      pivot_longer(everything(), names_to = "critter",values_to = "biodiv")
+    # calculate biodiversity component of objective function
 
-    tmp <- sim %>% map(thing) %>%
-      bind_rows(.id = "scenario") %>%
-      pivot_longer(n:c, names_to = "variable", values_to = "value") %>%
-      pivot_wider(names_from = "scenario", values_from = "value") %>%
-      group_by(step, variable, critter) %>%
-      summarise(
-        with_mpa = sum(with_mpa),
-        without_mpa = sum(without_mpa),
-        percent_improved = mean(with_mpa > without_mpa)
-      ) %>%
-      ungroup() %>%
-      left_join(ssb0s, by = "critter") %>%
-      mutate(abs_change = with_mpa - without_mpa,
-             percent_change = with_mpa / without_mpa - 1,
-             percent_change_ssb0 = (with_mpa - without_mpa) / ssb0)
-  }
+    # econ <- sum(map_dbl(res, ~sum(.x$c_p_a))) #  calculate econ component of objective function
+    #
+    econ <-
+      (map_df(mpa_sim[[length(mpa_sim)]], ~ sum(.x$r_p_a_fl, na.rm = TRUE))) %>%
+      pivot_longer(everything(), names_to = "critter",values_to = "econ")
+    #  calculate econ component of objective function, currently revenues across all fleets and species
 
-  print(xid)
+    # out <- tibble(biodiv = biodiv, econ = econ)
 
+    objective_outcomes <- biodiv %>%
+      left_join(econ, by = "critter")
 
-  mpa_sims <- mpa_sims %>%
-    mutate(results = map(sim, assess_sim, fauna = fauna))
+    outcomes <- list()
 
-  return(mpa_sims)
+    outcomes$obj <- objective_outcomes
 
-} # close run_mpa_experiment
+    outcomes$mpa <- mpas
+
+    return(outcomes)
+
+  } # close run_mpa_experiment

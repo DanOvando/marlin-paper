@@ -40,11 +40,11 @@ if (!dir.exists(results_path)){
 
 run_experiments <- FALSE
 
-run_casestudy <- FALSE
-
-safety_stop <- FALSE
+run_casestudy <- TRUE
 
 optimize_casestudy <- TRUE
+
+safety_stop <- FALSE
 
 draws <- 20
 
@@ -65,9 +65,6 @@ time_steps <- seq(0,years - 1, by = time_step)
 theme_set(marlin::theme_marlin())
 
 tune_type <- "explt"
-
-plan(multicore, workers = workers)
-
 
 # load data ---------------------------------------------------------------
 

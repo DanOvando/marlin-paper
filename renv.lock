@@ -755,16 +755,16 @@
     },
     "marlin": {
       "Package": "marlin",
-      "Version": "0.1.1.9000",
+      "Version": "0.1.2.9000",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteUsername": "danovando",
       "RemoteRepo": "marlin",
       "RemoteRef": "master",
-      "RemoteSha": "90b911b5375447a576eba2c6345a44e0c7b81f8d",
+      "RemoteSha": "76b780625d7b1521aa0c69c6dc9fcf34996d3d99",
       "Remotes": "james-thorson/FishLife",
-      "Hash": "74bf04b4845c57fc2ab5e5fc550dac21"
+      "Hash": "6f55368570a5f6ecc8c028a424b4d6b6"
     },
     "memoise": {
       "Package": "memoise",
