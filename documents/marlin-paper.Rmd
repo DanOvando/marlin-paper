@@ -314,6 +314,8 @@ signif_catch_gain_plot <- mpa_results %>%
 ```
 
 
+bycatch paradox - mpas good in some ways, bad in others 
+
 # Introduction
 
 Marine protected areas (MPAs) are a growing part of the marine

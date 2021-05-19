@@ -4,7 +4,8 @@ create_critters <-
            seasons = 1,
            marlin_inputs,
            seasonal_movement = FALSE,
-           ontogenetic_shift = FALSE) {
+           ontogenetic_shift = FALSE,
+           random_rec = FALSE) {
     # sciname <- marlin_inputs$scientific_name[[1]]
     #
     #
@@ -31,9 +32,13 @@ create_critters <-
       hab <- list(hab, hab)
     }
 
-    # rec_form <-  sample(c(0, 1, 2, 3), 1, replace = TRUE)
+    if (random_rec){
+    rec_form <-  sample(c(0, 1), 1, replace = TRUE)
 
-    rec_form <- 1 # sample(c(0, 1, 2, 3), 1, replace = TRUE)
+    } else {
+      rec_form <- 1
+    }
+    # rec_form <- 1 # sample(c(0, 1, 2, 3), 1, replace = TRUE)
 
 
     if (ontogenetic_shift) {

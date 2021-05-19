@@ -40,9 +40,9 @@ if (!dir.exists(results_path)){
 
 run_experiments <- FALSE
 
-run_casestudy <- TRUE
+run_casestudy <- FALSE
 
-optimize_casestudy <- TRUE
+optimize_casestudy <- FALSE
 
 safety_stop <- FALSE
 
