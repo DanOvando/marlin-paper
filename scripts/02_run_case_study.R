@@ -408,11 +408,11 @@ experiment_obj <- experiment_obj %>%
   mutate(delta_biodiv = biodiv / bau_biodiv - 1,
          delta_econ = econ / bau_econ - 1)
 
-experiment_obj %>%
+cs_fig_1 <- experiment_obj %>%
   ggplot(aes(delta_biodiv))
 
 
-experiment_obj %>%
+cs_fig_2 <- experiment_obj %>%
   ggplot(aes(delta_biodiv, delta_econ, color = placement_error)) +
   geom_point() +
   facet_wrap(~critter)
@@ -423,7 +423,7 @@ opt_obj <- opt_obj %>%
   mutate(delta_biodiv = ssb_v_ssb0 / bau_biodiv - 1,
          delta_econ = econ / bau_econ - 1)
 
-total_obt_obj <- opt_obj %>%
+total_opt_obj <- opt_obj %>%
   group_by(alpha, p_protected) %>%
   summarise(
     loss = mean(ssb_v_ssb0 <= bau_biodiv),
@@ -436,16 +436,16 @@ total_obt_obj <- opt_obj %>%
   mutate(delta_biodiv = biodiv / bau_biodiv - 1,
          delta_econ = econ / bau_econ - 1)
 
-total_obt_obj %>%
+cs_fig_3 <- total_opt_obj %>%
   ggplot(aes(biodiv, econ, color = factor(alpha))) +
   geom_smooth(se = FALSE)
 
 
-experiment_obj %>%
+cs_fig_4 <- experiment_obj %>%
   ggplot(aes(prop_mpa, biodiv / bau_biodiv - 1)) +
   geom_point()
 
-experiment_obj %>%
+cs_fig_5 <- experiment_obj %>%
   group_by(prop_mpa) %>%
   summarise(delta = mean((biodiv / bau_biodiv - 1) < 0)) %>%
   ggplot(aes(prop_mpa, delta)) +
@@ -466,10 +466,10 @@ total_experiment_obj <- experiment_obj %>%
          delta_econ = econ / bau_econ - 1)
 
 
-total_experiment_obj %>%
+cs_fig_6 <- total_experiment_obj %>%
   filter(prop_mpa > 0) %>%
   ggplot(aes(prop_mpa, loss)) +
-  geom_smooth(data = total_obt_obj, aes(p_protected / 100, loss, color = alpha, group = alpha)) +
+  geom_smooth(data = total_opt_obj, aes(p_protected / 100, loss, color = alpha, group = alpha)) +
   geom_point() +
   scale_x_continuous(labels = scales::percent, name = "Area in MPA") +
   scale_y_continuous(labels = scales::percent, name = "% Experiments With Conservation Loss") +
@@ -477,22 +477,23 @@ total_experiment_obj %>%
   scale_color_viridis_c(name = "Conservation Weighting in Optimization")
 
 
-total_experiment_obj %>%
+cs_fig_7 <- total_experiment_obj %>%
   filter(prop_mpa > 0) %>%
   ggplot(aes(prop_mpa, total_loss)) +
-  geom_smooth(data = total_obt_obj, aes(p_protected / 100, total_loss, color = alpha, group = alpha)) +
-  geom_jitter(aes(alpha = placement_error)) +
+  geom_jitter(alpha = 0.25) +
+  geom_smooth(data = total_opt_obj, aes(p_protected / 100, total_loss, color = alpha, group = alpha)) +
   geom_hline(aes(yintercept = 0), color = "red", linetype = 2) +
   scale_x_continuous(labels = scales::percent, name = "Area in MPA") +
   scale_y_continuous("Change in Total SSB/SSB0") +
   facet_wrap(~placement_strategy) +
-  scale_color_viridis_c(name = "Conservation Weighting in Optimization")
+  scale_color_viridis_c(name = "Conservation Weighting in Optimization") +
+  theme(legend.position = "top")
 
 
-total_experiment_obj %>%
+cs_fig_8 <- total_experiment_obj %>%
   filter(prop_mpa > 0) %>%
   ggplot(aes(prop_mpa, delta_econ)) +
-  geom_smooth(data = total_obt_obj, aes(p_protected / 100, delta_econ, color = alpha, group = alpha)) +
+  geom_smooth(data = total_opt_obj, aes(p_protected / 100, delta_econ, color = alpha, group = alpha)) +
   geom_jitter(alpha = 0.1) +
   geom_hline(aes(yintercept = 0), color = "red", linetype = 2) +
   scale_x_continuous(labels = scales::percent, name = "Area in MPA") +
@@ -502,7 +503,7 @@ total_experiment_obj %>%
 
 
 
-total_obt_obj %>%
+cs_fig_9 <- total_opt_obj %>%
   ggplot() +
   geom_smooth(aes(biodiv, econ, group = alpha, color= alpha), se = FALSE) +
   geom_point(data = total_experiment_obj,aes(biodiv, econ),size = 2, alpha = 0.5, fill = "red", shape = 21) +
@@ -510,19 +511,57 @@ total_obt_obj %>%
   scale_color_viridis_c(name = "Conservation Weighting in Optimization")
 
 
-total_obt_obj %>%
+cs_fig_10 <- total_opt_obj %>%
   ggplot() +
   geom_smooth(aes(delta_biodiv, delta_econ, group = alpha, color= alpha), se = FALSE) +
-  geom_point(data = total_experiment_obj,aes(delta_biodiv, delta_econ),size = 2, alpha = 0.2, fill = "red", shape = 21) +
+  geom_point(data = total_experiment_obj,aes(delta_biodiv, delta_econ),size = 2, alpha = 0.1, fill = "red", shape = 21) +
   geom_vline(aes(xintercept = 0), linetype = 2) +
   geom_hline(aes(yintercept = 0), linetype = 2) +
   geom_abline(intercept = 0, slope = -1) +
   facet_wrap(~placement_strategy) +
   scale_color_viridis_c(name = "Conservation Weighting in Optimization") +
-  scale_x_continuous(labels = scales::percent, name = "Change in Biodiversity Relative to BAU ") +
+  scale_x_continuous(labels = scales::percent, name = "Change in Total Biodiversity Relative to BAU ") +
   scale_y_continuous(labels = scales::percent, name = "Change in Revenue Relative to BAU ") +
-  theme(axis.text.x = element_text(size = 8))
+  theme(axis.text.x = element_text(size = 8),
+        legend.position = "top")
 
+
+cs_fig_11 <- total_opt_obj %>%
+  ggplot() +
+  geom_bin2d(data = total_experiment_obj,aes(loss, delta_econ), binwidth = .1, show.legend = FALSE) +
+  geom_point(aes(loss, delta_econ, group = alpha, color= alpha), alpha = 0.25) +
+  geom_vline(aes(xintercept = 0), linetype = 2) +
+  geom_hline(aes(yintercept = 0), linetype = 2) +
+  geom_abline(intercept = 0, slope = -1) +
+  facet_wrap(~placement_strategy) +
+  scale_fill_gradient(low = "grey", high = "red") +
+  scale_color_viridis_c(name = "Conservation Weighting") +
+  scale_x_continuous(labels = scales::percent, name = "% Sims With Loss in SSB/SSB0 Relative to BAU") +
+  scale_y_continuous(labels = scales::percent, name = "Change in Revenue Relative to BAU ") +
+  theme(axis.text.x = element_text(size = 8)) +
+  theme(legend.position = "top")
+
+
+# save things -------------------------------------------------------------
+
+
+write_rds(total_opt_obj,
+          file = file.path(results_path, "total_opt_obj.rds"))
+
+write_rds(experiment_obj,
+          file = file.path(results_path, "experiment_obj.rds"))
+
+write_rds(total_experiment_obj,
+          file = file.path(results_path, "total_experiment_obj.rds"))
+
+
+write_rds(case_study_experiments,
+          file = file.path(results_path, "case_study_experiments.rds"))
+
+figs <- ls()[str_detect(ls(), "cs_fig_")]
+
+save(file = file.path(results_path, "casestudy_figures.Rdata"),
+     list = figs)
 
 
 
