@@ -14,7 +14,8 @@ experiments <-
 
 # function to assign habitat for each species based on
 
-critters <- tibble(scientific_name = unique(marlin_inputs$scientific_name)) %>%
+critters <-
+  tibble(scientific_name = unique(marlin_inputs$scientific_name)) %>%
   mutate(centroid = NA)
 
 
@@ -147,37 +148,43 @@ experiments <- experiments %>%
 # add in starting conditions
 
 init_condit <- function(fauna, fleets, years = 100) {
+  starting_trajectory <-
+    simmar(fauna = fauna,
+           fleets = fleets,
+           years = years)
 
-starting_trajectory <- simmar(fauna = fauna, fleets = fleets, years = years)
+  # plot_marlin(check)
 
-# plot_marlin(check)
+  starting_conditions <-
+    starting_trajectory[length(starting_trajectory)]
 
-starting_conditions <- starting_trajectory[length(starting_trajectory)]
 
+  proc_starting_conditions <-
+    process_marlin(starting_conditions, keep_age = FALSE)
 
-proc_starting_conditions <- process_marlin(starting_conditions, keep_age = FALSE)
-
-out <- list(starting_conditions = starting_conditions,
-            proc_starting_conditions = proc_starting_conditions)
+  out <- list(starting_conditions = starting_conditions,
+              proc_starting_conditions = proc_starting_conditions)
 
 }
 
 experiments <- experiments %>%
   mutate(tmp = map2(fauna, fleet, init_condit))
 
-experiments$starting_conditions <- map(experiments$tmp,"starting_conditions")
+experiments$starting_conditions <-
+  map(experiments$tmp, "starting_conditions")
 
-experiments$proc_starting_conditions <- map(experiments$tmp,"proc_starting_conditions")
+experiments$proc_starting_conditions <-
+  map(experiments$tmp, "proc_starting_conditions")
 
 experiments <- experiments %>%
   select(-tmp)
 
 
 placement_experiment <- expand_grid(
-placement_strategy = c("depletion", "rate", "avoid_fishing", "target_fishing", "area"),
-prop_mpa = seq(0, 1, by = 0.05),
-prop_critters_considered = seq(.1,1, length.out = 4),
-placement_error = seq(0,2, length.out = 5)
+  placement_strategy = c("depletion", "rate", "avoid_fishing", "target_fishing", "area"),
+  prop_mpa = seq(0, 1, by = 0.05),
+  prop_critters_considered = seq(.1, 1, length.out = 4),
+  placement_error = seq(0, 2, length.out = 5)
 )
 
 
@@ -197,70 +204,70 @@ placement_error = seq(0,2, length.out = 5)
 # safety stop -------------------------------------------------------------
 
 if (safety_stop) {
-    safety_sim <- marlin::simmar(fauna = experiments$fauna[[19]],
-                                 fleets = experiments$fleet[[19]],
-                                 years = years)
-    proc_safety <- process_marlin(safety_sim, keep_age = FALSE)
+  safety_sim <- marlin::simmar(fauna = experiments$fauna[[19]],
+                               fleets = experiments$fleet[[19]],
+                               years = years)
+  proc_safety <- process_marlin(safety_sim, keep_age = FALSE)
 
-    plot_marlin(proc_safety)
+  plot_marlin(proc_safety)
 
-    space <-
-      (
-        plot_marlin(
-          proc_safety,
-          plot_type = "space",
-          steps_to_plot = 1
-        ) + labs(title = "Summer")
-      ) +
-      (
-        plot_marlin(
-          proc_safety,
-          plot_type = "space",
-          steps_to_plot = 1.5
-        ) + labs(title = "Winter")
-      ) & theme(strip.text = element_text(size = 6))
-    space
+  space <-
+    (
+      plot_marlin(
+        proc_safety,
+        plot_type = "space",
+        steps_to_plot = 1
+      ) + labs(title = "Summer")
+    ) +
+    (
+      plot_marlin(
+        proc_safety,
+        plot_type = "space",
+        steps_to_plot = 1.5
+      ) + labs(title = "Winter")
+    ) & theme(strip.text = element_text(size = 6))
+  space
 
-    sample_mpas <- place_mpa(
-      target_fauna = "carcharhinus longimanus",
-      size = 0.2,
-      fauna = experiments$fauna[[1]],
-      placement_error = 0,
-      place_randomly = FALSE
-    )
+  sample_mpas <- place_mpa(
+    target_fauna = "carcharhinus longimanus",
+    size = 0.2,
+    fauna = experiments$fauna[[1]],
+    placement_error = 0,
+    place_randomly = FALSE
+  )
 
-    # sample_mpas <- place_mpa(target_fauna = "prionace glauca",
-    #                          size = 0.2, fauna = fauna_frame$fauna[[1]])
+  # sample_mpas <- place_mpa(target_fauna = "prionace glauca",
+  #                          size = 0.2, fauna = fauna_frame$fauna[[1]])
 
-    sample_mpas %>%
-      ggplot(aes(x, y, fill = mpa)) +
-      geom_tile()
+  sample_mpas %>%
+    ggplot(aes(x, y, fill = mpa)) +
+    geom_tile()
 
-    safety_mpa_sim <- marlin::simmar(
-      fauna = experiments$fauna[[1]],
-      fleets = experiments$fleet[[1]],
-      mpas = list(locations = sample_mpas,
-                  mpa_year = floor(years * .5)),
-      years = years
-    )
+  safety_mpa_sim <- marlin::simmar(
+    fauna = experiments$fauna[[1]],
+    fleets = experiments$fleet[[1]],
+    mpas = list(locations = sample_mpas,
+                mpa_year = floor(years * .5)),
+    years = years
+  )
 
-    proc_safety_mpa <-
-      process_marlin(safety_mpa_sim, keep_age = FALSE)
+  proc_safety_mpa <-
+    process_marlin(safety_mpa_sim, keep_age = FALSE)
 
-    plot_marlin(no_mpa = proc_safety,
-                with_mpa = proc_safety_mpa,
-                plot_var = "ssb")
+  plot_marlin(no_mpa = proc_safety,
+              with_mpa = proc_safety_mpa,
+              plot_var = "ssb")
 
-    plot_marlin(no_mpa = proc_safety,
-                with_mpa = proc_safety_mpa,
-                plot_var = "c")
+  plot_marlin(no_mpa = proc_safety,
+              with_mpa = proc_safety_mpa,
+              plot_var = "c")
 
-    ggsave(
-      "test-space.pdf",
-      plot = space,
-      height = 20,
-      width = 10
-    )
+  ggsave(
+    "test-space.pdf",
+    plot = space,
+    height = 20,
+    width = 10
+  )
 
 }
 # tune system -------------------------------------------------------------
@@ -281,37 +288,47 @@ if (safety_stop) {
 
 nrow(experiments)
 if (run_experiments) {
-
   future::plan(future::multisession, workers = 8)
 
-  experiment_results <- vector(mode = "list", length = nrow(placement_experiment))
+  experiment_results <-
+    vector(mode = "list", length = nrow(placement_experiment))
 
-  for (p in 1:nrow(placement_experiment)){ # memory problem trying to do it all at once so breaking it up a bit
+  for (p in 1:nrow(placement_experiment)) {
+    # memory problem trying to do it all at once so breaking it up a bit
 
 
     # a <- Sys.time()
     tmp <- experiments %>%
       ungroup() %>%
-      mutate(results = future_pmap(list(
-                                        starting_conditions = starting_conditions,
-                                        proc_starting_conditions = proc_starting_conditions,
-                                        fauna = fauna,
-                                        fleets = fleet),
-                                   run_mpa_experiment,
-                                   placement_strategy = placement_experiment$placement_strategy[p],
-                                   prop_mpa = prop_mpa[p],
-                                   prop_critters_considered = placement_experiment$prop_critters_considered[p],
-                                   placement_error = placement_experiment$placement_error[p],
-                                   resolution = resolution,
-                                   .options = furrr_options(seed = 42),
-                                   .progress = FALSE))
+      mutate(
+        results = future_pmap(
+          list(
+            starting_conditions = starting_conditions,
+            proc_starting_conditions = proc_starting_conditions,
+            fauna = fauna,
+            fleets = fleet
+          ),
+          run_mpa_experiment,
+          placement_strategy = placement_experiment$placement_strategy[p],
+          prop_mpa = prop_mpa[p],
+          prop_critters_considered = placement_experiment$prop_critters_considered[p],
+          placement_error = placement_experiment$placement_error[p],
+          resolution = resolution,
+          .options = furrr_options(seed = 42),
+          .progress = FALSE
+        )
+      )
 
     tmp$results <- purrr::set_names(tmp$results, experiments$xid)
     # Sys.time() - a
 
     experiment_results[[p]] <- tmp$results
 
-    message(glue::glue("{scales::percent(p/nrow(placement_experiment), accuracy = 0.01)} done"))
+    message(
+      glue::glue(
+        "{scales::percent(p/nrow(placement_experiment), accuracy = 0.01)} done"
+      )
+    )
 
   } # close p loop
 
@@ -319,46 +336,44 @@ if (run_experiments) {
 
   future::plan(future::sequential)
 
-  write_rds(experiment_results, file = file.path(results_path, "experiment_results.rds"))
+  write_rds(experiment_results,
+            file = file.path(results_path, "raw_experiment_results.rds"))
 } else {
-  experiment_results <-
-    read_rds(file = file.path(results_path, "experiment_results.rds"))
+  raw_experiment_results <-
+    read_rds(file = file.path(results_path, "raw_experiment_results.rds"))
 }
 # (diff / nrow(experiments)) * 60
 #
-tmp <- experiment_results  %>%
-  map(~.x$obj)
-
+rm(tmp)
 
 group_var <- "placement_strategy"
 
 
-
-  results <- placement_experiment %>%
-  mutate(temp = experiment_results) %>%
-  group_by_at(colnames(.)[!colnames(.) %in%c("temp","prop_mpa")]) %>%
-    nest() %>%
-    ungroup() %>%
-    mutate(placement_id = 1:nrow(.)) %>%
-    unnest(cols = data) %>%
-  mutate(xid = map(experiment_results,names)) %>%
+results <- placement_experiment %>%
+  mutate(temp = raw_experiment_results) %>%
+  group_by_at(colnames(.)[!colnames(.) %in% c("temp", "prop_mpa")]) %>%
+  nest() %>%
+  ungroup() %>%
+  mutate(placement_id = 1:nrow(.)) %>%
+  unnest(cols = data) %>%
+  mutate(xid = map(raw_experiment_results, names)) %>%
   unnest(cols = c(temp, xid)) %>%
   mutate(obj = map(temp, "obj"),
          xid = as.numeric(xid)) %>%
   unnest(cols = obj)
 
-  if (any(results$econ[results$prop_mpa == 1] > 0)){
-    stop("something has gone wrong: yields present with 100% mpa")
-  }
+if (any(results$econ[results$prop_mpa == 1] > 0)) {
+  stop("something has gone wrong: yields present with 100% mpa")
+}
 
-  warning("move placement experiement id back above run_experiments")
+warning("move placement experiement id back above run_experiments")
 
-  # total_experiment <- placement_experiment %>%
-  #   left_join(experiments, by = 'xid')
+# total_experiment <- placement_experiment %>%
+#   left_join(experiments, by = 'xid')
 
 
-  # results <- results %>%
-  #   left_join(placement_experiment)
+# results <- results %>%
+#   left_join(placement_experiment)
 
 # compare to BAU
 
@@ -372,30 +387,127 @@ excols <-
   experiments %>%
   select(xid, data) %>%
   unnest(cols = data) %>%
-  select(-habitat, -critter,-scientific_name,-centroid) %>%
+  select(-habitat,-critter, -scientific_name, -centroid) %>%
   ungroup() %>%
   unique()
 
 
 total_results <- results %>%
-  group_by(placement_id,placement_strategy,prop_critters_considered,placement_error, xid, prop_mpa) %>%
+  group_by(
+    placement_id,
+    placement_strategy,
+    prop_critters_considered,
+    placement_error,
+    xid,
+    prop_mpa
+  ) %>%
   summarise(
     loss = mean(biodiv < bau_biodiv),
+    signif_loss = mean(biodiv < (0.9 * bau_biodiv)),
     total_loss = sum(biodiv - bau_biodiv),
     econ = sum(econ),
     biodiv = sum(biodiv),
     bau_econ = sum(bau_econ),
-    bau_biodiv = sum(bau_biodiv)) %>%
+    bau_biodiv = sum(bau_biodiv)
+  ) %>%
   ungroup() %>%
   mutate(delta_biodiv = biodiv / bau_biodiv - 1,
          delta_econ = econ / bau_econ - 1) %>%
   left_join(excols, by = "xid")
 
+total_results %>%
+  ggplot(aes(
+    prop_critters_considered,
+    loss,
+    color = factor(sigma_centroid),
+    alpha = sigma_hab
+  )) +
+  geom_jitter() +
+  facet_wrap( ~ placement_strategy)
+
+# across all of these: potential is context dependent, so not going to be any super clear answers, but we did some digging for some of the clearest patterns. Include a shiny app so that people can explore.
+
+
+# interesting message: lots of ways for at least some species to have loss across a range of MPA sizes
+fig_1 <- total_results %>%
+  ggplot(aes(prop_mpa, loss)) +
+  geom_jitter(alpha = 0.25) +
+  geom_bin2d() +
+  facet_wrap(~ placement_strategy) +
+  scale_x_continuous(name = "% MPA", labels = scales::percent) +
+  scale_y_continuous(name = "% Species With Loss", labels = scales::percent) +
+  scale_fill_viridis_c()
+
+# interesting message: lots of ways for at least some species to have loss across a range of MPA sizes. But, significant losses are much rarer. So, lots of ways to provide no effect
+fig_2 <- total_results %>%
+  ggplot(aes(prop_mpa, signif_loss)) +
+  geom_jitter(alpha = 0.25) +
+  geom_bin2d() +
+  facet_wrap(~ placement_strategy) +
+  scale_x_continuous(name = "% MPA", labels = scales::percent) +
+  scale_y_continuous(name = "% Species With Loss", labels = scales::percent) +
+  scale_fill_viridis_c()
+
+
+# effect of degree of habitat overlap.. collapse into something?
+fig_3 <- total_results %>%
+  filter(
+    prop_critters_considered == max(prop_critters_considered),
+    placement_error == min(placement_error),
+    ontogenetic_shift == FALSE,
+    seasonal_movement == FALSE,
+    sigma_hab == max(sigma_hab)
+  ) %>%
+  ggplot(aes(prop_mpa, loss, color = factor(sigma_centroid))) +
+  geom_point() +
+  facet_wrap( ~ placement_strategy)
+
+fig_4 <- total_results %>%
+  filter(
+    prop_critters_considered == max(prop_critters_considered),
+    ontogenetic_shift == FALSE,
+    seasonal_movement == FALSE,
+    round(prop_mpa, 1) == 0.3,
+    sigma_hab == max(sigma_hab)
+  ) %>%
+  ggplot(aes(placement_error, loss, color = factor(sigma_centroid))) +
+  geom_jitter() +
+  facet_wrap( ~ placement_strategy)
+
+fig_5 <- total_results %>%
+  filter(
+    placement_error == min(placement_error),
+    ontogenetic_shift == FALSE,
+    seasonal_movement == FALSE,
+    round(prop_mpa, 1) == 0.3,
+    sigma_hab == max(sigma_hab)
+  ) %>%
+  ggplot(aes(prop_critters_considered, loss, color = factor(sigma_centroid))) +
+  geom_jitter() +
+  facet_wrap( ~ placement_strategy)
+
+reg_1 <-
+  glm(
+    loss ~ sigma_hab + sigma_centroid + placement_error + prop_critters_considered  + seasonal_movement + ontogenetic_shift,
+    data = total_results %>% filter(round(prop_mpa, 1) == 0.3)
+  )
+
+
+summary(reg_1)
+
+# fig_4 <- results %>%
+#   left_join(excols, by = "xid") %>%
+#   ggplot(aes(prop_mpa, biodiv - bau_biodiv, color = factor(sigma_centroid))) +
+#   geom_hline(aes(yintercept = 0), linetype = 2, color = "red") +
+#   geom_jitter(alpha = 0.1) +
+#   facet_wrap( ~ critter, scales = "free_y") +
+#   scale_x_continuous(labels = scales::percent, name = "% MPA") +
+#   scale_y_continuous(name = "Change in SSB/SSB0")
 
 total_results %>%
   ggplot(aes(total_loss, delta_econ)) +
   geom_point() +
-  facet_wrap(~placement_strategy)
+  facet_wrap( ~ placement_strategy)
 
 total_results %>%
   filter(prop_mpa > 0,
@@ -403,19 +515,38 @@ total_results %>%
          prop_critters_considered == 1) %>%
   ggplot(aes(prop_mpa, total_loss, color = factor(sigma_centroid))) +
   geom_jitter() +
-  facet_wrap(~placement_strategy)
+  facet_wrap( ~ placement_strategy)
 
 
 results %>%
   left_join(excols, by = "xid") %>%
   filter(prop_mpa > 0,
-         placement_error == 0,
-         placement_strategy == "depletion") %>%
+         xid == 2,
+         prop_critters_considered == 0.1,
+         placement_id == 1) %>%
   ggplot(aes(prop_mpa, biodiv - bau_biodiv, color = factor(sigma_centroid))) +
   geom_hline(aes(yintercept = 0), linetype = 2, color = "red") +
-  geom_jitter(alpha = 0.25) +
-  facet_wrap(~critter, scales = "free_y") +
+  geom_jitter(alpha = 0.1) +
+  facet_wrap( ~ critter, scales = "free_y") +
   scale_x_continuous(labels = scales::percent, name = "% MPA") +
   scale_y_continuous(name = "Change in SSB/SSB0")
 
-a = lm(loss ~ sigma_centroid*prop_mpa,data = total_results)
+a = lm(loss ~ sigma_centroid * prop_mpa, data = total_results)
+
+
+# save results ------------------------------------------------------------
+
+write_rds(placement_experiment, file = file.path(results_path, "placement_experiment.rds"))
+
+
+write_rds(experiments, file = file.path(results_path, "experiments.rds"))
+
+# write_rds(results, file = file.path(results_path, "experiment_results.rds"))
+
+write_rds(total_results,
+          file = file.path(results_path, "total_experiment_results.rds"))
+
+figs <- ls()[str_detect(ls(), "fig_")]
+#
+save(file = file.path(results_path, "experiment_figures.Rdata"),
+     list = figs)

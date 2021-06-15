@@ -394,10 +394,21 @@ Moving to expressing things are percentage of species with some / significant lo
 key result: Assuming perfect information, degree of habitat matters buts its messy. Both the depletion and target_fishing strategies are capable of completely avoiding losses if all species share the same habitat. As habitat non-overlap (xx better phrase) inceases, this gets harder to do, and both incur some losses. All of the other placement strategies exhhibit some losses, even with perfect overlap, at some MPA size. 
 
 ```{r hab-effect, fig.cap="Precent of species with some degree of loss in SSB as a function of MPA size, MPA design strategy, and degree of habitat non-overlap (sigma_c), come up with a better name for this. Perfect information, no seasonal movement, all species considered in planning."}
-fig_3 + 
-  scale_y_continuous(labels = scales::percent, name = "% of Species with Loss in SSB/SSB0") +
-  scale_color_discrete(name = "Habitat Non-Overlap") + 
+
+tmp <- total_results %>%
+  filter(seasonal_movement == FALSE,
+         ontogenetic_shift == FALSE,
+         placement_error == min(placement_error),
+         prop_critters_considered == max(prop_critters_considered)) %>% 
+  ggplot(aes(prop_mpa, loss, color = factor(sigma_centroid))) +
+  geom_jitter() +
+  facet_wrap( ~ placement_strategy) + 
+    scale_color_discrete(name = "Habitat Non-Overlap") + 
+    scale_y_continuous(labels = scales::percent, name = "% of Species with Loss in SSB/SSB0")+
   theme(legend.position = "top")
+
+tmp
+
 ```
 
 moving away from perfect information though, things get messier: now just looking at the same plot but with all the other options turned on things get messy quickly. 

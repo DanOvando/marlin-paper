@@ -120,3 +120,48 @@ But, that begs the question of, is it an inevitable tradeoff, or just a case of 
 This might actually be a cool paper. Proc B?
 
 Idea: what ig instead of local or global, you have a parameter that says how many metapopulations there are. 1 says global density dependence, patches says one per patch. you then divide up the patches in equal aquares based on that, and calculate density dependence on that level. 
+
+
+## 2020-06-15 check in call
+
+Framing - MPAs and bycatch for large MPAs- what is the impact of MPAs on bycatch in the pelagic
+
+We don't have the right tools in the toolkit - better presentation of marlin - conventional models. We've packaged this up in a neat little package called marlin 
+
+Hone in on what are the research questions
+
+- How big to get a big effect
+
+- How significant of a risk are unintended consequences
+
+- How do benefits and risk map onto economic tradeoffs 
+
+
+
+- Potential for unintended consequences is real
+
+- But, since has to reach 0 at 100%, hard for effects to be that negative: either MPA is small so small effect, or MPA starts to get large enough to produce some protection too. 
+  - But that's clearly context dependent, wouldn't hold if you have a critter that only lives in one patch and you don't protect it
+
+- Some design paradigms are better than others but even good designs struggle as information quality goes down
+
+- Optimization can help, but can't remove tradeoffs
+
+- Unintended consequences are a real issue that need to be considered any time you have effort displacement and non-perfectly overlapping species, but problem isn't severe enough given reasonable parameters as an argument for doing nothing say
+
+
+- Add initial status as a thing to vary over - largely depends on their starting status 
+
+- Build intuition over life history and 
+
+Hi Dan! Thanks for sending the marlin paper outline. Just a few thoughts in advance of our meeting.
+I think the message can be much simpler than what is currently written. The key question is simply: can large offshore MPAs effectively protect species threatened by fishing? We can bring in stats on how overfishing drives extinction risk in many threatened species (e.g. sharks). Then we can make a case for what is different about the pelagic environment from the nearshore environment, and how models and empirics currently focus on the nearshore. We can then isolate the parameters of interest in the offshore...which brings me to my second framing point,
+There is a tension between 'we are just extending hastings et al. to explicitly relax assumptions made for nearshore environments to understand their implications on mpa impacts on pelagic bycatch' and 'here is a new method that is needed to explore this question, I.e. marlin).' We should discuss this and figure out which case we want to make or if there is a real compromise there. And finally,
+These decisions will help us decide which specific research questions we are ultimately interested in. Currently, because we don't have clear research questions, it is almost impossible to figure out how to best position our results (which is why I think the figures are a bit all over the place). I would suggest bullet-ing out the 3-5 most exciting findings from the work, and then we can use those to inform our conversation about the framing of the paper and presentation of results.
+
+
+LENNON
+
+Walk through some of the figures and unpack them a bit
+
+
