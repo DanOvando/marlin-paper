@@ -65,3 +65,103 @@ incentive to fish and incentive to protect
 
 So this isn't the odd rare turtle, these are valuable sharks
 
+
+## optimization
+
+similar SIR approach... why not just get it running first
+
+Yields: sum of revenue of target species: or if you just say revenue, then you can manipulate prices to get desired impact: if you say that bycatch literally has no value then just set price to 0, or negative. 
+
+biodiversity: B/K of all species (for now): average or sum? Sum I think, since you'd rather have all at 0.5 than half at 0 and half at 1
+
+yield_weight: do you have MSY for all species? I don't think so, and gets crazy complicated to think about MSY once you start messing with technical interactions etc. So you just need something to weight the marginal value of both. 
+
+So, for every step, you'll have N candidate cells, each with a marginal yield effect and a marginal biodiversity effect. You then need to rank each cell by the objective function. Need some function to convert yield and biomass into comparable units then. So just center and scale? alpha then controls the relative weight of a standard deviation increase in yield relative to a standard deviation increase in biodiversity? Issue there: once you're down to the last cell this won't work. Dividing by max caps both at 1, but no limit to the loss there... Rescale to be positive? yield - min(yield) + 1e-3 will ensure the min value is 1e-3, then scaling by max of that vector will make the max 1, so now everything has the same range. Oh, or just use scaes::rescale to put both on range of 0 to 1. 
+
+Is that going to have weird behavior rescaling at every iteration like that? i.e. the effective value of alpha will change depending on the scale of the biomass and yield. Setting alpha to 1 will maximize yields, setting it to 0 will maximize biodiversity, what does setting to 0.5 mean? value the best yield cell as much as the best biomass cell. 
+
+Seems good enough for now. So doing it this way, you only have to iterate over the weight, no different objective function shapes
+
+So what are you optimizing? Location and size or just location? In theory, you can save some computation time by stopping the optimization when the objective function starts to consistently decline. But, since there might be multiplie maxima here, that could get tricky, and wouldn't allow you to look at tradeoff wedges. So...
+
+- for each weight
+- for each range of MPA sizes
+- find the optimal MPA configuration. 
+- Not too bad!
+
+## what are you comparing optimization to
+
+OK, you have some optimized results, so what. On the one hand, you can examine to what extent given this case study, tradeoffs across species or across yields are inevitable or just gotta find the right network. 
+
+From there though, can also compare "optimal" to "realistic"
+
+Design strategies
+1. Assign protection by SSB / SSB0 weighted abundance in space (protect the highest concentrations of the most threatened species)
+2. Assign protection by bycatch rates (distribution of biomass bycatch / biomass target)
+3. Assign protection by targeting fishing effort
+4. Assign protection by avoiding fishing effort
+
+Knowledge states
+1. Degrees of accuracy over the thing being measured (i.e. error in the design strategy)
+
+2. Number of species considered (e.g. design around only 2 bycatch species instead of all)
+
+3. über naive: just close off random patches up to a specified size
+
+We then plot these points in objective function space and compare to the efficiency frontier / consider frequency and magnitude of conservation and economic tradeoofs
+
+The question all this is answering: how sensitive are conservation and economic outcomes to design strategy / uncertainty when there are technical interactions and heterogeneity in habitat? The first stage is teeing up the idea that beyond conservation / yield tradeoffs, as you increase habitat heterogeneity with technical interactions you increase the potential for conservation tradeoffs. But, the degree is going to be super context dependent, so to dive in a bit we then focus on this case study of the particular species / habitat overlap in the WCPO. Further work might reveal more generalities in this, but htis is basically getting a sense for the potential magnitude of the challenge. 
+
+
+OK, this is actually coming together! You should run the same design / knowledge states for the broader range of simulated habitats. That will make the point nice and clearly. 
+
+But, that begs the question of, is it an inevitable tradeoff, or just a case of poor design. That requires optimization. But, optimization is very computationally intensive. To examine this point then, we repeated the exercies, but with a specific case study where we hold habitat as constant, but redo the exercise conditional on constant habitat. We can then see to what extent tradeoofs persist, and ideally come up with some way of comparing the case study habitats to the metric of habitat heterogeneity in the full simulations. Case study also demonstrates that its a real thing: not making up the idea of different habitat use
+
+This might actually be a cool paper. Proc B?
+
+Idea: what ig instead of local or global, you have a parameter that says how many metapopulations there are. 1 says global density dependence, patches says one per patch. you then divide up the patches in equal aquares based on that, and calculate density dependence on that level. 
+
+
+## 2020-06-15 check in call
+
+Framing - MPAs and bycatch for large MPAs- what is the impact of MPAs on bycatch in the pelagic
+
+We don't have the right tools in the toolkit - better presentation of marlin - conventional models. We've packaged this up in a neat little package called marlin 
+
+Hone in on what are the research questions
+
+- How big to get a big effect
+
+- How significant of a risk are unintended consequences
+
+- How do benefits and risk map onto economic tradeoffs 
+
+
+
+- Potential for unintended consequences is real
+
+- But, since has to reach 0 at 100%, hard for effects to be that negative: either MPA is small so small effect, or MPA starts to get large enough to produce some protection too. 
+  - But that's clearly context dependent, wouldn't hold if you have a critter that only lives in one patch and you don't protect it
+
+- Some design paradigms are better than others but even good designs struggle as information quality goes down
+
+- Optimization can help, but can't remove tradeoffs
+
+- Unintended consequences are a real issue that need to be considered any time you have effort displacement and non-perfectly overlapping species, but problem isn't severe enough given reasonable parameters as an argument for doing nothing say
+
+
+- Add initial status as a thing to vary over - largely depends on their starting status 
+
+- Build intuition over life history and 
+
+Hi Dan! Thanks for sending the marlin paper outline. Just a few thoughts in advance of our meeting.
+I think the message can be much simpler than what is currently written. The key question is simply: can large offshore MPAs effectively protect species threatened by fishing? We can bring in stats on how overfishing drives extinction risk in many threatened species (e.g. sharks). Then we can make a case for what is different about the pelagic environment from the nearshore environment, and how models and empirics currently focus on the nearshore. We can then isolate the parameters of interest in the offshore...which brings me to my second framing point,
+There is a tension between 'we are just extending hastings et al. to explicitly relax assumptions made for nearshore environments to understand their implications on mpa impacts on pelagic bycatch' and 'here is a new method that is needed to explore this question, I.e. marlin).' We should discuss this and figure out which case we want to make or if there is a real compromise there. And finally,
+These decisions will help us decide which specific research questions we are ultimately interested in. Currently, because we don't have clear research questions, it is almost impossible to figure out how to best position our results (which is why I think the figures are a bit all over the place). I would suggest bullet-ing out the 3-5 most exciting findings from the work, and then we can use those to inform our conversation about the framing of the paper and presentation of results.
+
+
+LENNON
+
+Walk through some of the figures and unpack them a bit
+
+

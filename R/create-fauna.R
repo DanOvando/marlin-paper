@@ -6,7 +6,8 @@ create_fauna <- function(scientific_name,
                          rec_form,
                          seasons,
                          init_explt,
-                         explt_type = "f"){
+                         explt_type = "f",
+                         recruit_habitat = NA){
 
   tmp <-  create_critter(
     scientific_name = scientific_name,
@@ -18,6 +19,7 @@ create_fauna <- function(scientific_name,
     seasons = seasons,
     init_explt = init_explt,
     explt_type = "explt_type",
+    recruit_habitat = recruit_habitat
   )
 
 
