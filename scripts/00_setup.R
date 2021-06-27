@@ -21,6 +21,8 @@ library(mvtnorm)
 
 library(patchwork)
 
+library(progress)
+
 options(dplyr.summarise.inform = FALSE)
 
 
@@ -28,7 +30,7 @@ foos <- list.files(here("R"))
 
 walk(foos, ~ source(here("R", .x)))
 
-results_name <- "v1.0"
+results_name <- "test"
 
 results_path <- here("results", results_name)
 
@@ -38,7 +40,7 @@ if (!dir.exists(results_path)){
   dir.create(file.path(results_path,"sims"))
 }
 
-run_experiments <- FALSE
+run_experiments <- TRUE
 
 run_casestudy <- FALSE
 
@@ -64,7 +66,7 @@ time_steps <- seq(0,years - 1, by = time_step)
 
 theme_set(marlin::theme_marlin())
 
-tune_type <- "explt"
+tune_type <- "v1.0"
 
 # load data ---------------------------------------------------------------
 

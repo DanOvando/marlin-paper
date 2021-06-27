@@ -95,6 +95,8 @@ excols <-
 
 # Introduction
 
+Empirically, how do you differentiate increase in catch from fishing harder vs increases in catch from rebuilding: rebuilding has to have a decrease at first
+
 Marine protected areas (MPAs) are a growing part of the marine
 conservation toolbox, with 7.4% of the world's oceans currently
 protected and, and bodies such as the IUCN calling for 30% protection by
