@@ -92,7 +92,7 @@ excols <-
 ```
 
 
-
+** something to piont out: increased catches are a paradox, either come from rebuilding stock or concentrated fishing, but trajectory can tell you something. not possible for MPAs to increase catches without decreasing catches first if they are rebuilding? **
 # Introduction
 
 Empirically, how do you differentiate increase in catch from fishing harder vs increases in catch from rebuilding: rebuilding has to have a decrease at first

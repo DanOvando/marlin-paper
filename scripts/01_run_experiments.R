@@ -103,7 +103,7 @@ state_experiments <- state_experiments %>%
   ) %>%
   unnest(cols = habitats) %>%
   mutate(seasonal_movement = sample(c(TRUE, FALSE), nrow(.), replace = TRUE),
-         f_v_m = runif(nrow(.), .1,3),
+         f_v_m = runif(nrow(.), .5,2),
          adult_movement_sigma = runif(nrow(.), min = 0.05 * resolution, max = 3 * resolution),
          recruit_movement_sigma = runif(nrow(.), min = 0.05 * resolution, max = 3 * resolution),
          rec_form = sample(c(0,1,2,3), nrow(.), replace = TRUE)
@@ -276,7 +276,6 @@ check %>%
   ggplot(aes(depletion)) +
   geom_histogram() +
   facet_wrap(~critter)
-
 # generate MPA outcomes ---------------------------------------------------
 
 if (run_experiments) {

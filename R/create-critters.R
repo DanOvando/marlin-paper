@@ -33,7 +33,7 @@ create_critters <-
     }
 
     if (random_rec){
-    rec_form <-  sample(c(0, 1), 1, replace = TRUE)
+    rec_form <-  sample(c(0, 1,2,3), 1, replace = TRUE)
 
     } else {
       rec_form <- 1
@@ -60,6 +60,8 @@ create_critters <-
       adult_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
       recruit_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
       rec_form = rec_form,
+      fec_form = ifelse(str_detect(sciname,"carcharhinus"),"pups","weight"),
+      pups = 6,
       seasons = seasons,
       init_explt = ifelse(is.nan(
         mean(tmp_inputs$current_f, na.rm = TRUE)

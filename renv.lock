@@ -112,12 +112,12 @@
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteUsername": "kaskr",
       "RemoteRepo": "TMB_contrib_R",
-      "RemoteSubdir": "TMBhelper",
-      "RemoteRef": "master",
+      "RemoteUsername": "kaskr",
+      "RemoteRef": "HEAD",
       "RemoteSha": "fe3634c92f5bff7212a5250ecea23fefebf2e3c1",
-      "Hash": "0992f63f9f0b78a71a38e3ec4e3dc565"
+      "RemoteSubdir": "TMBhelper",
+      "Hash": "e11f9b8b8a68eb9249f85f46efbb239b"
     },
     "ThorsonUtilities": {
       "Package": "ThorsonUtilities",
