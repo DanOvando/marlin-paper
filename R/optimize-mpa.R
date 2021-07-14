@@ -7,6 +7,8 @@
 #' @param resolution the resolution of the simulated system
 #' @param prop_sampled the proportion of cells to sample in each SIR iteration
 #' @param workers number of workers for parallel process
+#' @param starting_conditions starting conditions of the simmar object
+#' @param objective one of max_ssb to maximize spawning stock biomass or min_loss to prioritize not having any losses
 #'
 #' @return a list with results of MPA optimization
 #' @export
@@ -19,7 +21,8 @@ optimize_mpa <-
            max_prop_mpa = 1,
            resolution,
            prop_sampled = .2,
-           workers = 6) {
+           workers = 6,
+           objective = "max_ssb") {
     # workers <- 6
     future::plan(future::multisession, workers = workers)
 
@@ -74,8 +77,22 @@ optimize_mpa <-
         res <-
           sim_mpa[[length(sim_mpa)]] # for now, just calculate in the final timestep
 
+        if (objective == "max_ssb"){
         biodiv <-
           sum(map_dbl(res, ~ sum(.x$ssb_p_a) / .x$ssb0)) # calculate biodiversity component of objective function
+        } else if (objective == "min_loss") {
+
+        biodiv_mpa <-
+          (map_dbl(res, ~ sum(.x$ssb_p_a) / .x$ssb0)) # calculate biodiversity component of objective function
+
+        biodiv_sq <-
+          map_dbl(starting_conditions[[1]], ~ sum(.x$ssb_p_a) / .x$ssb0) # calculate biodiversity component of objective function
+
+
+        biodiv <- sum((biodiv_mpa - biodiv_sq) >= 0)
+
+        }
+
 
         # econ <- sum(map_dbl(res, ~sum(.x$c_p_a))) #  calculate econ component of objective function
 
@@ -109,7 +126,7 @@ optimize_mpa <-
       marginal_values$patch <- candidate_patches # assign patches
 
       marginal_values$obj_value <-
-        alpha * scales::rescale(marginal_values$biodiv) + (1 - alpha) * scales::rescale(marginal_values$econ) # calculate objective function
+        alpha * scales::rescale(marginal_values$biodiv) + (1 - alpha) * scales::rescale(marginal_values$econ) # calculate objective function. Rescaling means that alpha dictates the weithing of a given percent rank of biodiversity relative to a relative percent rank of economics
 
       marginal_values <- marginal_values %>%
         arrange(patch) # make sure marginal values are ordered by patches
@@ -141,8 +158,8 @@ optimize_mpa <-
       res <-
         tmp_result[[length(tmp_result)]] # for now, just calculate in the final timestep
 
-      biodiv <-
-        (map_dbl(res, ~ sum(.x$ssb_p_a) / .x$ssb0)) # calculate biodiversity component of objective function
+        biodiv <-
+          (map_dbl(res, ~ sum(.x$ssb_p_a) / .x$ssb0)) # calculate biodiversity component of objective function
 
       econ <-
         (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
@@ -182,8 +199,9 @@ optimize_mpa <-
     res <-
       tmp_result[[length(tmp_result)]] # for now, just calculate in the final timestep
 
-    biodiv <-
-      (map_dbl(res, ~ sum(.x$ssb_p_a) / .x$ssb0)) # calculate biodiversity component of objective function
+      biodiv <-
+        (map_dbl(res, ~ sum(.x$ssb_p_a) / .x$ssb0)) # calculate biodiversity component of objective function
+
 
     econ <-
       (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species

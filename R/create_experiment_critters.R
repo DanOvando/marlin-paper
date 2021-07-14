@@ -75,7 +75,7 @@ create_experiment_critters <-
       ), 1e4, mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE))
     )
 
-    critter$init_explt = max(critter$m_at_age) * f_v_m * critter$steepness
+    critter$init_explt = max(critter$m_at_age) * f_v_m * critter$steepness * 0.8
 
       # ifelse(str_detect(sciname,"carcharhinus"),f_v_m / 2,f_v_m)
 

@@ -23,6 +23,8 @@ library(patchwork)
 
 library(progress)
 
+library(rpart.plot)
+
 options(dplyr.summarise.inform = FALSE)
 
 
@@ -42,9 +44,11 @@ if (!dir.exists(results_path)){
 
 run_experiments <- FALSE
 
-run_casestudy <- TRUE
+experiment_workers <- 8
 
-optimize_casestudy <- TRUE
+run_casestudy <- FALSE
+
+optimize_casestudy <- FALSE
 
 safety_stop <- FALSE
 

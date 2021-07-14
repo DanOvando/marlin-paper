@@ -231,6 +231,27 @@ if (optimize_casestudy == TRUE){
 
   write_rds(optimized_networks, file = file.path(results_path,"optimized_networks.rds"))
 
+  a <- Sys.time()
+  min_loss_optimized_networks <- optimized_networks %>%
+    mutate(
+      network = pmap(
+        list(alpha = alpha),
+        optimize_mpa,
+        fauna = casestudy$fauna[[1]],
+        fleets = casestudy$fleet[[1]],
+        max_prop_mpa = 1,
+        prop_sampled = 0.2,
+        starting_conditions = starting_conditions,
+        resolution = resolution,
+        objective = "min_loss",
+        workers = 8
+      ))
+
+  Sys.time() - a
+
+  write_rds(min_loss_optimized_networks, file = file.path(results_path,"min_loss_optimized_networks.rds"))
+
+
   #
   # check <- optimized_networks %>%
   #   mutate(outcomes = map(network,"outcomes")) %>%
@@ -340,6 +361,8 @@ if (optimize_casestudy == TRUE){
 
   optimized_networks <-
     read_rds(file = file.path(results_path, "optimized_networks.rds"))
+
+  min_loss_optimized_networks <- read_rds(file = file.path(results_path,"min_loss_optimized_networks.rds"))
 
 
 }
