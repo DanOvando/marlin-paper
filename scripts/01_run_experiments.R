@@ -3,13 +3,14 @@ source(file.path("scripts", "00_setup.R"))
 
 # generate state experiments. This is a somewhat tricky process where the actual generated values are created for many variables in create_experiment_critters
 
-n_states <- 500
+n_states <- 250
 
 if (run_experiments) {
   state_experiments <-
     tibble(
       sigma_centroid = runif(n_states, .1 * resolution, resolution ^ 2 / 2),
-      sigma_hab = runif(n_states, .1 * resolution, resolution ^ 2 / 8)
+      sigma_hab = runif(n_states, .1 * resolution, resolution ^ 2 / 8),
+      spatial_q = sample(c(FALSE,TRUE), n_states, replace = TRUE, prob = c(3,1))
     ) %>%
     mutate(state_id = 1:nrow(.))
 
@@ -171,7 +172,7 @@ if (run_experiments) {
 
   state_experiments <- state_experiments %>%
     ungroup() %>%
-    mutate(fleet = map(fauna, compile_experiment_fleet))
+    mutate(fleet = map2(fauna,data, compile_experiment_fleet))
 
   # add in starting conditions
 
@@ -228,9 +229,9 @@ if (run_experiments) {
 
 
   # safety stop -------------------------------------------------------------
-
   if (safety_stop) {
     i <- sample(1:n_states, 1)
+    # i = 1
     safety_sim <- marlin::simmar(
       fauna = state_experiments$fauna[[i]],
       fleets = state_experiments$fleet[[i]],
@@ -311,7 +312,6 @@ if (run_experiments) {
     ggplot(aes(depletion)) +
     geom_histogram() +
     facet_wrap( ~ critter)
-  # stop()
   # generate MPA outcomes ---------------------------------------------------
 
   state_experiments %>%
@@ -519,7 +519,7 @@ worst_result_plot <- worst_result %>%
   size = 4) +
   geom_hline(yintercept = 0, linetype = 2) +
   geom_line(aes(prop_mpa, biodiv / bau_biodiv - 1, color = critter),
-            show.legend = FALSE) +
+            show.legend = FALSE, size = 1.25) +
   scale_x_continuous(labels = scales::percent, name = "MPA Size") +
   scale_y_continuous(
     labels = scales::percent,
@@ -554,8 +554,8 @@ worst_habitat_plot <- worst_habitat %>%
     axis.ticks.y = element_blank(),
     axis.ticks.x = element_blank(),
     panel.border = element_blank()
-  ) +
-  facet_wrap(~scientific_name)
+  ) #+
+  # facet_wrap(~scientific_name)
 
 best_case <- experiment_summary %>%
   filter(min_loss == min(min_loss)) %>%
@@ -573,7 +573,7 @@ best_result <- results %>%
 best_result_plot <- best_result %>%
   ggplot() +
   geom_hline(yintercept = 0, linetype = 2) +
-  geom_line(aes(prop_mpa, biodiv / bau_biodiv - 1, color = critter)) +
+  geom_line(aes(prop_mpa, biodiv / bau_biodiv - 1, color = critter), size = 1.25) +
   geom_text(data = tibble(
     x = .1,
     y = max(best_result$biodiv / best_result$bau_biodiv - 1)
@@ -615,8 +615,8 @@ best_habitat_plot <- best_habitat %>%
     axis.ticks.y = element_blank(),
     axis.ticks.x = element_blank(),
     panel.border = element_blank()
-  ) +
-  facet_wrap(~scientific_name)
+  ) # +
+  # facet_wrap(~scientific_name)
 
 
 
@@ -713,15 +713,6 @@ total_results %>%
   facet_wrap(~ placement_strategy)
 
 
-tmp <- results %>%
-  left_join(excols, by = "state_id") %>%
-  ggplot(aes(prop_mpa, biodiv - bau_biodiv)) +
-  geom_hline(aes(yintercept = 0), linetype = 2, color = "red") +
-  geom_bin2d(binwidth = .1) +
-  facet_grid(critter ~ placement_strategy) +
-  scale_x_continuous(labels = scales::percent, name = "% MPA") +
-  scale_y_continuous(name = "Change in SSB/SSB0") +
-  scale_fill_viridis_c(trans = "log10")
 
 states <- state_experiments %>%
   select(state_id, data) %>%
@@ -766,18 +757,24 @@ fig_7 <- results %>%
 
 
 fig_8 <- results %>%
+  filter(prop_mpa < 1) %>%
   left_join(states, by = c("state_id", "critter")) %>%
+  # filter(f_v_m > 1.5) %>%
   group_by(state_id, placement_id) %>%
   mutate(real_sigma_centroid = sd(centroid)) %>%
   ggplot(aes(
     prop_mpa,
-    biodiv - bau_biodiv,
-    color = factor(rec_form),
+    pmin(2,biodiv / bau_biodiv -1),
+    color = sigma_hab,
     group = interaction(placement_id, state_id)
   )) +
-  geom_line(alpha = 0.2) +
+  geom_line(alpha = 0.1) +
+  geom_hline(aes(yintercept = 0), linetype = 2, color = "red") +
   facet_grid(critter ~ placement_strategy) +
-  scale_color_viridis_d()
+  scale_color_viridis_c(name = "Range Size") +
+  scale_y_continuous(labels = scales::percent,"Change in Biomass/Unfished Biomass relative to BAU") +
+  scale_x_continuous(labels = scales::label_percent(accuracy = 1), name = "MPA Size") +
+  theme(legend.position = "top")
 
 
 fig_9 <- results %>%
@@ -797,19 +794,48 @@ fig_9 <- results %>%
 fig_9
 
 
+# fig_10 <- results %>%
+#   left_join(states, by = c("state_id", "critter")) %>%
+#   group_by(state_id, placement_id) %>%
+#   mutate(real_sigma_centroid = sd(centroid)) %>%
+#   ggplot(aes(
+#     prop_mpa,
+#     biodiv - bau_biodiv,
+#     color = spatial_q,
+#     group = interaction(placement_id, state_id)
+#   )) +
+#   geom_line(alpha = 0.2) +
+#   facet_grid(critter ~ placement_strategy) +
+#   scale_color_viridis_d()
+#
+# fig_10
+
+
 critter_results <- results %>%
   left_join(states, by = c("state_id", "critter")) %>%
   group_by(state_id, placement_id) %>%
   mutate(real_sigma_centroid = sd(centroid)) %>%
-  mutate(loss = biodiv < bau_biodiv)
+  mutate(loss = pmin(2,biodiv / bau_biodiv - 1))
+
+mean(critter_results$loss)
 
 tree_1 <-   rpart::rpart(
-  loss ~ sigma_hab + real_sigma_centroid + placement_error + f_v_m + placement_strategy + critter + seasonal_movement,
-  method = "anova",
-  data = critter_results %>% filter(prop_mpa < 0.5)
+  loss ~ real_sigma_centroid + placement_error + f_v_m  + critter + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma,
+  data = critter_results %>% filter(prop_mpa < 1, placement_strategy == "rate")
 )
 
 rpart.plot(tree_1)
+
+
+tree_1 <-   rstanarm::stan_glm(
+  loss ~ real_sigma_centroid + placement_error + f_v_m  + critter + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma,
+  data = critter_results %>% filter(prop_mpa < 0.3, placement_strategy == "rate"),
+  cores = 4,
+  chains = 4
+)
+
+plot(tree_1)
+
 # save results ------------------------------------------------------------
 
 
@@ -825,5 +851,5 @@ figs <- ls()[str_detect(ls(), "fig_")]
 walk(figs, ~ ggsave(filename = file.path(results_path,paste0(.x,".pdf")), get(.x)))
 
 #
-save(file = file.path(results_path, "experiment_figures.Rdata"),
-     list = figs)
+# save(file = file.path(results_path, "experiment_figures.Rdata"),
+#      list = figs)
