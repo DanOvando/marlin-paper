@@ -1,11 +1,14 @@
-create_critters <-
+create_experiment_critters <-
   function(sciname,
            habitat,
            seasons = 1,
            marlin_inputs,
+           adult_movement_sigma = 10,
+           recruit_movement_sigma = 20,
            seasonal_movement = FALSE,
            ontogenetic_shift = FALSE,
-           random_rec = FALSE) {
+           f_v_m,
+           rec_form) {
     # sciname <- marlin_inputs$scientific_name[[1]]
     #
     #
@@ -32,12 +35,12 @@ create_critters <-
       hab <- list(hab, hab)
     }
 
-    if (random_rec){
-    rec_form <-  sample(c(0, 1,2,3), 1, replace = TRUE)
-
-    } else {
-      rec_form <- 1
-    }
+    # if (random_rec){
+    #   rec_form <-  sample(c(0, 1), 1, replace = TRUE)
+    #
+    # } else {
+    #   rec_form <- 2
+    # }
     # rec_form <- 1 # sample(c(0, 1, 2, 3), 1, replace = TRUE)
 
 
@@ -57,15 +60,13 @@ create_critters <-
       seasonal_habitat = hab,
       recruit_habitat = recruit_habitat,
       adult_movement = 0,
-      adult_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
-      recruit_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
+      adult_movement_sigma = adult_movement_sigma,
+      recruit_movement_sigma = recruit_movement_sigma,
       rec_form = rec_form,
       fec_form = ifelse(str_detect(sciname,"carcharhinus"),"pups","weight"),
       pups = 6,
+      # weight_a = ifelse(str_detect(sciname,"carcharhinus"),2,NA),
       seasons = seasons,
-      init_explt = ifelse(is.nan(
-        mean(tmp_inputs$current_f, na.rm = TRUE)
-      ), .4, mean(tmp_inputs$current_f, na.rm = TRUE)),
       steepness =  ifelse(is.nan(
         mean(tmp_inputs$steepness, na.rm = TRUE)
       ), 0.8, mean(tmp_inputs$steepness, na.rm = TRUE)),
@@ -74,17 +75,11 @@ create_critters <-
       ), 1e4, mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE))
     )
 
+    critter$init_explt = max(critter$m_at_age) * f_v_m * critter$steepness * 0.8
 
-    # # later sub in a lookup table for this
-    # trait_frame <- tibble(
-    #   seasonal_habitat = list(habitat$data[[which(habitat$species_sciname == sciname)]]),
-    #   adult_movement = 1,
-    #   adult_movement_sigma = runif(1,min = 1, max = 30),
-    #   seasons = seasons,
-    #   init_explt = sample(c(.05,.1,.2), 1, replace = TRUE),
-    #   rec_form = sample(c(0,1,2,3),1, replace = TRUE),
-    #   fec_form = c("power"),
-    #   weight_a = NA
-    # )
+      # ifelse(str_detect(sciname,"carcharhinus"),f_v_m / 2,f_v_m)
+
+
+    return(critter)
 
   }

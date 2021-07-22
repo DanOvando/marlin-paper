@@ -21,6 +21,12 @@ library(mvtnorm)
 
 library(patchwork)
 
+library(progress)
+
+library(rpart.plot)
+
+library(rstanarm)
+
 options(dplyr.summarise.inform = FALSE)
 
 
@@ -28,7 +34,7 @@ foos <- list.files(here("R"))
 
 walk(foos, ~ source(here("R", .x)))
 
-results_name <- "v1.0"
+results_name <- "v0.5"
 
 results_path <- here("results", results_name)
 
@@ -40,6 +46,8 @@ if (!dir.exists(results_path)){
 
 run_experiments <- FALSE
 
+experiment_workers <- 10
+
 run_casestudy <- FALSE
 
 optimize_casestudy <- FALSE
@@ -50,7 +58,7 @@ draws <- 20
 
 resolution <- 10 # resolution is in squared patches, so 20 implies a 20X20 system, i.e. 400 patches
 
-years <- 40
+years <- 80
 
 seasons <- 2
 
@@ -64,7 +72,7 @@ time_steps <- seq(0,years - 1, by = time_step)
 
 theme_set(marlin::theme_marlin())
 
-tune_type <- "explt"
+tune_type <- "v1.0"
 
 # load data ---------------------------------------------------------------
 
