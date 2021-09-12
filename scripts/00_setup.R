@@ -34,7 +34,7 @@ foos <- list.files(here("R"))
 
 walk(foos, ~ source(here("R", .x)))
 
-results_name <- "v0.5"
+results_name <- "tester"
 
 results_path <- here("results", results_name)
 
@@ -44,9 +44,9 @@ if (!dir.exists(results_path)){
   dir.create(file.path(results_path,"sims"))
 }
 
-run_experiments <- FALSE
+run_experiments <- TRUE
 
-experiment_workers <- 10
+experiment_workers <- 4
 
 run_casestudy <- FALSE
 
