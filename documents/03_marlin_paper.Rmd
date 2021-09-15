@@ -110,17 +110,15 @@ less resilient species are both more in need of protection and easier to acciden
 
 # Introduction
 
-Empirically, how do you differentiate increase in catch from fishing harder vs increases in catch from rebuilding: rebuilding has to have a decrease at first
+<!-- Empirically, how do you differentiate increase in catch from fishing harder vs increases in catch from rebuilding: rebuilding has to have a decrease at first -->
 
 Marine protected areas (MPAs) are a growing part of the marine
-conservation toolbox, with 7.4% of the world's oceans currently
-protected and, and bodies such as the IUCN calling for 30% protection by
+conservation toolbox, with 5.9% of the world's oceans currently in implemented MPAs [@grorud-colvert2021], and bodies such as the IUCN calling for 30% protection by
 2030. Many of the largest of these MPAs are being implemented in the
-form of "blue-water" MPAs largely covering pelagic ecosystems,
-characterized by highly mobile species and fishing fleets using a
-diverse mix of static and dynamic ocean features. These systems operate
+form of large MPAs primarily covering pelagic ecosystems. These pelagic systems operate
 very differently from the coastal areas where modern MPA design
-practices have been developed. Pelagic systems are also characterized by
+practices have been developed, characterized by highly mobile species and fishing fleets using a
+diverse mix of static and dynamic ocean features. These ecosystems
 combinations of relatively abundant species targeted by fishing, such as
 most tuna stocks, and highly threatened species caught as incidental
 "bycatch" in targeted fishing operations, such as oceanic whitetip
