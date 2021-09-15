@@ -77,11 +77,6 @@ optimize_mpa <-
         res <-
           sim_mpa[[length(sim_mpa)]] # for now, just calculate in the final timestep
 
-        if (objective == "max_ssb"){
-        biodiv <-
-          sum(map_dbl(res, ~ sum(.x$ssb_p_a) / .x$ssb0)) # calculate biodiversity component of objective function
-        } else if (objective == "min_loss") {
-
         biodiv_mpa <-
           (map_dbl(res, ~ sum(.x$ssb_p_a) / .x$ssb0)) # calculate biodiversity component of objective function
 
@@ -89,15 +84,36 @@ optimize_mpa <-
           map_dbl(starting_conditions[[1]], ~ sum(.x$ssb_p_a) / .x$ssb0) # calculate biodiversity component of objective function
 
 
+        delta_biodiv <- biodiv_mpa - biodiv_sq
+
+        if (objective == "max_ssb"){
+        biodiv <-
+          sum(map_dbl(res, ~ sum(.x$ssb_p_a) / .x$ssb0)) # calculate biodiversity component of objective function
+        } else if (objective == "min_loss") {
+
+
         biodiv <- sum((biodiv_mpa - biodiv_sq) >= 0)
 
         }
 
-
         # econ <- sum(map_dbl(res, ~sum(.x$c_p_a))) #  calculate econ component of objective function
 
-        econ <-
-          sum(map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
+        econ_sq <-
+          (map_dbl(starting_conditions[[1]], ~ sum(.x$r_p_a_fl, na.rm = TRUE)))
+
+        econ_mpa <-
+          (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
+
+        delta_econ <- econ_mpa - econ_sq
+
+        econ <- delta_econ
+
+        econ[delta_econ > 0 & delta_biodiv < 0] <- 0
+
+        econ <- sum(econ)
+
+        # econ <-
+        #   sum(map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
 
         out <- tibble(biodiv = biodiv, econ = econ)
 
@@ -161,8 +177,27 @@ optimize_mpa <-
         biodiv <-
           (map_dbl(res, ~ sum(.x$ssb_p_a) / .x$ssb0)) # calculate biodiversity component of objective function
 
-      econ <-
-        (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
+        biodiv_sq <-
+          map_dbl(starting_conditions[[1]], ~ sum(.x$ssb_p_a) / .x$ssb0) # calculate biodiversity component of objective function
+
+
+        delta_biodiv <- biodiv - biodiv_sq
+
+        econ_sq <-
+          (map_dbl(starting_conditions[[1]], ~ sum(.x$r_p_a_fl, na.rm = TRUE)))
+
+        econ_mpa <-
+          (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
+
+        delta_econ <- econ_mpa - econ_sq
+
+        econ <- delta_econ
+
+        econ[delta_econ > 0 & delta_biodiv < 0] <- 0
+
+
+      # econ <-
+      #   (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
 
       out <-
         list(
@@ -202,9 +237,27 @@ optimize_mpa <-
       biodiv <-
         (map_dbl(res, ~ sum(.x$ssb_p_a) / .x$ssb0)) # calculate biodiversity component of objective function
 
+      biodiv_sq <-
+        map_dbl(starting_conditions[[1]], ~ sum(.x$ssb_p_a) / .x$ssb0) # calculate biodiversity component of objective function
 
-    econ <-
-      (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
+
+      delta_biodiv <- biodiv - biodiv_sq
+
+      econ_sq <-
+        (map_dbl(starting_conditions[[1]], ~ sum(.x$r_p_a_fl, na.rm = TRUE)))
+
+      econ_mpa <-
+        (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
+
+      delta_econ <- econ_mpa - econ_sq
+
+      econ <- delta_econ
+
+      econ[delta_econ > 0 & delta_biodiv < 0] <- 0
+
+
+    # econ <-
+    #   (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
 
     out <-
       list(

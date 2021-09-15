@@ -165,3 +165,229 @@ LENNON
 Walk through some of the figures and unpack them a bit
 
 
+# comparing catches to CPUE to abundance
+
+```{r}
+
+rfmo <- "wcpfc"
+mats <- list.files(path = here("data", "tuna-catch"))
+
+# mats <- mats[str_detect(mats, "wcpfc_")]
+
+mats <- mats[str_detect(mats, paste0(rfmo,"_")) & str_detect(mats, "tonnes") & str_detect(mats, "monthly") & str_detect(mats, "2017") & str_detect(mats, "5grid")]
+
+get_layer <- function(file) {
+  # file <- mats[7]
+
+  file_comps <- str_split(file, "_", simplify = TRUE)
+  
+  species <- paste(file_comps[,7],file_comps[,8])
+  
+  species <- str_replace(species, ".tif", "")
+# 
+  hab <- stars::read_stars(here("data", "tuna-catch", file)) %>%
+    sf::st_as_sf() %>%
+    recenter_vector(center= -200)
+
+#   plot(hab)
+  
+  centers <- sf::st_centroid(hab)
+  
+  centers <- sf::st_coordinates(centers) %>% 
+    as.data.frame()
+  
+  centers$catch = as.data.frame(hab)[,1]
+    
+
+  x_binsize <- (max(centers$X) - min(centers$X) + 1) / resolution
+
+  y_binsize <- (max(centers$Y) - min(centers$Y) + 1) / resolution
+
+  if (x_binsize < 1 | y_binsize < 1) {
+    stop("resolution is too high for input data")
+  }
+
+
+  habitat <- centers %>%
+    mutate(X = X - min(X),
+           Y = Y - min(Y)) %>%
+    mutate(rough_x = floor(X / x_binsize),
+           rough_y = floor(Y / y_binsize)) %>%
+    dplyr::select(contains("rough_"), catch)
+
+
+  habitat <- habitat %>%
+    group_by(rough_x, rough_y) %>%
+    summarise(hab = sum(catch)) %>%
+    mutate(xy = rough_x * rough_y)
+
+  mod <-
+    gamm4::gamm4(hab ~ s(rough_x) + s(rough_y) + s(xy), data = habitat)
+
+  habitat_frame <-
+    expand_grid(rough_x = 1:resolution,
+                rough_y = 1:resolution) %>%
+    mutate(xy = rough_x * rough_y)
+  
+interp_habitat <- predict(mod$gam, newdata = habitat_frame)
+  
+interp_habitat <- pmax(0, interp_habitat / max(interp_habitat))
+
+habitat_frame$habitat <- interp_habitat
+
+habitat_frame %>%
+  ggplot(aes(rough_x, rough_y, fill = habitat)) +
+  geom_tile()
+
+  hab <- habitat_frame %>%
+    dplyr::select(contains("rough"), habitat) %>%
+    rename(x = rough_x, y = rough_y) %>%
+    ungroup()
+
+  out <- tibble(scientific_name = species, habitat = list(hab))
+
+
+}
+
+
+mats <- map(mats, safely(get_layer))
+
+mats_worked <- map(mats, "error") %>% map_lgl(is.null)
+
+mats <- mats[mats_worked]
+
+mats <- map(mats, "result")
+
+catch_mats <- mats %>%
+  bind_rows() %>% 
+  unnest(cols = habitat) %>% 
+  group_by(scientific_name, x, y) %>% 
+  summarise(habitat = sum(habitat)) %>% 
+  ungroup() %>% 
+  nest(habitat = c(-scientific_name)) %>% 
+  ungroup()
+
+catch_habitat <- catch_mats %>%
+  bind_rows() %>%
+  unnest(cols = habitat) %>%
+  ggplot(aes(x, y, fill = habitat)) +
+  geom_tile() +
+  facet_wrap( ~ scientific_name) +
+  scale_fill_viridis_c()
+
+catch_habitat
+
+
+```
+
+Compare to the SDM stuff
+
+```{r}
+
+mats <- list.files(path = here("data", "matrices"))
+
+mats <- mats[str_detect(mats, "longline_wcpfc")]
+
+get_layer <- function(file) {
+  # file <- mats[3]
+
+  file_comps <- str_split(file, "_", simplify = TRUE)
+
+  species <- str_replace(file_comps[, 1], "-", " ")
+
+  fleet <- file_comps[, 2]
+
+
+  hab <-
+    read_csv(here("data", "matrices", file),
+             col_names = FALSE,
+             skip = 1) %>%
+    rename(lat = X1) %>%
+    mutate(lat = 1:nrow(.)) %>%
+    pivot_longer(
+      -lat,
+      names_to = "lon",
+      values_to = "hab",
+      names_prefix = "X"
+    ) %>%
+    mutate(hab = tidyr::replace_na(hab, 0),
+           lon = as.numeric(lon) - 1)
+
+  # hab %>%
+  #   ggplot(aes(lon, lat, fill = hab)) +
+  #   geom_tile()
+  #
+
+  x_binsize <- (max(hab$lon) - min(hab$lon) + 1) / resolution
+
+  y_binsize <- (max(hab$lat) - min(hab$lat) + 1) / resolution
+
+  if (x_binsize < 1 | y_binsize < 1) {
+    stop("resolution is too high for input data")
+  }
+
+
+  hab <- hab %>%
+    mutate(X = lon - min(lon),
+           Y = lat - min(lat)) %>%
+    mutate(rough_x = floor(X / x_binsize),
+           rough_y = floor(Y / y_binsize)) %>%
+    select(contains("rough_"), hab)
+  #
+  #   hab %>%
+  #     ggplot(aes(rough_x, rough_y, fill = hab)) +
+  #     geom_tile()
+
+  hab <- hab %>%
+    group_by(rough_x, rough_y) %>%
+    summarise(hab = sum(hab)) %>%
+    mutate(xy = rough_x * rough_y)
+
+  mod <-
+    gamm4::gamm4(hab ~ s(rough_x) + s(rough_y) + s(xy), data = hab)
+
+  hab$interp_cpue <- as.numeric(predict(mod$gam))
+
+  hab$habitat <- pmax(0, hab$interp_cpue / max(hab$interp_cpue))
+
+
+  if (sqrt(nrow(hab)) != resolution) {
+    stop("habitat layer does not match simulation resolution")
+  }
+  hab <- hab %>%
+    select(contains("rough"), habitat) %>%
+    rename(x = rough_x, y = rough_y) %>%
+    ungroup()
+
+  # hab %>%
+  #   ggplot(aes(rough_x, rough_y, fill = habitat)) +
+  #   geom_tile()
+
+  out <- tibble(scientific_name = species, habitat = list(hab))
+
+
+}
+
+
+mats <- map(mats, get_layer)
+
+sdm_habitat <- mats %>%
+  bind_rows() %>%
+  unnest(cols = habitat) %>%
+  filter(scientific_name %in% unique(catch_mats$scientific_name)) %>% 
+  ggplot(aes(x, y, fill = habitat)) +
+  geom_tile() +
+  facet_wrap( ~ scientific_name) +
+  scale_fill_viridis_c()
+
+
+sdm_habitat
+
+
+catch_habitat / sdm_habitat
+```
+
+
+
+
+

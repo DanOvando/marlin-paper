@@ -5,9 +5,56 @@ source(file.path("scripts", "00_setup.R"))
 # load bycatch risk layers ------------------------------------------------
 
 
-mats <- list.files(path = here("data", "matrices"))
+mats <- list.files(path = here("data", "species-matrices"))
 
-mats <- mats[str_detect(mats, "longline_wcpfc")]
+mats <- mats[str_detect(mats, "cpue_mean")]
+
+file_comps <- str_split(mats, "_", simplify = TRUE)
+
+species <- str_replace(file_comps[, 1], "-", " ")
+
+# go through and figure out the best matrix for each species in a really hacky manner
+
+best_mat <- rep(NA, n_distinct(species))
+for (s in seq_along(unique(species))){
+
+  fls <- mats[species == unique(species)[s]]
+
+  if (all(str_detect(fls,"ps_cpue"))){
+    # if the only thing available is purse seine CPUE
+
+    fls <- fls[str_detect(fls,"ps_cpue")]
+
+
+  } else {
+
+    fls <- fls[!str_detect(fls,"ps_cpue")]
+
+  }
+
+  if (any(str_detect(fls,"mtper"))){
+
+    fls <- fls[str_detect(fls,"mtper")]
+
+
+  } else {
+
+    fls <- fls[str_detect(fls,"countper")]
+  }
+
+
+  # preference: longline weight cpue
+
+  # then longline number cpue
+
+  # then purse seine
+
+
+  best_mat[s] <- fls
+
+}
+
+
 
 get_layer <- function(file) {
   # file <- mats[3]
@@ -16,11 +63,11 @@ get_layer <- function(file) {
 
   species <- str_replace(file_comps[, 1], "-", " ")
 
-  fleet <- file_comps[, 2]
+  # fleet <- file_comps[, 2]
 
 
   hab <-
-    read_csv(here("data", "matrices", file),
+    read_csv(here("data", "species-matrices", file),
              col_names = FALSE,
              skip = 1) %>%
     rename(lat = X1) %>%
@@ -37,7 +84,7 @@ get_layer <- function(file) {
   # hab %>%
   #   ggplot(aes(lon, lat, fill = hab)) +
   #   geom_tile()
-  #
+
 
   x_binsize <- (max(hab$lon) - min(hab$lon) + 1) / resolution
 
@@ -55,9 +102,9 @@ get_layer <- function(file) {
            rough_y = floor(Y / y_binsize)) %>%
     select(contains("rough_"), hab)
   #
-  #   hab %>%
-  #     ggplot(aes(rough_x, rough_y, fill = hab)) +
-  #     geom_tile()
+    # hab %>%
+    #   ggplot(aes(rough_x, rough_y, fill = hab)) +
+    #   geom_tile()
 
   hab <- hab %>%
     group_by(rough_x, rough_y) %>%
@@ -81,16 +128,15 @@ get_layer <- function(file) {
     ungroup()
 
   # hab %>%
-  #   ggplot(aes(rough_x, rough_y, fill = habitat)) +
+  #   ggplot(aes(x, y, fill = habitat)) +
   #   geom_tile()
 
   out <- tibble(scientific_name = species, habitat = list(hab))
 
-
 }
 
 
-mats <- map(mats, get_layer)
+mats <- map(best_mat, get_layer)
 
 check_habitat <- mats %>%
   bind_rows() %>%
@@ -110,6 +156,8 @@ casestudy <- tibble(scientific_name = unique(marlin_inputs$scientific_name)) %>%
   left_join(mats, by = "scientific_name") %>%
   filter(!map_lgl(.$habitat, is.null))
 
+case_study_species = unique(casestudy$scientific_name)
+write_rds(case_study_species, file = "case_stdy_species.rds")
 casestudy <- casestudy %>%
   mutate(critter = pmap(
     list(
@@ -208,6 +256,8 @@ if (optimize_casestudy == TRUE){
 
   optimized_networks <- tibble(alpha = seq(0,1, length.out = 20))
 
+  optimized_networks <- tibble(alpha = 0)
+
   fauna <- casestudy$fauna[[1]]
 
   fleets <- casestudy$fleet[[1]]
@@ -224,8 +274,10 @@ if (optimize_casestudy == TRUE){
         prop_sampled = 0.2,
         starting_conditions = starting_conditions,
         resolution = resolution,
-        workers = 8
+        workers = experiment_workers
       ))
+
+  stop()
 
   Sys.time() - a
 
@@ -367,9 +419,76 @@ if (optimize_casestudy == TRUE){
 
 }
 
-
 # process results ---------------------------------------------------------
 
+ex <- optimized_networks %>%
+  filter(round(alpha,1) == 1) %>%
+  slice(1)
+
+ex <- ex$network[[1]]$mpa_network %>%
+  group_by(p_protected) %>%
+  nest() %>%
+  ungroup()
+
+
+foo <- function(mpa){
+
+tmp_result <- simmar(
+  fauna = casestudy$fauna[[1]],
+  fleets = casestudy$fleet[[1]],
+  years = years,
+  mpas = list(locations = mpa,
+              mpa_year = 1),
+  initial_conditions = starting_conditions[[1]]
+)
+
+res <-
+  tmp_result[[length(tmp_result)]] # for now, just calculate in the final timestep
+
+foo2 <- function(z){
+
+  out <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
+    mutate(dep = (z$ssb_p_a %>% as.data.frame() %>% rowSums())) %>%
+    mutate(dep = dep / (z$ssb0_p))
+
+}
+
+out <- map_df(res,foo2, .id = "critter")
+#
+# out %>%
+#   ggplot(aes(x,y,fill = dep)) +
+#   geom_tile() +
+#   facet_wrap(~critter)
+
+return(out)
+}
+
+ex <- ex %>%
+  # slice(1:10) %>%
+  mutate(cs_result = map(data, foo))
+
+mpas <- ex %>%
+  select(p_protected, data) %>%
+  unnest(cols = data)
+
+# a = ex %>%
+#   unnest(cols = cs_result) %>%
+#   left_join(mpas, by = c("p_protected", "x", "y")) %>%
+#   mutate(p_protected = round(p_protected / max(p_protected),2)) %>%
+#   ggplot(aes(x, y, fill = dep)) +
+#   geom_tile() +
+#   scale_fill_viridis_c() +
+#   facet_wrap(~ critter) +
+#   transition_time(p_protected) +
+#   labs(title = 'MPA %: {frame_time}')
+#
+# a
+# anim_save("cs_anim.gif")
+# ex %>%
+#   # filter(p_protected == 100) %>%
+#   ggplot(aes(x,y,fill = mpa)) +
+#   geom_tile() +
+#   transition_time(p_protected)
 
 # calculate objective function for base case (no mpa)
 
@@ -426,6 +545,14 @@ opt_obj <- optimized_networks %>%
   select(-network) %>%
   unnest(cols = obj)
 
+obj_objective_value <- optimized_networks %>%
+  mutate(obj = map(network,"objective")) %>%
+  select(-network) %>%
+  unnest(cols = obj) %>%
+  select(alpha, p_protected, obj)
+
+opt_obj <- opt_obj %>%
+  left_join(obj_objective_value, by = c("alpha","p_protected"))
 
 # combine experiment and optimization, and then calculate change in objective function relative to status quo
 #
@@ -453,6 +580,7 @@ opt_obj <- opt_obj %>%
 total_opt_obj <- opt_obj %>%
   group_by(alpha, p_protected) %>%
   summarise(
+    obj_fun = unique(obj),
     loss = mean(ssb_v_ssb0 <= bau_biodiv),
     total_loss = sum(ssb_v_ssb0 - bau_biodiv),
     econ = sum(econ),
@@ -528,6 +656,7 @@ cs_fig_8 <- total_experiment_obj %>%
   facet_wrap(~placement_strategy) +
   scale_color_viridis_c(name = "Conservation Weighting in Optimization")
 
+# ggsave("cs_fig_8.pdf", io_rpue_outcomes_plot, width = 8, height = 6)
 
 
 cs_fig_9 <- total_opt_obj %>%
@@ -538,9 +667,43 @@ cs_fig_9 <- total_opt_obj %>%
   scale_color_viridis_c(name = "Conservation Weighting in Optimization")
 
 
-cs_fig_10 <- total_opt_obj %>%
+a = opt_obj %>%
+  filter(alpha == 0) %>%
+  ggplot(aes(p_protected, econ)) +
+  geom_line() +
+  facet_wrap(~critter, scales = "free_y") +
+  scale_x_continuous(name = "% MPA") +
+  scale_y_continuous(name = "Revenue")
+
+b = opt_obj %>%
+  filter(alpha == 0) %>%
+  ggplot(aes(p_protected, ssb_v_ssb0)) +
+  geom_line() +
+  facet_wrap(~critter, scales = "free_y") +
+  scale_x_continuous(name = "% MPA") +
+  scale_y_continuous(name = "SSB/SSB0")
+
+a / b
+
+a = opt_obj %>%
+  group_by(alpha) %>%
+  filter(obj == max(obj)) %>%
   ggplot() +
-  geom_smooth(aes(delta_biodiv, delta_econ, group = alpha, color= alpha), se = FALSE) +
+  geom_vline(aes(xintercept = 0), linetype = 2) +
+  geom_hline(aes(yintercept = 0), linetype = 2) +
+  geom_line(aes(delta_biodiv, delta_econ, color= p_protected), size = 1) +
+  facet_wrap(~critter) +
+  scale_x_continuous(labels = scales::percent, name = "Change in Total Biodiversity Relative to BAU ") +
+  scale_y_continuous(labels = scales::percent, name = "Change in Revenue Relative to BAU ") +
+  theme(axis.text.x = element_text(size = 8),
+        legend.position = "top")
+
+cs_fig_10 <- total_opt_obj %>%
+  group_by(alpha) %>%
+  filter(obj_fun == max(obj_fun)) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_line(aes(delta_biodiv, delta_econ, color= alpha), size = 2) +
   geom_point(data = total_experiment_obj,aes(delta_biodiv, delta_econ),size = 2, alpha = 0.1, fill = "red", shape = 21) +
   geom_vline(aes(xintercept = 0), linetype = 2) +
   geom_hline(aes(yintercept = 0), linetype = 2) +
@@ -551,6 +714,37 @@ cs_fig_10 <- total_opt_obj %>%
   scale_y_continuous(labels = scales::percent, name = "Change in Revenue Relative to BAU ") +
   theme(axis.text.x = element_text(size = 8),
         legend.position = "top")
+
+cs_fig_10a <- total_opt_obj %>%
+  ggplot() +
+  geom_smooth(aes(delta_biodiv, delta_econ, group = alpha, color = alpha), se = FALSE) +
+  geom_point(
+    data = total_experiment_obj %>%  filter(placement_strategy == "target_fishing"),
+    aes(delta_biodiv, delta_econ),
+    size = 2,
+    alpha = 0.1,
+    fill = "red",
+    shape = 21
+  ) +
+  geom_vline(aes(xintercept = 0), linetype = 2) +
+  geom_hline(aes(yintercept = 0), linetype = 2) +
+  geom_abline(intercept = 0, slope = -1) +
+  scale_color_viridis_c(
+    name = "Conservation Weighting in Optimization",
+    guide = guide_colorbar(
+      frame.colour = "black",
+      ticks.colour = "black",
+      barwidth = unit(10, "lines")
+    ),
+    labels = scales::percent
+  ) +
+  scale_x_continuous(labels = scales::percent, name = "Change in Total Biodiversity Relative to BAU ") +
+  scale_y_continuous(labels = scales::percent, name = "Change in Revenue Relative to BAU ") +
+  theme(axis.text.x = element_text(size = 8),
+        legend.position = "top",
+        plot.margin = unit(c(1,1,1,1),"cm"))
+
+ggsave("cs_fig_10a.pdf", cs_fig_10a, width = 8, height = 6)
 
 
 cs_fig_11 <- total_opt_obj %>%
