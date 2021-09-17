@@ -54,8 +54,6 @@ for (s in seq_along(unique(species))){
 
 }
 
-
-
 get_layer <- function(file) {
   # file <- mats[3]
 
@@ -157,7 +155,7 @@ casestudy <- tibble(scientific_name = unique(marlin_inputs$scientific_name)) %>%
   filter(!map_lgl(.$habitat, is.null))
 
 case_study_species = unique(casestudy$scientific_name)
-write_rds(case_study_species, file = "case_stdy_species.rds")
+
 casestudy <- casestudy %>%
   mutate(critter = pmap(
     list(
@@ -196,22 +194,17 @@ fauna <- casestudy$fauna[[1]]
 
 fleets <- casestudy$fleet[[1]]
 
-starting_trajectory <- simmar(fauna = fauna, fleets = fleets, years = 100)
+starting_trajectory <- simmar(fauna = fauna, fleets = fleets, years = 200)
 
-check <- process_marlin(starting_trajectory, keep_age = FALSE)
-
-plot_marlin(check)
 
 starting_conditions <- starting_trajectory[length(starting_trajectory)]
 
 
 proc_starting_conditions <- process_marlin(starting_conditions)
 
-
-
 if (run_casestudy == TRUE){
 
-  future::plan(future::multisession, workers = 8)
+  future::plan(future::multisession, workers = experiment_workers)
 
   case_study_experiments <-
     expand_grid(
@@ -256,7 +249,7 @@ if (optimize_casestudy == TRUE){
 
   optimized_networks <- tibble(alpha = seq(0,1, length.out = 20))
 
-  optimized_networks <- tibble(alpha = 0)
+  # optimized_networks <- tibble(alpha = 0)
 
   fauna <- casestudy$fauna[[1]]
 
@@ -277,31 +270,29 @@ if (optimize_casestudy == TRUE){
         workers = experiment_workers
       ))
 
-  stop()
-
   Sys.time() - a
 
   write_rds(optimized_networks, file = file.path(results_path,"optimized_networks.rds"))
 
-  a <- Sys.time()
-  min_loss_optimized_networks <- optimized_networks %>%
-    mutate(
-      network = pmap(
-        list(alpha = alpha),
-        optimize_mpa,
-        fauna = casestudy$fauna[[1]],
-        fleets = casestudy$fleet[[1]],
-        max_prop_mpa = 1,
-        prop_sampled = 0.2,
-        starting_conditions = starting_conditions,
-        resolution = resolution,
-        objective = "min_loss",
-        workers = 8
-      ))
-
-  Sys.time() - a
-
-  write_rds(min_loss_optimized_networks, file = file.path(results_path,"min_loss_optimized_networks.rds"))
+  # a <- Sys.time()
+  # min_loss_optimized_networks <- optimized_networks %>%
+  #   mutate(
+  #     network = pmap(
+  #       list(alpha = alpha),
+  #       optimize_mpa,
+  #       fauna = casestudy$fauna[[1]],
+  #       fleets = casestudy$fleet[[1]],
+  #       max_prop_mpa = 1,
+  #       prop_sampled = 0.2,
+  #       starting_conditions = starting_conditions,
+  #       resolution = resolution,
+  #       objective = "min_loss",
+  #       workers = 8
+  #     ))
+  #
+  # Sys.time() - a
+  #
+  # write_rds(min_loss_optimized_networks, file = file.path(results_path,"min_loss_optimized_networks.rds"))
 
 
   #
@@ -414,7 +405,7 @@ if (optimize_casestudy == TRUE){
   optimized_networks <-
     read_rds(file = file.path(results_path, "optimized_networks.rds"))
 
-  min_loss_optimized_networks <- read_rds(file = file.path(results_path,"min_loss_optimized_networks.rds"))
+  # min_loss_optimized_networks <- read_rds(file = file.path(results_path,"min_loss_optimized_networks.rds"))
 
 
 }
@@ -525,11 +516,17 @@ experiment_obj %>%
   facet_wrap(~critter, scales = "free_y")
 
 experiment_obj %>%
-  filter(placement_strategy == "avoid_fishing") %>%
+  filter(placement_strategy == "area") %>%
   ggplot(aes(prop_mpa, biodiv, color = log(econ))) +
   geom_point() +
   facet_wrap(~critter, scales = "free_y")
 
+
+
+experiment_obj %>%
+  ggplot(aes(prop_mpa, econ)) +
+  geom_point() +
+  facet_wrap(~critter, scales = "free_y")
 
 
 
@@ -554,6 +551,19 @@ obj_objective_value <- optimized_networks %>%
 opt_obj <- opt_obj %>%
   left_join(obj_objective_value, by = c("alpha","p_protected"))
 
+opt_obj %>%
+  ggplot(aes(p_protected, ssb_v_ssb0)) +
+  geom_point() +
+  facet_wrap(~critter)
+
+
+
+opt_obj %>%
+  ggplot(aes(p_protected, econ)) +
+  geom_point() +
+  facet_wrap(~critter, scales = "free_y")
+
+
 # combine experiment and optimization, and then calculate change in objective function relative to status quo
 #
 
@@ -561,6 +571,12 @@ experiment_obj <- experiment_obj %>%
   left_join(bau, by = "critter") %>%
   mutate(delta_biodiv = biodiv / bau_biodiv - 1,
          delta_econ = econ / bau_econ - 1)
+
+experiment_obj %>%
+  ggplot(aes(prop_mpa, delta_econ)) +
+  geom_point() +
+  facet_wrap(~critter, scales = "free_y")
+
 
 cs_fig_1 <- experiment_obj %>%
   ggplot(aes(delta_biodiv))
@@ -590,6 +606,11 @@ total_opt_obj <- opt_obj %>%
   ungroup() %>%
   mutate(delta_biodiv = biodiv / bau_biodiv - 1,
          delta_econ = econ / bau_econ - 1)
+
+opt_obj %>%
+  ggplot(aes(p_protected, ssb_v_ssb0)) +
+  geom_point() +
+  facet_wrap(~critter)
 
 cs_fig_3 <- total_opt_obj %>%
   ggplot(aes(biodiv, econ, color = factor(alpha))) +
@@ -684,6 +705,17 @@ b = opt_obj %>%
   scale_y_continuous(name = "SSB/SSB0")
 
 a / b
+
+total_opt_obj %>%
+  ggplot(aes(p_protected, econ, color = factor(alpha))) +
+  geom_line() +
+  scale_color_viridis_d()
+
+total_opt_obj %>%
+  ggplot(aes(p_protected, biodiv, color = factor(alpha))) +
+  geom_line() +
+  scale_color_viridis_d()
+
 
 a = opt_obj %>%
   group_by(alpha) %>%

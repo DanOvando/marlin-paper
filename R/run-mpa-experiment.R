@@ -9,10 +9,58 @@ run_mpa_experiment <-
            placement_error = 0,
            prop_critters_considered,
            random_mpas = FALSE,
+           max_delta = 1,
            resolution) {
 
 
     n_mpa <- round(prop_mpa * resolution^2)
+
+    # set up open access
+
+    starting <- starting_conditions[[length(starting_conditions)]]
+
+    revenues <-  map_df(starting, ~.x$r_p_a_fl %>%
+                          reshape2::melt() %>%
+                          group_by(Var3) %>%
+                          summarise(revenue = sum(value, na.rm = TRUE))) %>%
+      group_by(Var3) %>%
+      rename(fleet = Var3) %>%
+      summarise(revenue = sum(revenue))
+
+    effort <- map_df(starting, ~.x$e_p_fl) %>%
+      ungroup() %>%
+      mutate(patch = 1:nrow(.)) %>%
+      pivot_longer(-patch, names_to = "fleet", values_to = "effort") %>%
+      group_by(fleet) %>%
+      summarise(effort = sum(effort) / length(fauna))
+
+
+    profits <- revenues %>%
+      left_join(effort, by = "fleet") %>%
+      mutate(cost = revenue / effort^2) %>%
+      mutate(profit = revenue - cost * effort^2)
+
+    max_rev <- map_dbl(fauna, "ssb0")
+
+    prices = pluck(fleets, 1,1) %>%
+      map_dbl("price")
+
+    max_p <- sum(max_rev * prices[names(max_rev)])
+
+    profits <- profits %>%
+      mutate(theta = log((effort * (1 + max_delta)) / effort) / (max_p))
+
+    fleets$longline$cost_per_unit_effort <- profits$cost[profits$fleet == "longline"]
+
+    fleets$longline$profit_sensitivity <- profits$theta[profits$fleet == "longline"]
+
+    fleets$longline$fleet_model <- "open access"
+
+    fleets$purseseine$cost_per_unit_effort <- profits$cost[profits$fleet == "purseseine"]
+
+    fleets$purseseine$profit_sensitivity <- profits$theta[profits$fleet == "purseseine"]
+
+    fleets$purseseine$fleet_model <- "open access"
 
     # assign objective score to each cell
 

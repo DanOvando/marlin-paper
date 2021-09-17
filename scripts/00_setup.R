@@ -34,7 +34,7 @@ foos <- list.files(here("R"))
 
 walk(foos, ~ source(here("R", .x)))
 
-results_name <- "v0.9"
+results_name <- "tester"
 
 results_path <- here("results", results_name)
 
@@ -50,7 +50,7 @@ experiment_workers <- 8
 
 run_casestudy <- FALSE
 
-optimize_casestudy <- TRUE
+optimize_casestudy <- FALSE
 
 safety_stop <- FALSE
 
@@ -72,7 +72,6 @@ time_steps <- seq(0,years - 1, by = time_step)
 
 theme_set(marlin::theme_marlin())
 
-tune_type <- "v1.0"
 
 # load data ---------------------------------------------------------------
 
