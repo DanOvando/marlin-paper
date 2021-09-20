@@ -136,7 +136,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_unit = "length"
         )
       ),
-      base_effort = resolution
+      base_effort = resolution^2
     ),
     "purseseine" = create_fleet(
       list(
@@ -272,7 +272,7 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_unit = "length"
         )
       ),
-      base_effort = resolution
+      base_effort = resolution^2
     )
   )
 

@@ -34,7 +34,7 @@ foos <- list.files(here("R"))
 
 walk(foos, ~ source(here("R", .x)))
 
-results_name <- "tester"
+results_name <- "test-rpue"
 
 results_path <- here("results", results_name)
 
@@ -50,7 +50,7 @@ experiment_workers <- 8
 
 run_casestudy <- FALSE
 
-optimize_casestudy <- FALSE
+optimize_casestudy <- TRUE
 
 safety_stop <- FALSE
 

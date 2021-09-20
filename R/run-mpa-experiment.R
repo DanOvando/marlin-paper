@@ -12,7 +12,6 @@ run_mpa_experiment <-
            max_delta = 1,
            resolution) {
 
-
     n_mpa <- round(prop_mpa * resolution^2)
 
     # set up open access
@@ -37,8 +36,8 @@ run_mpa_experiment <-
 
     profits <- revenues %>%
       left_join(effort, by = "fleet") %>%
-      mutate(cost = revenue / effort^2) %>%
-      mutate(profit = revenue - cost * effort^2)
+      mutate(cost = revenue / effort) %>%
+      mutate(profit = revenue - cost * effort)
 
     max_rev <- map_dbl(fauna, "ssb0")
 
@@ -48,7 +47,7 @@ run_mpa_experiment <-
     max_p <- sum(max_rev * prices[names(max_rev)])
 
     profits <- profits %>%
-      mutate(theta = log((effort * (1 + max_delta)) / effort) / (max_p))
+      mutate(theta = log((1 + max_delta)) / (max_p))
 
     fleets$longline$cost_per_unit_effort <- profits$cost[profits$fleet == "longline"]
 
@@ -56,11 +55,11 @@ run_mpa_experiment <-
 
     fleets$longline$fleet_model <- "open access"
 
-    fleets$purseseine$cost_per_unit_effort <- profits$cost[profits$fleet == "purseseine"]
+    # fleets$purseseine$cost_per_unit_effort <- profits$cost[profits$fleet == "purseseine"]
+    #
+    # fleets$purseseine$profit_sensitivity <- profits$theta[profits$fleet == "purseseine"]
 
-    fleets$purseseine$profit_sensitivity <- profits$theta[profits$fleet == "purseseine"]
-
-    fleets$purseseine$fleet_model <- "open access"
+    # fleets$purseseine$fleet_model <- "open access"
 
     # assign objective score to each cell
 
@@ -166,8 +165,6 @@ run_mpa_experiment <-
 
 
     # run MPA simulation
-
-
     mpa_sim <- simmar(
       fauna = fauna,
       fleets = fleets,

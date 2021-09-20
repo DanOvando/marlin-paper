@@ -21,7 +21,7 @@ optimize_mpa <-
            max_prop_mpa = 1,
            resolution,
            prop_sampled = .2,
-           max_delta = 1,
+           max_delta = 2,
            workers = 6,
            objective = "max_ssb") {
     # workers <- 6
@@ -78,13 +78,15 @@ optimize_mpa <-
       mutate(patch = 1:nrow(.)) %>%
       pivot_longer(-patch, names_to = "fleet", values_to = "effort") %>%
       group_by(fleet) %>%
-      summarise(effort = sum(effort) / length(fauna))
+      summarise(e2 = sum((effort / length(fauna))^1),
+                ee = sum(effort / length(fauna)))
 
+    # revenues$revenue <- 339613.9
 
     profits <- revenues %>%
       left_join(effort, by = "fleet") %>%
-      mutate(cost = revenue / effort^2) %>%
-      mutate(profit = revenue - cost * effort^2)
+      mutate(cost = revenue / e2) %>%
+      mutate(profit = revenue - cost * e2)
 
     max_rev <- map_dbl(fauna, "ssb0")
 
@@ -94,7 +96,7 @@ optimize_mpa <-
     max_p <- sum(max_rev * prices[names(max_rev)])
 
     profits <- profits %>%
-      mutate(theta = log((effort * (1 + max_delta)) / effort) / (max_p))
+      mutate(theta = log((1 + max_delta)) / (max_p))
 
     fleets$longline$cost_per_unit_effort <- profits$cost[profits$fleet == "longline"]
 
@@ -107,6 +109,8 @@ optimize_mpa <-
     fleets$purseseine$profit_sensitivity <- profits$theta[profits$fleet == "purseseine"]
 
     fleets$purseseine$fleet_model <- "open access"
+
+    # browser()
 
     calc_objective_function <-
       function(candidate_patch, fauna, fleets, mpas,starting_conditions) {
@@ -123,6 +127,22 @@ optimize_mpa <-
           initial_conditions = starting_conditions[[1]]
         )
 
+wtf <- process_marlin(sim_mpa)
+browser()
+
+        #
+        #
+        effort <- map_df(sim_mpa, ~map_df(.x,~.x$e_p_fl) %>% mutate(patch = 1:nrow(.))) %>%
+          ungroup() %>%
+          group_by(patch) %>%
+          mutate(year = 1:length(longline)) %>%
+          pivot_longer(c(-patch,-year), names_to = "fleet", values_to = "effort") %>%
+          group_by(fleet,year) %>%
+          summarise(effort = sum(effort,na.rm = TRUE) / length(fauna))
+
+        effort %>%
+          ggplot(aes(year, effort, color = fleet)) +
+          geom_line()
         res <-
           sim_mpa[[length(sim_mpa)]] # for now, just calculate in the final timestep
 
@@ -152,6 +172,10 @@ optimize_mpa <-
 
         econ_mpa <-
           (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
+
+        # effort <- map_df(res[1], ~.x$e_p_fl) %>% mutate(patch = 1:nrow(.)) # effort is the same across species
+
+        # browser()
 
         # delta_econ <- econ_mpa - econ_sq
         #
@@ -305,6 +329,7 @@ optimize_mpa <-
       # econ[delta_econ > 0 & delta_biodiv < 0] <- 0
 
       econ <- econ_mpa
+      browser()
 
     # econ <-
     #   (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species

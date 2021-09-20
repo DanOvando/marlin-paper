@@ -200,7 +200,9 @@ starting_trajectory <- simmar(fauna = fauna, fleets = fleets, years = 200)
 starting_conditions <- starting_trajectory[length(starting_trajectory)]
 
 
-proc_starting_conditions <- process_marlin(starting_conditions)
+proc_starting_conditions <- process_marlin(starting_trajectory)
+
+plot_marlin(proc_starting_conditions)
 
 if (run_casestudy == TRUE){
 
@@ -247,9 +249,9 @@ write_rds(case_study_experiments, file = file.path(results_path, "case_study_exp
 
 if (optimize_casestudy == TRUE){
 
-  optimized_networks <- tibble(alpha = seq(0,1, length.out = 20))
+  # optimized_networks <- tibble(alpha = seq(0,1, length.out = 20))
 
-  # optimized_networks <- tibble(alpha = 0)
+  optimized_networks <- tibble(alpha = 0)
 
   fauna <- casestudy$fauna[[1]]
 
@@ -267,7 +269,7 @@ if (optimize_casestudy == TRUE){
         prop_sampled = 0.2,
         starting_conditions = starting_conditions,
         resolution = resolution,
-        workers = experiment_workers
+        workers = 1
       ))
 
   Sys.time() - a
@@ -413,7 +415,7 @@ if (optimize_casestudy == TRUE){
 # process results ---------------------------------------------------------
 
 ex <- optimized_networks %>%
-  filter(round(alpha,1) == 1) %>%
+  filter(round(alpha,1) == 0) %>%
   slice(1)
 
 ex <- ex$network[[1]]$mpa_network %>%
@@ -704,8 +706,12 @@ b = opt_obj %>%
   scale_x_continuous(name = "% MPA") +
   scale_y_continuous(name = "SSB/SSB0")
 
-a / b
+opt_obj %>%
+  group_by(alpha) %>%
+  filter(obj == max(obj))
 
+a / b
+stop()
 total_opt_obj %>%
   ggplot(aes(p_protected, econ, color = factor(alpha))) +
   geom_line() +

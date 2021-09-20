@@ -388,6 +388,30 @@ catch_habitat / sdm_habitat
 ```
 
 
+# RPUE vs REvenue vs PPUE
 
+So there are clearly some differences between the outcomes with the three fleet models. 
 
+when the fleet distributes itself based on RPUE, as you start to fish things down the "best" patches start to look worse relative to the worst patches. This is because as you start to allocate more and more effort towards the high revenye patches, ther marginal benefit goes down, since the marginal increase in f per unit increase in E starts to decrease. So, the best revenye patch is 53 times better than the worst, but the best RPUE patch is only 7 time bigger than the worst. 
 
+So RPUE is closer to PPUE, since it captures the effect that the demonitator starts to grow faster than the numerator at high E. Whereas with just revenue, as you increase effort the value of that patch just keeps going up, assuming a constant supply of fish. So you're including the "stock effect" sort of, and then with PPUE you add in the fact that not only do you get diminishing returns in E, but it costs you money to exert E. 
+
+The revenue model says that even if it takes you infinite effort to get 101 units, and 1 effort to get 100 units, go to 101 units. 
+
+So that bets two questions. 1 is there any logical reason for revenue in a real world setting where it would be distributed by revenue, not by RPUE? 
+
+A fleet's objective function is maximize profits, either individually or in total. Let's think about in total then. The fleet will pick the the total amount of effort that maximizes profits, conditional on distributing those profits to mazimize profits per unit effort, right? 
+
+The other is, did the solving the increased revenus through overfishing by mPA get solved by the open access or by the fleet model? GOod test, set alpha = 0, set fleet to RPUE, but also open access, see if that fixes it. 
+
+If it doesn't another thing to consider it to modify the objective function to maximize RPUE or something like that to try and reflect costs 
+
+the fundamental issues is that the fleet model and the optimization can have two different objectives. When you allocate around RPUE and optimize around revenue, the fleet is "suboptimal" since it allocqtes a bit less effort to the best patches, since their RPUE is a little lower thanks to the baranov. 
+
+When you allocate by revenue you are least being internally consistent, i.e. the fleet is just maximizing revenue, and then you optimize around that. So, that seems like the best option until you figure out how to deal with profits / costs intelligently. 
+
+Which is a strategy: shift the optimization to be around profits not revenue, which because you are assuming constant effort unless you include an exponent on effort, which causes a whole new set of problems since minute differences in the spatial distribution can change the outcomes, then optimizing around RPUE should be the same as optimizing around profits? So changing the optimization to profits should do nothing. becuase it's just going to be the same thing, except minus cost * constant effort. 
+
+The only reason anyof this really matters is it if has a big impact on the bycatch implications. So, go back and run the experiments. If the revenue vs rpue this is intrinsic, then you need to consider it. If it's just a trait ot he WCPO scenario, then interestinh and flag and use this to discuss the critical need for better fleet modeling with Jim. 
+
+Fishing the line is the culprit i think. in order for unintended consequences to occue, species have to live in different places. when you disteirbute by revenue, fishing the line is much more pronouned: people stick by the MPA edge. But, when you do RPUE, the near-MPA area starts to lose its appeal after a bit and people wander to new areas, causing problems. 

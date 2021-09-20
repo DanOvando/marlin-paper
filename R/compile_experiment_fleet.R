@@ -68,9 +68,9 @@ compile_experiment_fleet <- function(fauna, state, tune_type = "explt") {
         spatial_catchability = shark_spatial_q
       )
     ),
-    base_effort = resolution
+    spatial_allocation = state$spatial_allocation[[1]],
+    base_effort = resolution^2
   ))
-
 
   # a <- Sys.time()
 

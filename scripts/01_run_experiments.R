@@ -10,7 +10,8 @@ if (run_experiments) {
     tibble(
       sigma_centroid = runif(n_states, .1 * resolution, resolution ^ 2 / 2),
       sigma_hab = runif(n_states, .1 * resolution, resolution ^ 2 / 8),
-      spatial_q = sample(c(FALSE,TRUE), n_states, replace = TRUE, prob = c(3,1))
+      spatial_q = sample(c(FALSE,TRUE), n_states, replace = TRUE, prob = c(3,1)),
+      spatial_allocation = sample(c("revenue","rpue"), n_states, replace = TRUE)
     ) %>%
     mutate(state_id = 1:nrow(.))
 
@@ -116,12 +117,12 @@ if (run_experiments) {
       adult_movement_sigma = runif(
         nrow(.),
         min = 0.05 * resolution,
-        max = 3 * resolution
+        max = 2 * resolution
       ),
       recruit_movement_sigma = runif(
         nrow(.),
         min = 0.05 * resolution,
-        max = 3 * resolution
+        max = 2 * resolution
       ),
       rec_form = sample(c(0, 1, 2, 3), nrow(.), replace = TRUE)
     )
@@ -219,14 +220,13 @@ if (run_experiments) {
     ),
     prop_mpa = seq(0, 1, by = 0.05),
     prop_critters_considered = 1,
-    placement_error = c(0, .1, .5)
+    placement_error = c(0)
   ) %>%
     group_by_at(colnames(.)[!colnames(.) %in% c("temp", "prop_mpa")]) %>%
     nest() %>%
     ungroup() %>%
     mutate(placement_id = 1:nrow(.)) %>%
     unnest(cols = data)
-
 
   # safety stop -------------------------------------------------------------
   if (safety_stop) {
@@ -784,7 +784,7 @@ fig_9 <- results %>%
   ggplot(aes(
     prop_mpa,
     biodiv - bau_biodiv,
-    color = factor(placement_error),
+    color = factor(spatial_allocation),
     group = interaction(placement_id, state_id)
   )) +
   geom_line(alpha = 0.2) +
