@@ -16,52 +16,8 @@ run_mpa_experiment <-
 
     # set up open access
 
-    starting <- starting_conditions[[length(starting_conditions)]]
+    # starting <- starting_conditions[[length(starting_conditions)]]
 
-    revenues <-  map_df(starting, ~.x$r_p_a_fl %>%
-                          reshape2::melt() %>%
-                          group_by(Var3) %>%
-                          summarise(revenue = sum(value, na.rm = TRUE))) %>%
-      group_by(Var3) %>%
-      rename(fleet = Var3) %>%
-      summarise(revenue = sum(revenue))
-
-    effort <- map_df(starting, ~.x$e_p_fl) %>%
-      ungroup() %>%
-      mutate(patch = 1:nrow(.)) %>%
-      pivot_longer(-patch, names_to = "fleet", values_to = "effort") %>%
-      group_by(fleet) %>%
-      summarise(effort = sum(effort) / length(fauna))
-
-
-    profits <- revenues %>%
-      left_join(effort, by = "fleet") %>%
-      mutate(cost = revenue / effort) %>%
-      mutate(profit = revenue - cost * effort)
-
-    max_rev <- map_dbl(fauna, "ssb0")
-
-    prices = pluck(fleets, 1,1) %>%
-      map_dbl("price")
-
-    max_p <- sum(max_rev * prices[names(max_rev)])
-
-    profits <- profits %>%
-      mutate(theta = log((1 + max_delta)) / (max_p))
-
-    fleets$longline$cost_per_unit_effort <- profits$cost[profits$fleet == "longline"]
-
-    fleets$longline$profit_sensitivity <- profits$theta[profits$fleet == "longline"]
-
-    fleets$longline$fleet_model <- "open access"
-
-    # fleets$purseseine$cost_per_unit_effort <- profits$cost[profits$fleet == "purseseine"]
-    #
-    # fleets$purseseine$profit_sensitivity <- profits$theta[profits$fleet == "purseseine"]
-
-    # fleets$purseseine$fleet_model <- "open access"
-
-    # assign objective score to each cell
 
     critters_considered <- sample(names(fauna), round(prop_critters_considered * n_distinct(names(fauna))), replace = FALSE)
 
@@ -69,7 +25,7 @@ run_mpa_experiment <-
 
       # place MPAs in proportion to depletion-weighted spawning stock biomass
       depletion <-
-        (1 - (map_df(starting_conditions[[1]], ~ sum(.x$ssb_p_a) / .x$ssb0))) %>%  # depletion of each species
+        (1 - (map_df(starting_conditions, ~ sum(.x$ssb_p_a) / .x$ssb0))) %>%  # depletion of each species
         pivot_longer(everything(), names_to = "critter", values_to = "weight")
 
       priorities <- proc_starting_conditions$fauna %>%
@@ -93,7 +49,7 @@ run_mpa_experiment <-
       # place in proportino to depletion weighted catch relative to total catch. So, cells in which most of the catch comes from really depleted species, higher priority
 
       depletion <-
-        (1 - (map_df(starting_conditions[[1]], ~ sum(.x$ssb_p_a) / .x$ssb0))) %>%  # depletion of each species
+        (1 - (map_df(starting_conditions, ~ sum(.x$ssb_p_a) / .x$ssb0))) %>%  # depletion of each species
         pivot_longer(everything(), names_to = "critter", values_to = "weight")
 
       priorities <- proc_starting_conditions$fauna %>%
@@ -165,31 +121,44 @@ run_mpa_experiment <-
 
 
     # run MPA simulation
+
     mpa_sim <- simmar(
       fauna = fauna,
       fleets = fleets,
       years = years,
       mpas = list(locations = mpas,
                   mpa_year = 1),
-      initial_conditions = starting_conditions[[1]]
+      initial_conditions = starting_conditions
     )
 
     # process results
 
-    # outcomes <- process_marlin(mpa_sim, steps_to_keep = last(names(mpa_sim)),time_step = fauna[[1]]$time_step, keep_age = FALSE)
+    # outcomes <- process_marlin(mpa_sim,time_step = fauna[[1]]$time_step, keep_age = FALSE)
 
     #
-    # plot_marlin(outcomes)
+    # plot_marlin(outcomes, max_scale = FALSE, plot_var = "c")
 
     biodiv <-
       (map_df(mpa_sim[[length(mpa_sim)]], ~ sum(.x$ssb_p_a) / .x$ssb0)) %>%
       pivot_longer(everything(), names_to = "critter",values_to = "biodiv")
+
+    # print(max(biodiv$biodiv))
+    if (any(biodiv$biodiv > 2) | any(is.na(biodiv$biodiv))){
+      stop()
+    }
     # calculate biodiversity component of objective function
 
     # econ <- sum(map_dbl(res, ~sum(.x$c_p_a))) #  calculate econ component of objective function
-    #
+
+
+    # econ <-
+    #   (map_df(mpa_sim[[length(mpa_sim)]], ~ sum(.x$r_p_a_fl, na.rm = TRUE))) %>%
+    #   pivot_longer(everything(), names_to = "critter",values_to = "econ")
+    # #  calculate econ component of objective function, currently revenues across all fleets and species
+
+
     econ <-
-      (map_df(mpa_sim[[length(mpa_sim)]], ~ sum(.x$r_p_a_fl, na.rm = TRUE))) %>%
+      (map_df(mpa_sim[[length(mpa_sim)]], ~ sum(.x$prof_p_fl, na.rm = TRUE))) %>%
       pivot_longer(everything(), names_to = "critter",values_to = "econ")
     #  calculate econ component of objective function, currently revenues across all fleets and species
 

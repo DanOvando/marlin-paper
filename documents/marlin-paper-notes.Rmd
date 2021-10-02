@@ -415,3 +415,37 @@ Which is a strategy: shift the optimization to be around profits not revenue, wh
 The only reason anyof this really matters is it if has a big impact on the bycatch implications. So, go back and run the experiments. If the revenue vs rpue this is intrinsic, then you need to consider it. If it's just a trait ot he WCPO scenario, then interestinh and flag and use this to discuss the critical need for better fleet modeling with Jim. 
 
 Fishing the line is the culprit i think. in order for unintended consequences to occue, species have to live in different places. when you disteirbute by revenue, fishing the line is much more pronouned: people stick by the MPA edge. But, when you do RPUE, the near-MPA area starts to lose its appeal after a bit and people wander to new areas, causing problems. 
+
+So, I think the solution is
+
+1. store profit per fleet per patch in simmar so you can stop having to wrangle it
+
+2. optimize around profits
+
+3. Distribute fleet based on profits 
+
+4. Turn off open access
+
+This means that if you assume 0 profits at start, then you can only go down profit wise from overfished, but could in theory go up from rebuilding. 
+
+So, that means that you're capturing the assumption that there's a reason why things are underfished now, but still allows for rebulding benefits
+
+In order for this to have any spatial effect you need to have an exponent on effort cost or something like that. Otherwise, maximizing revenue is the exact same thing as maximizing profits - a constant (base_effort * cost_per_unit_effort). 
+
+All of this serves two purposes. 1st to make things internally consistent for the optimization and the fleet model. 2nd to stop the "optimal" thing being to corral the fleet into catching more. \
+
+An alternative would be to introduce a port and include a distance from fleet thing? But I think you can rationalize the exponent based on competition, gear competition (e.g. need to pull in longline and reset a bunch), and hold capacity? though does that really hold in the real world? I think it would have to be things like longer soak times needed?
+
+
+The other thing that matter here is how you are thinking about the market. If it's one mobile fleet  then it makes sense ot pool revenues and costs everywhere. But, if it were a bunch of independent fleets in each patch, that get some displaced into them, then the decreased profit margins in indiivual patches start to matter
+
+OK the only thing clear in this is that you do nede to actually run the damn counterfactual, it doesn't take long soj ust do it. 
+
+sigh ok calling it. But for tomorrow, the key is to go back into simmar, and calculate profits by species, by first tallying fleet wide profits, and then dividing by the proportino of revenue by species 
+
+Within the simulation model, if the spatial allocation was RPUE, then effort in the current time step would be exactly proportional to RPUE in the prior time step. 
+
+You don't see that in the data. You do see a strong correlation with revenue in the prior time step. Really hard to say if that is causal, i.e. are fleets chasing revenue or is it a site effect or what, but it's at elast a piece of evidence. So, I think you go with revenue in the model, and use the experiments to make the case in the discussion the discussion that any tactical modeling needs to understand how the fleet actually responds and distributes itself. 
+
+Choice depends a lot on the unts in question. IF you think that every unit of effort is discrete and per vessel, i.e. vessel I does or does not fish in that patch, then RPUE woul be the metric
+

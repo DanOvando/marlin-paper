@@ -197,13 +197,77 @@ fleets <- casestudy$fleet[[1]]
 starting_trajectory <- simmar(fauna = fauna, fleets = fleets, years = 200)
 
 
-starting_conditions <- starting_trajectory[length(starting_trajectory)]
+starting <- starting_trajectory[[length(starting_trajectory)]]
 
+revenues <-  map_df(starting, ~.x$r_p_a_fl %>%
+                      reshape2::melt() %>%
+                      group_by(Var3) %>%
+                      summarise(revenue = sum(value, na.rm = TRUE))) %>%
+  group_by(Var3) %>%
+  rename(fleet = Var3) %>%
+  summarise(revenue = sum(revenue))
+
+# effort <- map_df(starting, ~.x$e_p_fl) %>%
+#   ungroup() %>%
+#   mutate(patch = 1:nrow(.)) %>%
+#   pivot_longer(-patch, names_to = "fleet", values_to = "effort") %>%
+#   group_by(fleet) %>%
+#   summarise(e2 = sum((effort / length(fauna))^1),
+#             ee = sum(effort / length(fauna)))
+
+effort <- map_df(starting[1], ~.x$e_p_fl) %>%
+  ungroup() %>%
+  mutate(patch = 1:nrow(.)) %>%
+  pivot_longer(-patch, names_to = "fleet", values_to = "effort") %>%
+  group_by(fleet) %>%
+  summarise(e2 = sum(((effort + 1)^fleets[[1]]$effort_cost_exponent)),
+            check = sum(effort))
+
+
+# revenues$revenue <- 339613.9
+
+profits <- revenues %>%
+  left_join(effort, by = "fleet") %>%
+  mutate(cost = revenue / e2) %>%
+  mutate(profit = revenue - cost * e2)
+
+max_rev <- map_dbl(fauna, "ssb0")
+
+prices = pluck(fleets, 1,1) %>%
+  map_dbl("price")
+
+max_p <- sum(max_rev * prices[names(max_rev)])
+
+profits <- profits %>%
+  mutate(theta = log((1 + max_delta)) / (max_p))
+
+fleets$longline$cost_per_unit_effort <- profits$cost[profits$fleet == "longline"]
+
+fleets$longline$profit_sensitivity <- profits$theta[profits$fleet == "longline"]
+
+fleets$purseseine$spatial_allocation <- "profit"
+
+fleets$purseseine$cost_per_unit_effort <- profits$cost[profits$fleet == "purseseine"]
+
+fleets$purseseine$profit_sensitivity <- profits$theta[profits$fleet == "purseseine"]
+
+fleets$purseseine$spatial_allocation <- "profit"
+
+
+# browser()
+#
+
+starting_trajectory <- simmar(fauna = fauna,
+                                      fleets = fleets,
+                                      year = years,
+                                      initial_conditions = starting)
+
+
+starting_conditions <- starting_trajectory[[length(starting_trajectory)]]
 
 proc_starting_conditions <- process_marlin(starting_trajectory)
 
-plot_marlin(proc_starting_conditions)
-
+plot_marlin(proc_starting_conditions, max_scale = FALSE)
 if (run_casestudy == TRUE){
 
   future::plan(future::multisession, workers = experiment_workers)
@@ -211,13 +275,14 @@ if (run_casestudy == TRUE){
   case_study_experiments <-
     expand_grid(
       placement_strategy = c("depletion", "rate", "avoid_fishing", "target_fishing", "area"),
-      prop_mpa = seq(0, 1, by = 0.01),
-      prop_critters_considered = seq(.1,1, length.out = 4),
-      placement_error = seq(0,2, length.out = 5)
+      prop_mpa = seq(0,.99, by = 0.01),
+      prop_critters_considered = 1,
+      placement_error = 0
     )
 
   a <- Sys.time()
   case_study_experiments <- case_study_experiments %>%
+    ungroup() %>%
     mutate(results = future_pmap(list(placement_strategy = placement_strategy,
                                prop_mpa = prop_mpa,
                                prop_critters_considered = prop_critters_considered,
@@ -249,13 +314,9 @@ write_rds(case_study_experiments, file = file.path(results_path, "case_study_exp
 
 if (optimize_casestudy == TRUE){
 
-  # optimized_networks <- tibble(alpha = seq(0,1, length.out = 20))
+  optimized_networks <- tibble(alpha = seq(0,1, length.out = 20))
 
-  optimized_networks <- tibble(alpha = 0)
-
-  fauna <- casestudy$fauna[[1]]
-
-  fleets <- casestudy$fleet[[1]]
+  # optimized_networks <- tibble(alpha = c(0,1))
 
   a <- Sys.time()
   optimized_networks <- optimized_networks %>%
@@ -263,13 +324,13 @@ if (optimize_casestudy == TRUE){
       network = pmap(
         list(alpha = alpha),
         optimize_mpa,
-        fauna = casestudy$fauna[[1]],
-        fleets = casestudy$fleet[[1]],
-        max_prop_mpa = 1,
+        fauna = fauna,
+        fleets = fleets,
+        max_prop_mpa = .95,
         prop_sampled = 0.2,
         starting_conditions = starting_conditions,
         resolution = resolution,
-        workers = 1
+        workers = experiment_workers
       ))
 
   Sys.time() - a
@@ -415,7 +476,7 @@ if (optimize_casestudy == TRUE){
 # process results ---------------------------------------------------------
 
 ex <- optimized_networks %>%
-  filter(round(alpha,1) == 0) %>%
+  filter(alpha == 0) %>%
   slice(1)
 
 ex <- ex$network[[1]]$mpa_network %>%
@@ -432,7 +493,7 @@ tmp_result <- simmar(
   years = years,
   mpas = list(locations = mpa,
               mpa_year = 1),
-  initial_conditions = starting_conditions[[1]]
+  initial_conditions = starting_conditions
 )
 
 res <-
@@ -486,13 +547,13 @@ mpas <- ex %>%
 # calculate objective function for base case (no mpa)
 
 bau_biodiv <-
-  (map_df(starting_conditions[[1]], ~ sum(.x$ssb_p_a) / .x$ssb0)) %>%  # calculate biodiversity component of objective function
+  (map_df(starting_conditions, ~ sum(.x$ssb_p_a) / .x$ssb0)) %>%  # calculate biodiversity component of objective function
   pivot_longer(everything(), names_to = "critter",values_to = "bau_biodiv")
 
 # econ <- sum(map_dbl(res, ~sum(.x$c_p_a))) #  calculate econ component of objective function
 
 bau_econ <-
-  (map_df(starting_conditions[[1]], ~ sum(.x$r_p_a_fl, na.rm = TRUE))) %>%
+  (map_df(starting_conditions, ~ sum(.x$prof_p_fl, na.rm = TRUE))) %>%
   pivot_longer(everything(), names_to = "critter",values_to = "bau_econ")
 #  calculate econ component of objective function, currently revenues across all fleets and species
 
@@ -513,8 +574,8 @@ experiment_obj %>%
   facet_grid(placement_strategy~critter, scales = "free_y")
 
 experiment_obj %>%
-  ggplot(aes(prop_mpa, biodiv, color = log(econ))) +
-  geom_point() +
+  ggplot(aes(prop_mpa, biodiv, color = placement_strategy)) +
+  geom_point(alpha = 0.25) +
   facet_wrap(~critter, scales = "free_y")
 
 experiment_obj %>%
@@ -526,7 +587,7 @@ experiment_obj %>%
 
 
 experiment_obj %>%
-  ggplot(aes(prop_mpa, econ)) +
+  ggplot(aes(prop_mpa, econ, color = placement_strategy)) +
   geom_point() +
   facet_wrap(~critter, scales = "free_y")
 
@@ -572,7 +633,7 @@ opt_obj %>%
 experiment_obj <- experiment_obj %>%
   left_join(bau, by = "critter") %>%
   mutate(delta_biodiv = biodiv / bau_biodiv - 1,
-         delta_econ = econ / bau_econ - 1)
+         delta_econ = econ - bau_econ)
 
 experiment_obj %>%
   ggplot(aes(prop_mpa, delta_econ)) +
@@ -593,7 +654,7 @@ cs_fig_2 <- experiment_obj %>%
 opt_obj <- opt_obj %>%
   left_join(bau, by = "critter") %>%
   mutate(delta_biodiv = ssb_v_ssb0 / bau_biodiv - 1,
-         delta_econ = econ / bau_econ - 1)
+         delta_econ = econ - bau_econ)
 
 total_opt_obj <- opt_obj %>%
   group_by(alpha, p_protected) %>%
@@ -607,7 +668,7 @@ total_opt_obj <- opt_obj %>%
             bau_biodiv = sum(bau_biodiv)) %>%
   ungroup() %>%
   mutate(delta_biodiv = biodiv / bau_biodiv - 1,
-         delta_econ = econ / bau_econ - 1)
+         delta_econ = econ - bau_econ)
 
 opt_obj %>%
   ggplot(aes(p_protected, ssb_v_ssb0)) +
@@ -641,7 +702,7 @@ total_experiment_obj <- experiment_obj %>%
            ) %>%
   ungroup() %>%
   mutate(delta_biodiv = biodiv / bau_biodiv - 1,
-         delta_econ = econ / bau_econ - 1)
+         delta_econ = econ - bau_econ)
 
 
 cs_fig_6 <- total_experiment_obj %>%
@@ -707,14 +768,20 @@ b = opt_obj %>%
   scale_y_continuous(name = "SSB/SSB0")
 
 opt_obj %>%
-  group_by(alpha) %>%
-  filter(obj == max(obj))
+  ggplot(aes(p_protected, ssb_v_ssb0)) +
+  geom_point() +
+  facet_wrap(~critter, scales = "free_y")
+
+# opt_obj %>%
+#   group_by(alpha) %>%
+#   filter(obj == max(obj))
 
 a / b
-stop()
 total_opt_obj %>%
+  group_by(alpha) %>%
+  filter(obj_fun == max(obj_fun)) %>%
   ggplot(aes(p_protected, econ, color = factor(alpha))) +
-  geom_line() +
+  geom_point() +
   scale_color_viridis_d()
 
 total_opt_obj %>%
@@ -742,14 +809,14 @@ cs_fig_10 <- total_opt_obj %>%
   ungroup() %>%
   ggplot() +
   geom_line(aes(delta_biodiv, delta_econ, color= alpha), size = 2) +
-  geom_point(data = total_experiment_obj,aes(delta_biodiv, delta_econ),size = 2, alpha = 0.1, fill = "red", shape = 21) +
+  geom_point(data = total_experiment_obj %>% filter(placement_strategy == "target_fishing"),aes(delta_biodiv, delta_econ),size = 2, alpha = 0.1, fill = "red", shape = 21) +
   geom_vline(aes(xintercept = 0), linetype = 2) +
   geom_hline(aes(yintercept = 0), linetype = 2) +
   geom_abline(intercept = 0, slope = -1) +
   facet_wrap(~placement_strategy) +
   scale_color_viridis_c(name = "Conservation Weighting in Optimization") +
-  scale_x_continuous(labels = scales::percent, name = "Change in Total Biodiversity Relative to BAU ") +
-  scale_y_continuous(labels = scales::percent, name = "Change in Revenue Relative to BAU ") +
+  # scale_x_continuous(labels = scales::percent, name = "Change in Total Biodiversity Relative to BAU ") +
+  # scale_y_continuous(labels = scales::percent, name = "Change in Revenue Relative to BAU ") +
   theme(axis.text.x = element_text(size = 8),
         legend.position = "top")
 

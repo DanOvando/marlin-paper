@@ -60,57 +60,7 @@ optimize_mpa <-
     mpa_network <-
       vector(mode = "list", length = max_patches_protected)
 
-
     # set up open access
-
-    starting <- starting_conditions[[length(starting_conditions)]]
-
-    revenues <-  map_df(starting, ~.x$r_p_a_fl %>%
-                          reshape2::melt() %>%
-                          group_by(Var3) %>%
-                          summarise(revenue = sum(value, na.rm = TRUE))) %>%
-      group_by(Var3) %>%
-      rename(fleet = Var3) %>%
-      summarise(revenue = sum(revenue))
-
-    effort <- map_df(starting, ~.x$e_p_fl) %>%
-      ungroup() %>%
-      mutate(patch = 1:nrow(.)) %>%
-      pivot_longer(-patch, names_to = "fleet", values_to = "effort") %>%
-      group_by(fleet) %>%
-      summarise(e2 = sum((effort / length(fauna))^1),
-                ee = sum(effort / length(fauna)))
-
-    # revenues$revenue <- 339613.9
-
-    profits <- revenues %>%
-      left_join(effort, by = "fleet") %>%
-      mutate(cost = revenue / e2) %>%
-      mutate(profit = revenue - cost * e2)
-
-    max_rev <- map_dbl(fauna, "ssb0")
-
-    prices = pluck(fleets, 1,1) %>%
-      map_dbl("price")
-
-    max_p <- sum(max_rev * prices[names(max_rev)])
-
-    profits <- profits %>%
-      mutate(theta = log((1 + max_delta)) / (max_p))
-
-    fleets$longline$cost_per_unit_effort <- profits$cost[profits$fleet == "longline"]
-
-    fleets$longline$profit_sensitivity <- profits$theta[profits$fleet == "longline"]
-
-    fleets$longline$fleet_model <- "open access"
-
-    fleets$purseseine$cost_per_unit_effort <- profits$cost[profits$fleet == "purseseine"]
-
-    fleets$purseseine$profit_sensitivity <- profits$theta[profits$fleet == "purseseine"]
-
-    fleets$purseseine$fleet_model <- "open access"
-
-    # browser()
 
     calc_objective_function <-
       function(candidate_patch, fauna, fleets, mpas,starting_conditions) {
@@ -124,25 +74,23 @@ optimize_mpa <-
           years = years,
           mpas = list(locations = tmp_mpas,
                       mpa_year = 1),
-          initial_conditions = starting_conditions[[1]]
+          initial_conditions = starting_conditions
         )
 
-wtf <- process_marlin(sim_mpa)
-browser()
 
         #
         #
-        effort <- map_df(sim_mpa, ~map_df(.x,~.x$e_p_fl) %>% mutate(patch = 1:nrow(.))) %>%
-          ungroup() %>%
-          group_by(patch) %>%
-          mutate(year = 1:length(longline)) %>%
-          pivot_longer(c(-patch,-year), names_to = "fleet", values_to = "effort") %>%
-          group_by(fleet,year) %>%
-          summarise(effort = sum(effort,na.rm = TRUE) / length(fauna))
+        # effort <- map_df(sim_mpa, ~map_df(.x,~.x$e_p_fl) %>% mutate(patch = 1:nrow(.))) %>%
+        #   ungroup() %>%
+        #   group_by(patch) %>%
+        #   mutate(year = 1:length(longline)) %>%
+        #   pivot_longer(c(-patch,-year), names_to = "fleet", values_to = "effort") %>%
+        #   group_by(fleet,year) %>%
+        #   summarise(effort = sum(effort,na.rm = TRUE) / length(fauna))
 
-        effort %>%
-          ggplot(aes(year, effort, color = fleet)) +
-          geom_line()
+        # effort %>%
+        #   ggplot(aes(year, effort, color = fleet)) +
+        #   geom_line()
         res <-
           sim_mpa[[length(sim_mpa)]] # for now, just calculate in the final timestep
 
@@ -150,7 +98,7 @@ browser()
           (map_dbl(res, ~ sum(.x$ssb_p_a) / .x$ssb0)) # calculate biodiversity component of objective function
 
         biodiv_sq <-
-          map_dbl(starting_conditions[[1]], ~ sum(.x$ssb_p_a) / .x$ssb0) # calculate biodiversity component of objective function
+          map_dbl(starting_conditions, ~ sum(.x$ssb_p_a) / .x$ssb0) # calculate biodiversity component of objective function
 
 
         delta_biodiv <- biodiv_mpa - biodiv_sq
@@ -168,22 +116,11 @@ browser()
         # econ <- sum(map_dbl(res, ~sum(.x$c_p_a))) #  calculate econ component of objective function
 
         econ_sq <-
-          (map_dbl(starting_conditions[[1]], ~ sum(.x$r_p_a_fl, na.rm = TRUE)))
+          (map_dbl(starting_conditions, ~ sum(.x$r_p_a_fl, na.rm = TRUE)))
 
-        econ_mpa <-
-          (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
+        profit_mpa <-  (map_dbl(res, ~ sum(.x$prof_p_fl, na.rm = TRUE)))
 
-        # effort <- map_df(res[1], ~.x$e_p_fl) %>% mutate(patch = 1:nrow(.)) # effort is the same across species
-
-        # browser()
-
-        # delta_econ <- econ_mpa - econ_sq
-        #
-        # econ <- delta_econ
-        #
-        # econ[delta_econ > 0 & delta_biodiv < 0] <- 0
-
-        econ <- sum(econ_mpa)
+        econ <- sum(profit_mpa, na.rm = TRUE)
 
         # econ <-
         #   sum(map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
@@ -191,7 +128,6 @@ browser()
         out <- tibble(biodiv = biodiv, econ = econ)
 
       }
-
 
     for (i in 1:max_patches_protected) {
       # determine marginal objective function value of each sampled cell
@@ -206,7 +142,7 @@ browser()
           fauna = fauna,
           fleets = fleets,
           mpas = mpas,
-          starting_conditions = starting_conditions,
+          starting_conditions = starting,
           .options = furrr_options(seed = 42),
           .progress = FALSE
         )
@@ -241,7 +177,7 @@ browser()
         years = years,
         mpas = list(locations = mpas,
                     mpa_year = 1),
-        initial_conditions = starting_conditions[[1]]
+        initial_conditions = starting_conditions
       )
 
       res <-
@@ -251,26 +187,20 @@ browser()
           (map_dbl(res, ~ sum(.x$ssb_p_a) / .x$ssb0)) # calculate biodiversity component of objective function
 
         biodiv_sq <-
-          map_dbl(starting_conditions[[1]], ~ sum(.x$ssb_p_a) / .x$ssb0) # calculate biodiversity component of objective function
+          map_dbl(starting_conditions, ~ sum(.x$ssb_p_a) / .x$ssb0) # calculate biodiversity component of objective function
 
 
         delta_biodiv <- biodiv - biodiv_sq
 
         econ_sq <-
-          (map_dbl(starting_conditions[[1]], ~ sum(.x$r_p_a_fl, na.rm = TRUE)))
+          (map_dbl(starting_conditions, ~ sum(.x$r_p_a_fl, na.rm = TRUE)))
 
-        econ_mpa <-
-          (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
+        # econ_mpa <-
+        #   (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
 
-        # delta_econ <- econ_mpa - econ_sq
-        #
-        # econ <- delta_econ
-        #
-        # econ[delta_econ > 0 & delta_biodiv < 0] <- 0
-        #
-        econ <- econ_mpa
-      # econ <-
-      #   (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
+        profit_mpa <-  (map_dbl(res, ~ sum(.x$prof_p_fl, na.rm = TRUE)))
+
+        econ <- profit_mpa
 
       out <-
         list(
@@ -302,7 +232,7 @@ browser()
     tmp_result <- simmar(fauna = fauna,
                          fleets = fleets,
                          years = years,
-                         initial_conditions = starting_conditions[[1]])
+                         initial_conditions = starting_conditions)
 
     res <-
       tmp_result[[length(tmp_result)]] # for now, just calculate in the final timestep
@@ -311,25 +241,17 @@ browser()
         (map_dbl(res, ~ sum(.x$ssb_p_a) / .x$ssb0)) # calculate biodiversity component of objective function
 
       biodiv_sq <-
-        map_dbl(starting_conditions[[1]], ~ sum(.x$ssb_p_a) / .x$ssb0) # calculate biodiversity component of objective function
+        map_dbl(starting_conditions, ~ sum(.x$ssb_p_a) / .x$ssb0) # calculate biodiversity component of objective function
 
 
       delta_biodiv <- biodiv - biodiv_sq
 
       econ_sq <-
-        (map_dbl(starting_conditions[[1]], ~ sum(.x$r_p_a_fl, na.rm = TRUE)))
+        (map_dbl(starting_conditions, ~ sum(.x$r_p_a_fl, na.rm = TRUE)))
 
-      econ_mpa <-
-        (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
+      profit_mpa <-  (map_dbl(res, ~ sum(.x$prof_p_fl, na.rm = TRUE)))
 
-      # delta_econ <- econ_mpa - econ_sq
-      #
-      # econ <- delta_econ
-      #
-      # econ[delta_econ > 0 & delta_biodiv < 0] <- 0
-
-      econ <- econ_mpa
-      browser()
+      econ <- profit_mpa
 
     # econ <-
     #   (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species

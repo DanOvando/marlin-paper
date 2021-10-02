@@ -1,4 +1,5 @@
-compile_fleet <- function(fauna, tune_type = "explt") {
+compile_fleet <- function(fauna, tune_type = "explt",  effort_cost_exponent = 1.3,
+                          spatial_allocation = "rpue") {
 
   # browser()
   # fauna <- wtf
@@ -136,7 +137,9 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_unit = "length"
         )
       ),
-      base_effort = resolution^2
+      effort_cost_exponent = effort_cost_exponent,
+      base_effort = resolution^2,
+      spatial_allocation = spatial_allocation
     ),
     "purseseine" = create_fleet(
       list(
@@ -272,7 +275,9 @@ compile_fleet <- function(fauna, tune_type = "explt") {
           sel_unit = "length"
         )
       ),
-      base_effort = resolution^2
+      effort_cost_exponent = effort_cost_exponent,
+      base_effort = resolution^2,
+      spatial_allocation = spatial_allocation
     )
   )
 

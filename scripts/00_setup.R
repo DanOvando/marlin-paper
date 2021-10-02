@@ -34,7 +34,7 @@ foos <- list.files(here("R"))
 
 walk(foos, ~ source(here("R", .x)))
 
-results_name <- "test-rpue"
+results_name <- "v0.9"
 
 results_path <- here("results", results_name)
 
@@ -48,7 +48,7 @@ run_experiments <- TRUE
 
 experiment_workers <- 8
 
-run_casestudy <- FALSE
+run_casestudy <- TRUE
 
 optimize_casestudy <- TRUE
 
@@ -63,6 +63,8 @@ years <- 80
 seasons <- 2
 
 time_step <- 1 / seasons
+
+max_delta <- 1
 
 workers <- round(parallel::detectCores() - 8)
 

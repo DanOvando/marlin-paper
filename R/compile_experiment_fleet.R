@@ -1,4 +1,5 @@
-compile_experiment_fleet <- function(fauna, state, tune_type = "explt") {
+compile_experiment_fleet <- function(fauna, state, tune_type = "explt",
+                                     effort_cost_exponent = 1.3) {
 
 
   if (all(state$spatial_q == TRUE)) {
@@ -57,7 +58,7 @@ compile_experiment_fleet <- function(fauna, state, tune_type = "explt") {
       ),
       "carcharhinus longimanus" = Metier$new(
         critter = fauna$`carcharhinus longimanus`,
-        price = 1.89,
+        price = 0,
         sel_form = "logistic",
         sel_start = fauna$`carcharhinus longimanus`$length_50_mature *
           sample(c(0.9), 1, replace = TRUE),
@@ -68,8 +69,10 @@ compile_experiment_fleet <- function(fauna, state, tune_type = "explt") {
         spatial_catchability = shark_spatial_q
       )
     ),
-    spatial_allocation = state$spatial_allocation[[1]],
-    base_effort = resolution^2
+    base_effort = resolution^2,
+    cost_per_unit_effort = 10,
+    effort_cost_exponent = effort_cost_exponent,
+    spatial_allocation = state$spatial_allocation[1]
   ))
 
   # a <- Sys.time()

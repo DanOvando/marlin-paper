@@ -3,7 +3,7 @@ source(file.path("scripts", "00_setup.R"))
 
 # generate state experiments. This is a somewhat tricky process where the actual generated values are created for many variables in create_experiment_critters
 
-n_states <- 250
+n_states <- 500
 
 if (run_experiments) {
   state_experiments <-
@@ -11,7 +11,7 @@ if (run_experiments) {
       sigma_centroid = runif(n_states, .1 * resolution, resolution ^ 2 / 2),
       sigma_hab = runif(n_states, .1 * resolution, resolution ^ 2 / 8),
       spatial_q = sample(c(FALSE,TRUE), n_states, replace = TRUE, prob = c(3,1)),
-      spatial_allocation = sample(c("revenue","rpue"), n_states, replace = TRUE)
+      spatial_allocation = sample(c("ppue","rpue", "revenue",'profit'), n_states, replace = TRUE)
     ) %>%
     mutate(state_id = 1:nrow(.))
 
@@ -176,7 +176,6 @@ if (run_experiments) {
     mutate(fleet = map2(fauna,data, compile_experiment_fleet))
 
   # add in starting conditions
-
   init_condit <- function(fauna, fleets, years = 100) {
     starting_trajectory <-
       simmar(fauna = fauna,
@@ -192,13 +191,75 @@ if (run_experiments) {
     proc_starting_conditions <-
       process_marlin(starting_conditions, keep_age = FALSE)
 
-    out <- list(starting_conditions = starting_conditions,
+    out <- list(starting_conditions = starting_conditions[[1]],
                 proc_starting_conditions = proc_starting_conditions)
 
   }
 
   state_experiments <- state_experiments %>%
     mutate(tmp = map2(fauna, fleet, init_condit))
+
+  state_experiments$starting_conditions <-
+    map(state_experiments$tmp, "starting_conditions")
+
+  assign_costs <- function(init_condit, fleets, fauna){
+
+    starting <- init_condit
+
+    revenues <-  map_df(starting, ~.x$r_p_a_fl %>%
+                          reshape2::melt() %>%
+                          group_by(Var3) %>%
+                          summarise(revenue = sum(value, na.rm = TRUE))) %>%
+      group_by(Var3) %>%
+      rename(fleet = Var3) %>%
+      summarise(revenue = sum(revenue))
+
+    effort <- map_df(starting[1], ~.x$e_p_fl) %>%
+      ungroup() %>%
+      mutate(patch = 1:nrow(.)) %>%
+      pivot_longer(-patch, names_to = "fleet", values_to = "effort") %>%
+      group_by(fleet) %>%
+      summarise(e2 = sum(((effort + 1)^fleets[[1]]$effort_cost_exponent)),
+                check = sum(effort))
+
+
+    profits <- revenues %>%
+      left_join(effort, by = "fleet") %>%
+      mutate(cost = revenue / e2) %>%
+      mutate(profit = revenue - cost * e2)
+
+    max_rev <- map_dbl(fauna, "ssb0")
+
+    prices = pluck(fleets, 1,1) %>%
+      map_dbl("price")
+
+    max_p <- sum(max_rev * prices[names(max_rev)])
+
+    profits <- profits %>%
+      mutate(theta = log((1 + max_delta)) / (max_p))
+
+    fleets$longline$cost_per_unit_effort <- profits$cost[profits$fleet == "longline"]
+
+    fleets$longline$profit_sensitivity <- profits$theta[profits$fleet == "longline"]
+
+    return(fleets)
+
+  }
+
+  state_experiments$fleet <-
+    pmap(
+      list(
+        init_condit = state_experiments$starting_conditions,
+        fauna = state_experiments$fauna,
+        fleets = state_experiments$fleet
+      ),
+      assign_costs
+    )
+
+  # reset initial conditions based on costs
+  state_experiments <- state_experiments %>%
+    mutate(tmp = map2(fauna, fleet, init_condit))
+
 
   state_experiments$starting_conditions <-
     map(state_experiments$tmp, "starting_conditions")
@@ -227,16 +288,19 @@ if (run_experiments) {
     ungroup() %>%
     mutate(placement_id = 1:nrow(.)) %>%
     unnest(cols = data)
-
   # safety stop -------------------------------------------------------------
+
   if (safety_stop) {
     i <- sample(1:n_states, 1)
     # i = 1
-    safety_sim <- marlin::simmar(
+    safety_sim <- simmar(
       fauna = state_experiments$fauna[[i]],
       fleets = state_experiments$fleet[[i]],
-      years = years
+      years = years,
+      mpas = list()
     )
+
+    state_experiments$fleet[[i]]$longline$spatial_allocation
     proc_safety <- process_marlin(safety_sim, keep_age = FALSE)
 
     plot_marlin(proc_safety)
@@ -260,7 +324,7 @@ if (run_experiments) {
 
     sample_mpas <- place_mpa(
       target_fauna = "carcharhinus longimanus",
-      size = 0.9,
+      size = .9,
       fauna = state_experiments$fauna[[1]],
       placement_error = 0,
       place_randomly = FALSE
@@ -273,7 +337,7 @@ if (run_experiments) {
       ggplot(aes(x, y, fill = mpa)) +
       geom_tile()
 
-    safety_mpa_sim <- marlin::simmar(
+    safety_mpa_sim <- simmar(
       fauna = state_experiments$fauna[[i]],
       fleets = state_experiments$fleet[[i]],
       mpas = list(locations = sample_mpas,
@@ -290,16 +354,15 @@ if (run_experiments) {
 
     plot_marlin(no_mpa = proc_safety,
                 with_mpa = proc_safety_mpa,
-                plot_var = "c")
+                plot_var = "c",
+                max_scale = FALSE)
 
 
   }
 
   # check distribution of starting conditions
 
-  tmp <- map(state_experiments$starting_conditions, 1)
-
-  tmp <- map(tmp, ~ map_df(.x,  ~ sum(.x$ssb_p_a) / .x$ssb0))
+  tmp <- map(state_experiments$starting_conditions, ~ map_df(.x,  ~ sum(.x$ssb_p_a) / .x$ssb0))
 
   check <-
     tibble(state_id = state_experiments$state_id, tmp = (tmp)) %>%
@@ -398,7 +461,6 @@ if (run_experiments) {
 
 }
 
-
 group_var <- "placement_strategy"
 
 results <- placement_experiments %>%
@@ -428,6 +490,10 @@ results <- results %>%
   group_by(placement_id, state_id, critter) %>%
   mutate(bau_biodiv = biodiv[prop_mpa == 0],
          bau_econ = econ[prop_mpa == 0])
+
+results %>%
+  ggplot(aes(biodiv - bau_biodiv)) +
+  geom_histogram()
 
 
 excols <-
@@ -463,6 +529,10 @@ total_results <- results %>%
          abs_delta_biodiv = biodiv - bau_biodiv,
          delta_econ = econ / bau_econ - 1) %>%
   left_join(excols, by = "state_id")
+
+total_results %>%
+  ggplot(aes(biodiv - bau_biodiv)) +
+  geom_histogram()
 
 # total_results %>%
 #   ggplot(
@@ -509,20 +579,23 @@ worst_result <- results %>%
          state_id == worst_case$state_id,
          prop_mpa <0.5)
 
+worst_result %>%
+  ggplot(aes(biodiv - bau_biodiv)) +
+  geom_histogram()
+
 worst_result_plot <- worst_result %>%
   ggplot() +
   geom_text(data = tibble(
     x = .1,
-    y = max(worst_result$biodiv / worst_result$bau_biodiv - 1)
+    y = max(worst_result$biodiv - worst_result$bau_biodiv)
   ),
   aes(x = x, y = y, label = "Worst Case"),
   size = 4) +
   geom_hline(yintercept = 0, linetype = 2) +
-  geom_line(aes(prop_mpa, biodiv / bau_biodiv - 1, color = critter),
+  geom_line(aes(prop_mpa, biodiv - bau_biodiv, color = critter),
             show.legend = FALSE, size = 1.25) +
   scale_x_continuous(labels = scales::percent, name = "MPA Size") +
   scale_y_continuous(
-    labels = scales::percent,
     name = ''
   )
 
@@ -558,8 +631,8 @@ worst_habitat_plot <- worst_habitat %>%
   # facet_wrap(~scientific_name)
 
 best_case <- experiment_summary %>%
-  filter(min_loss == min(min_loss)) %>%
-  filter(total_gain == max(total_gain)) %>%
+  filter(min_loss == min(min_loss, na.rm = TRUE)) %>%
+  filter(total_gain == max(total_gain, na.rm = TRUE)) %>%
   slice(1)
 
 best_state <- state_experiments %>%
@@ -573,18 +646,18 @@ best_result <- results %>%
 best_result_plot <- best_result %>%
   ggplot() +
   geom_hline(yintercept = 0, linetype = 2) +
-  geom_line(aes(prop_mpa, biodiv / bau_biodiv - 1, color = critter), size = 1.25) +
+  geom_line(aes(prop_mpa, biodiv - bau_biodiv, color = critter), size = 1.25) +
   geom_text(data = tibble(
     x = .1,
-    y = max(best_result$biodiv / best_result$bau_biodiv - 1)
+    y = max(best_result$biodiv - best_result$bau_biodiv)
   ),
   aes(x = x, y = y, label = "Best Case"),
   size = 4) +
   scale_x_continuous(labels = scales::percent, name = "") +
-  scale_y_continuous("Change in Spawning Biomass", labels = scales::percent) +
+  scale_y_continuous("Change in Spawning Biomass") +
   theme(legend.position = "top") +
   scale_color_discrete(name = element_blank()) +
-  labs(title = "Change in Biomass")
+  labs(title = "Change in SSB/SSB0")
 
 
 best_habitat <- best_state %>%
@@ -746,7 +819,7 @@ fig_7 <- results %>%
   mutate(real_sigma_centroid = sd(centroid)) %>%
   ggplot(aes(
     prop_mpa,
-    biodiv - bau_biodiv,
+    pmin(2,biodiv / bau_biodiv - 1),
     color = factor(f_v_m),
     group = interaction(placement_id, state_id)
   )) +
@@ -783,13 +856,16 @@ fig_9 <- results %>%
   mutate(real_sigma_centroid = sd(centroid)) %>%
   ggplot(aes(
     prop_mpa,
-    biodiv - bau_biodiv,
+    pmin(2,biodiv / bau_biodiv -1),
     color = factor(spatial_allocation),
     group = interaction(placement_id, state_id)
   )) +
-  geom_line(alpha = 0.2) +
-  facet_grid(critter ~ placement_strategy) +
-  scale_color_viridis_d()
+  geom_line(alpha = 0.3) +
+  facet_grid(critter ~ placement_strategy)+
+  scale_color_discrete(name = "Spatial Allocation Strategy") +
+  theme(legend.position = "top") +
+  scale_y_continuous(name = "MPA Effect on SSB/SSB0")
+  # scale_color_viridis_d()
 
 fig_9
 
@@ -815,26 +891,38 @@ critter_results <- results %>%
   left_join(states, by = c("state_id", "critter")) %>%
   group_by(state_id, placement_id) %>%
   mutate(real_sigma_centroid = sd(centroid)) %>%
-  mutate(loss = pmin(2,biodiv / bau_biodiv - 1))
+  mutate(delta_biodiv = pmin(2,biodiv / bau_biodiv - 1),
+         loss = biodiv < bau_biodiv)
 
-mean(critter_results$loss)
+
+mean(critter_results$loss, na.rm = TRUE)
 
 tree_1 <-   rpart::rpart(
-  loss ~ real_sigma_centroid + placement_error + f_v_m  + critter + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma,
-  data = critter_results %>% filter(prop_mpa < 1, placement_strategy == "rate")
+  loss ~ real_sigma_centroid  + f_v_m  + critter + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma + placement_strategy + prop_mpa + sigma_hab + spatial_allocation,
+  data = critter_results %>% filter(prop_mpa < 1)
 )
-
+#
 rpart.plot(tree_1)
 
 
-tree_1 <-   rstanarm::stan_glm(
-  loss ~ real_sigma_centroid + placement_error + f_v_m  + critter + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma,
-  data = critter_results %>% filter(prop_mpa < 0.3, placement_strategy == "rate"),
+reg_1 <-   rstanarm::stan_glm(
+  delta_biodiv ~ real_sigma_centroid  + f_v_m  + critter + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma + placement_strategy + prop_mpa + sigma_hab + spatial_allocation,
+  data = critter_results %>% filter(prop_mpa < 1),
   cores = 4,
   chains = 4
 )
 
-plot(tree_1)
+plot(reg_1)
+
+reg_2 <-   rstanarm::stan_glm(
+  loss ~ real_sigma_centroid  + f_v_m  + critter + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma + placement_strategy + prop_mpa + sigma_hab + spatial_allocation,
+  family = binomial(),
+  data = critter_results %>% filter(prop_mpa < 1),
+  cores = 4,
+  chains = 4
+)
+
+plot(reg_2)
 
 # save results ------------------------------------------------------------
 
