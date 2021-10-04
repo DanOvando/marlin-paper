@@ -277,7 +277,7 @@ if (run_casestudy == TRUE){
       placement_strategy = c("depletion", "rate", "avoid_fishing", "target_fishing", "area"),
       prop_mpa = seq(0,.99, by = 0.01),
       prop_critters_considered = 1,
-      placement_error = 0
+      placement_error = c(0,.2)
     )
 
   a <- Sys.time()
@@ -311,7 +311,6 @@ write_rds(case_study_experiments, file = file.path(results_path, "case_study_exp
 
 
 # optimize network --------------------------------------------------------
-
 if (optimize_casestudy == TRUE){
 
   optimized_networks <- tibble(alpha = seq(0,1, length.out = 20))
@@ -326,8 +325,8 @@ if (optimize_casestudy == TRUE){
         optimize_mpa,
         fauna = fauna,
         fleets = fleets,
-        max_prop_mpa = .95,
-        prop_sampled = 0.2,
+        max_prop_mpa = 1,
+        prop_sampled = 0.25,
         starting_conditions = starting_conditions,
         resolution = resolution,
         workers = experiment_workers
@@ -558,7 +557,8 @@ bau_econ <-
 #  calculate econ component of objective function, currently revenues across all fleets and species
 
 bau <- bau_econ %>%
-  left_join(bau_biodiv, by = "critter")
+  left_join(bau_biodiv, by = "critter") %>%
+  mutate(bau_econ = bau_econ / 1e6)
 
 
 # calculate objective function for experiments
@@ -566,7 +566,8 @@ bau <- bau_econ %>%
 experiment_obj <- case_study_experiments %>%
   mutate(obj = map(results, "obj")) %>%
   select(-results) %>%
-  unnest(cols = obj)
+  unnest(cols = obj) %>%
+  mutate(econ = econ / 1e6)
 
 experiment_obj %>%
   ggplot(aes(biodiv, econ, color = placement_strategy)) +
@@ -589,21 +590,16 @@ experiment_obj %>%
 experiment_obj %>%
   ggplot(aes(prop_mpa, econ, color = placement_strategy)) +
   geom_point() +
-  facet_wrap(~critter, scales = "free_y")
+  facet_wrap( ~ critter, scales = "free_y")
 
-
-
-experiment_obj %>%
-  ggplot(aes(prop_mpa, econ, fill = factor(placement_error))) +
-  geom_smooth() +
-  facet_grid(placement_strategy~critter, scales = "free_y")
 
 # calculate objective function for optimization
 
 opt_obj <- optimized_networks %>%
   mutate(obj = map(network,"outcomes")) %>%
   select(-network) %>%
-  unnest(cols = obj)
+  unnest(cols = obj) %>%
+  mutate(econ = econ / 1e6)
 
 obj_objective_value <- optimized_networks %>%
   mutate(obj = map(network,"objective")) %>%
@@ -632,7 +628,7 @@ opt_obj %>%
 
 experiment_obj <- experiment_obj %>%
   left_join(bau, by = "critter") %>%
-  mutate(delta_biodiv = biodiv / bau_biodiv - 1,
+  mutate(delta_biodiv = biodiv - bau_biodiv,
          delta_econ = econ - bau_econ)
 
 experiment_obj %>%
@@ -641,25 +637,27 @@ experiment_obj %>%
   facet_wrap(~critter, scales = "free_y")
 
 
-cs_fig_1 <- experiment_obj %>%
-  ggplot(aes(delta_biodiv))
-
 
 cs_fig_2 <- experiment_obj %>%
   ggplot(aes(delta_biodiv, delta_econ, color = placement_error)) +
   geom_point() +
-  facet_wrap(~critter)
+  facet_wrap( ~ critter, scales = "free_y")
 
 
 opt_obj <- opt_obj %>%
   left_join(bau, by = "critter") %>%
-  mutate(delta_biodiv = ssb_v_ssb0 / bau_biodiv - 1,
+  mutate(delta_biodiv = ssb_v_ssb0 - bau_biodiv,
          delta_econ = econ - bau_econ)
+
+opt_frontier <- opt_obj %>%
+  group_by(alpha) %>%
+  filter(obj == max(obj))
 
 total_opt_obj <- opt_obj %>%
   group_by(alpha, p_protected) %>%
   summarise(
     obj_fun = unique(obj),
+    real_loss =  mean(ssb_v_ssb0 <= (0.9 *bau_biodiv)),
     loss = mean(ssb_v_ssb0 <= bau_biodiv),
     total_loss = sum(ssb_v_ssb0 - bau_biodiv),
     econ = sum(econ),
@@ -667,66 +665,54 @@ total_opt_obj <- opt_obj %>%
             bau_econ = sum(bau_econ),
             bau_biodiv = sum(bau_biodiv)) %>%
   ungroup() %>%
-  mutate(delta_biodiv = biodiv / bau_biodiv - 1,
+  mutate(delta_biodiv = biodiv - bau_biodiv,
          delta_econ = econ - bau_econ)
 
-opt_obj %>%
-  ggplot(aes(p_protected, ssb_v_ssb0)) +
-  geom_point() +
-  facet_wrap(~critter)
+total_opt_frontier <- total_opt_obj %>%
+  group_by(alpha) %>%
+  filter(obj_fun == max(obj_fun))
 
-cs_fig_3 <- total_opt_obj %>%
-  ggplot(aes(biodiv, econ, color = factor(alpha))) +
-  geom_smooth(se = FALSE)
-
-
-cs_fig_4 <- experiment_obj %>%
-  ggplot(aes(prop_mpa, biodiv / bau_biodiv - 1)) +
-  geom_point()
 
 cs_fig_5 <- experiment_obj %>%
   group_by(prop_mpa) %>%
-  summarise(delta = mean((biodiv / bau_biodiv - 1) < 0)) %>%
+  summarise(delta = mean(biodiv < (0.9 *bau_biodiv))) %>%
   ggplot(aes(prop_mpa, delta)) +
   geom_point()
 
 total_experiment_obj <- experiment_obj %>%
-  group_by(placement_strategy, prop_mpa, prop_critters_considered,placement_error) %>%
+  group_by(placement_strategy,
+           prop_mpa,
+           prop_critters_considered,
+           placement_error) %>%
   summarise(
     loss = mean(biodiv <= bau_biodiv),
+    real_loss = mean(biodiv <= (0.9 * bau_biodiv)),
     total_loss = sum(biodiv - bau_biodiv),
     econ = sum(econ),
-            biodiv = sum(biodiv),
-            bau_econ = sum(bau_econ),
-            bau_biodiv = sum(bau_biodiv)
-           ) %>%
+    biodiv = sum(biodiv),
+    bau_econ = sum(bau_econ),
+    bau_biodiv = sum(bau_biodiv)
+  ) %>%
   ungroup() %>%
-  mutate(delta_biodiv = biodiv / bau_biodiv - 1,
+  mutate(delta_biodiv = biodiv - bau_biodiv,
          delta_econ = econ - bau_econ)
 
 
 cs_fig_6 <- total_experiment_obj %>%
   filter(prop_mpa > 0) %>%
-  ggplot(aes(prop_mpa, loss)) +
-  geom_smooth(data = total_opt_obj, aes(p_protected / 100, loss, color = alpha, group = alpha)) +
+  ggplot(aes(prop_mpa, real_loss)) +
+  geom_smooth(data = total_opt_obj,
+              aes(
+                p_protected / 100,
+                real_loss,
+                color = alpha,
+                group = alpha
+              )) +
   geom_point() +
   scale_x_continuous(labels = scales::percent, name = "Area in MPA") +
   scale_y_continuous(labels = scales::percent, name = "% Experiments With Conservation Loss") +
-  facet_wrap(~placement_strategy) +
+  facet_wrap( ~ placement_strategy) +
   scale_color_viridis_c(name = "Conservation Weighting in Optimization")
-
-
-cs_fig_7 <- total_experiment_obj %>%
-  filter(prop_mpa > 0) %>%
-  ggplot(aes(prop_mpa, total_loss)) +
-  geom_jitter(alpha = 0.25) +
-  geom_smooth(data = total_opt_obj, aes(p_protected / 100, total_loss, color = alpha, group = alpha)) +
-  geom_hline(aes(yintercept = 0), color = "red", linetype = 2) +
-  scale_x_continuous(labels = scales::percent, name = "Area in MPA") +
-  scale_y_continuous("Change in Total SSB/SSB0") +
-  facet_wrap(~placement_strategy) +
-  scale_color_viridis_c(name = "Conservation Weighting in Optimization") +
-  theme(legend.position = "top")
 
 
 cs_fig_8 <- total_experiment_obj %>%
@@ -745,9 +731,16 @@ cs_fig_8 <- total_experiment_obj %>%
 
 cs_fig_9 <- total_opt_obj %>%
   ggplot() +
-  geom_smooth(aes(biodiv, econ, group = alpha, color= alpha), se = FALSE) +
-  geom_point(data = total_experiment_obj,aes(biodiv, econ),size = 2, alpha = 0.5, fill = "red", shape = 21) +
-  facet_wrap(~placement_strategy) +
+  geom_smooth(aes(biodiv, econ, group = alpha, color = alpha), se = FALSE) +
+  geom_point(
+    data = total_experiment_obj,
+    aes(biodiv, econ),
+    size = 2,
+    alpha = 0.5,
+    fill = "red",
+    shape = 21
+  ) +
+  facet_wrap( ~ placement_strategy) +
   scale_color_viridis_c(name = "Conservation Weighting in Optimization")
 
 
@@ -772,10 +765,6 @@ opt_obj %>%
   geom_point() +
   facet_wrap(~critter, scales = "free_y")
 
-# opt_obj %>%
-#   group_by(alpha) %>%
-#   filter(obj == max(obj))
-
 a / b
 total_opt_obj %>%
   group_by(alpha) %>%
@@ -790,33 +779,28 @@ total_opt_obj %>%
   scale_color_viridis_d()
 
 
-a = opt_obj %>%
-  group_by(alpha) %>%
-  filter(obj == max(obj)) %>%
-  ggplot() +
-  geom_vline(aes(xintercept = 0), linetype = 2) +
-  geom_hline(aes(yintercept = 0), linetype = 2) +
-  geom_line(aes(delta_biodiv, delta_econ, color= p_protected), size = 1) +
-  facet_wrap(~critter) +
-  scale_x_continuous(labels = scales::percent, name = "Change in Total Biodiversity Relative to BAU ") +
-  scale_y_continuous(labels = scales::percent, name = "Change in Revenue Relative to BAU ") +
-  theme(axis.text.x = element_text(size = 8),
-        legend.position = "top")
 
 cs_fig_10 <- total_opt_obj %>%
   group_by(alpha) %>%
   filter(obj_fun == max(obj_fun)) %>%
   ungroup() %>%
   ggplot() +
-  geom_line(aes(delta_biodiv, delta_econ, color= alpha), size = 2) +
-  geom_point(data = total_experiment_obj %>% filter(placement_strategy == "target_fishing"),aes(delta_biodiv, delta_econ),size = 2, alpha = 0.1, fill = "red", shape = 21) +
+  geom_line(aes(delta_biodiv, delta_econ, color = alpha), size = 2) +
+  geom_point(
+    data = total_experiment_obj,
+    aes(delta_biodiv, delta_econ),
+    size = 2,
+    alpha = 0.1,
+    fill = "red",
+    shape = 21
+  ) +
   geom_vline(aes(xintercept = 0), linetype = 2) +
   geom_hline(aes(yintercept = 0), linetype = 2) +
   geom_abline(intercept = 0, slope = -1) +
-  facet_wrap(~placement_strategy) +
+  facet_wrap( ~ placement_strategy) +
   scale_color_viridis_c(name = "Conservation Weighting in Optimization") +
-  # scale_x_continuous(labels = scales::percent, name = "Change in Total Biodiversity Relative to BAU ") +
-  # scale_y_continuous(labels = scales::percent, name = "Change in Revenue Relative to BAU ") +
+  scale_x_continuous(name = "Change in Total Biodiversity Relative to BAU ") +
+  scale_y_continuous(name = "Change in Total Profits Relative to BAU ") +
   theme(axis.text.x = element_text(size = 8),
         legend.position = "top")
 
@@ -853,9 +837,10 @@ ggsave("cs_fig_10a.pdf", cs_fig_10a, width = 8, height = 6)
 
 
 cs_fig_11 <- total_opt_obj %>%
+  filter(p_protected > 10) %>%
   ggplot() +
-  geom_bin2d(data = total_experiment_obj,aes(loss, delta_econ), binwidth = .1, show.legend = FALSE) +
-  geom_point(aes(loss, delta_econ, group = alpha, color= alpha), alpha = 0.25) +
+  geom_bin2d(data = total_experiment_obj %>%  filter(prop_mpa > .1),aes(real_loss, delta_econ), show.legend = FALSE) +
+  geom_point(aes(real_loss, delta_econ, group = alpha, color= alpha), alpha = 1) +
   geom_vline(aes(xintercept = 0), linetype = 2) +
   geom_hline(aes(yintercept = 0), linetype = 2) +
   geom_abline(intercept = 0, slope = -1) +
@@ -863,13 +848,16 @@ cs_fig_11 <- total_opt_obj %>%
   scale_fill_gradient(low = "grey", high = "red") +
   scale_color_viridis_c(name = "Conservation Weighting") +
   scale_x_continuous(labels = scales::percent, name = "% Sims With Loss in SSB/SSB0 Relative to BAU") +
-  scale_y_continuous(labels = scales::percent, name = "Change in Revenue Relative to BAU ") +
+  scale_y_continuous(name = "Change in Revenue Relative to BAU ") +
   theme(axis.text.x = element_text(size = 8)) +
   theme(legend.position = "top")
 
 
 # save things -------------------------------------------------------------
 
+
+write_rds(opt_obj,
+          file = file.path(results_path, "opt_obj.rds"))
 
 write_rds(total_opt_obj,
           file = file.path(results_path, "total_opt_obj.rds"))

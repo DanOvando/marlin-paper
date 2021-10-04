@@ -281,7 +281,7 @@ if (run_experiments) {
     ),
     prop_mpa = seq(0, 1, by = 0.05),
     prop_critters_considered = 1,
-    placement_error = c(0)
+    placement_error = c(0,.2)
   ) %>%
     group_by_at(colnames(.)[!colnames(.) %in% c("temp", "prop_mpa")]) %>%
     nest() %>%
@@ -483,6 +483,72 @@ if (any(results$econ[results$prop_mpa == 1] > 0)) {
   stop("something has gone wrong: yields present with 100% mpa")
 }
 
+
+states <- state_experiments %>%
+  select(state_id, data) %>%
+  unnest(cols= data) %>%
+  mutate(
+    critter = fct_recode(
+      scientific_name,
+      "Shark" = "carcharhinus longimanus",
+      "Tuna" = "katsuwonus pelamis",
+      "Marlin" = "kajikia audax"
+    )
+  )
+
+
+
+calc_centroid_distance <- function(tmp_state){
+
+  distance_matrix <-
+    expand_grid(x = 1:resolution, y = 1:resolution) %>%
+    dist() %>%
+    as.matrix()
+
+  centroid_distances <- expand_grid(x = tmp_state$centroid, y = tmp_state$centroid) %>%
+    rowwise() %>%
+    mutate(distance = distance_matrix[x,y])
+
+  cd <- sum(centroid_distances$distance)
+
+}
+
+calc_sigma_habitat <- function(tmp_state){
+
+
+  habitat <- tmp_state %>%
+    select(scientific_name, contains("sigma_"), habitat) %>%
+    unnest(cols = habitat) %>%
+    mutate(
+      scientific_name = fct_recode(
+        scientific_name,
+        "Shark" = "carcharhinus longimanus",
+        "Tuna" = "katsuwonus pelamis",
+        "Marlin" = "kajikia audax"
+      )
+    ) %>%
+    select(x,y,scientific_name,habitat) %>%
+    pivot_wider(names_from = scientific_name, values_from = habitat) %>%
+    select(-x,-y) %>%
+    as.matrix()
+
+
+  sigma_habitat <- sd(sqrt(habitat))
+
+}
+
+
+
+states <- states %>%
+  group_by(state_id) %>%
+  nest() %>%
+  mutate(centroid_distance = map_dbl(data,calc_centroid_distance),
+         sigma_habitat = map_dbl(data,calc_sigma_habitat)) %>%
+  unnest(cols = data)
+
+
+results <- results %>%
+  left_join(states, by = c("state_id", "critter"))
 
 # compare to BAU
 
@@ -787,20 +853,8 @@ total_results %>%
 
 
 
-states <- state_experiments %>%
-  select(state_id, data) %>%
-  unnest(cols= data) %>%
-  mutate(
-    critter = fct_recode(
-      scientific_name,
-      "Shark" = "carcharhinus longimanus",
-      "Tuna" = "katsuwonus pelamis",
-      "Marlin" = "kajikia audax"
-    )
-  )
 
 fig_6 <- results %>%
-  left_join(states, by = c("state_id", "critter")) %>%
   group_by(state_id, placement_id) %>%
   mutate(real_sigma_centroid = sd(centroid)) %>%
   ggplot(aes(
@@ -814,7 +868,6 @@ fig_6 <- results %>%
   scale_color_viridis_d()
 
 fig_7 <- results %>%
-  left_join(states, by = c("state_id", "critter")) %>%
   group_by(state_id, placement_id) %>%
   mutate(real_sigma_centroid = sd(centroid)) %>%
   ggplot(aes(
@@ -831,27 +884,24 @@ fig_7 <- results %>%
 
 fig_8 <- results %>%
   filter(prop_mpa < 1) %>%
-  left_join(states, by = c("state_id", "critter")) %>%
   # filter(f_v_m > 1.5) %>%
   group_by(state_id, placement_id) %>%
-  mutate(real_sigma_centroid = sd(centroid)) %>%
   ggplot(aes(
     prop_mpa,
     pmin(2,biodiv / bau_biodiv -1),
-    color = sigma_hab,
+    color =  centroid_distance,
     group = interaction(placement_id, state_id)
   )) +
-  geom_line(alpha = 0.1) +
+  geom_line(alpha = 0.5) +
   geom_hline(aes(yintercept = 0), linetype = 2, color = "red") +
   facet_grid(critter ~ placement_strategy) +
-  scale_color_viridis_c(name = "Range Size") +
+  scale_color_viridis_c() +
   scale_y_continuous(labels = scales::percent,"Change in Biomass/Unfished Biomass relative to BAU") +
   scale_x_continuous(labels = scales::label_percent(accuracy = 1), name = "MPA Size") +
   theme(legend.position = "top")
 
 
 fig_9 <- results %>%
-  left_join(states, by = c("state_id", "critter")) %>%
   group_by(state_id, placement_id) %>%
   mutate(real_sigma_centroid = sd(centroid)) %>%
   ggplot(aes(
@@ -888,7 +938,6 @@ fig_9
 
 
 critter_results <- results %>%
-  left_join(states, by = c("state_id", "critter")) %>%
   group_by(state_id, placement_id) %>%
   mutate(real_sigma_centroid = sd(centroid)) %>%
   mutate(delta_biodiv = pmin(2,biodiv / bau_biodiv - 1),
@@ -898,31 +947,39 @@ critter_results <- results %>%
 mean(critter_results$loss, na.rm = TRUE)
 
 tree_1 <-   rpart::rpart(
-  loss ~ real_sigma_centroid  + f_v_m  + critter + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma + placement_strategy + prop_mpa + sigma_hab + spatial_allocation,
-  data = critter_results %>% filter(prop_mpa < 1)
+  loss ~ real_sigma_centroid  + f_v_m  + critter + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma + placement_strategy + prop_mpa + sigma_habitat + spatial_allocation + centroid_distance,
+  data = critter_results %>% filter(prop_mpa > .3)
 )
 #
 rpart.plot(tree_1)
 
 
 reg_1 <-   rstanarm::stan_glm(
-  delta_biodiv ~ real_sigma_centroid  + f_v_m  + critter + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma + placement_strategy + prop_mpa + sigma_hab + spatial_allocation,
+  delta_biodiv ~ real_sigma_centroid  + f_v_m + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma + placement_strategy + prop_mpa + sigma_habitat + centroid_distance + spatial_allocation,
   data = critter_results %>% filter(prop_mpa < 1),
   cores = 4,
   chains = 4
 )
 
-plot(reg_1)
+critter_results %>%
+  filter(prop_mpa > .1) %>%
+  ggplot(aes(sigma_habitat, delta_biodiv, color = prop_mpa)) +
+  geom_point(alpha = 0.1) +
+  facet_wrap(~critter) +
+  scale_color_viridis_c()
+
+fig_10 = plot(reg_1)
+
 
 reg_2 <-   rstanarm::stan_glm(
-  loss ~ real_sigma_centroid  + f_v_m  + critter + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma + placement_strategy + prop_mpa + sigma_hab + spatial_allocation,
+  loss ~   f_v_m  + critter + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma + prop_mpa + sigma_habitat + spatial_allocation,
   family = binomial(),
-  data = critter_results %>% filter(prop_mpa < 1),
+  data = critter_results %>% filter(prop_mpa < 1, placement_strategy == "area"),
   cores = 4,
   chains = 4
 )
 
-plot(reg_2)
+fig_11 <- plot(reg_2)
 
 # save results ------------------------------------------------------------
 
@@ -930,6 +987,9 @@ plot(reg_2)
 # write_rds(experiments, file = file.path(results_path, "experiments.rds"))
 
 # write_rds(results, file = file.path(results_path, "experiment_results.rds"))
+
+write_rds(results %>% select(-temp),
+          file = file.path(results_path, "compact_experiment_results.rds"))
 
 write_rds(total_results,
           file = file.path(results_path, "total_experiment_results.rds"))

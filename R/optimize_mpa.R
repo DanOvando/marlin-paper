@@ -142,7 +142,7 @@ optimize_mpa <-
           fauna = fauna,
           fleets = fleets,
           mpas = mpas,
-          starting_conditions = starting,
+          starting_conditions = starting_conditions,
           .options = furrr_options(seed = 42),
           .progress = FALSE
         )
