@@ -116,13 +116,13 @@ if (run_experiments) {
       f_v_m = sample(c(0.4,0.8,1.6), nrow(.), replace = TRUE),
       adult_movement_sigma = runif(
         nrow(.),
-        min = 0.05 * resolution,
-        max = 2 * resolution
+        min = 0.01 * resolution,
+        max = .5 * resolution
       ),
       recruit_movement_sigma = runif(
         nrow(.),
-        min = 0.05 * resolution,
-        max = 2 * resolution
+        min = 0.01 * resolution,
+        max = .5 * resolution
       ),
       rec_form = sample(c(0, 1, 2, 3), nrow(.), replace = TRUE)
     )
@@ -889,14 +889,14 @@ fig_8 <- results %>%
   ggplot(aes(
     prop_mpa,
     pmin(2,biodiv / bau_biodiv -1),
-    color =  centroid_distance,
+    color =  sigma_habitat,
     group = interaction(placement_id, state_id)
   )) +
   geom_line(alpha = 0.5) +
   geom_hline(aes(yintercept = 0), linetype = 2, color = "red") +
   facet_grid(critter ~ placement_strategy) +
-  scale_color_viridis_c() +
-  scale_y_continuous(labels = scales::percent,"Change in Biomass/Unfished Biomass relative to BAU") +
+  scale_color_viridis_c(name = "Habitat Difference") +
+  scale_y_continuous(labels = scales::percent,"Change in SSB/SSB0 relative to BAU") +
   scale_x_continuous(labels = scales::label_percent(accuracy = 1), name = "MPA Size") +
   theme(legend.position = "top")
 
@@ -939,19 +939,20 @@ fig_9
 
 critter_results <- results %>%
   group_by(state_id, placement_id) %>%
-  mutate(real_sigma_centroid = sd(centroid)) %>%
   mutate(delta_biodiv = pmin(2,biodiv / bau_biodiv - 1),
-         loss = biodiv < bau_biodiv)
+         loss = biodiv < bau_biodiv,
+         real_loss = biodiv <= (0.9 * bau_biodiv))
 
 
 mean(critter_results$loss, na.rm = TRUE)
 
 tree_1 <-   rpart::rpart(
-  loss ~ real_sigma_centroid  + f_v_m  + critter + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma + placement_strategy + prop_mpa + sigma_habitat + spatial_allocation + centroid_distance,
-  data = critter_results %>% filter(prop_mpa > .3)
+  real_loss ~ f_v_m  + critter + seasonal_movement + adult_movement_sigma + rec_form + recruit_movement_sigma + placement_strategy + prop_mpa + sigma_habitat + spatial_allocation,
+  data = critter_results %>% filter(prop_mpa > .2, prop_mpa < 0.4),
+  method = "class"
 )
 #
-rpart.plot(tree_1)
+rpart.plot(tree_1, type = 5)
 
 
 reg_1 <-   rstanarm::stan_glm(
@@ -963,7 +964,7 @@ reg_1 <-   rstanarm::stan_glm(
 
 critter_results %>%
   filter(prop_mpa > .1) %>%
-  ggplot(aes(sigma_habitat, delta_biodiv, color = prop_mpa)) +
+  ggplot(aes(adult_movement_sigma, delta_biodiv, color = prop_mpa)) +
   geom_point(alpha = 0.1) +
   facet_wrap(~critter) +
   scale_color_viridis_c()

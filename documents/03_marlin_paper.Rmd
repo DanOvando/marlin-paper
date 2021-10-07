@@ -1,5 +1,6 @@
 ---
 title: "Solutions to the potential for unintended conservation consequences of MPAs"
+subtitle: Conditions for success and unintended consequences in pelagic MPA design
 author:
     - Daniel Ovando
     - Darcy Bradley
@@ -554,7 +555,63 @@ Looking at the full
 `r n_distinct(total_experiment_results$placement_id) * n_distinct(total_experiment_results$state_id)`
 experiments run, the results were highly variable, with MPAs capable of
 producing substantial conservation gains to substantial conservation
-losses and everything in between. We do not focus into the individual
+losses and everything in between. 
+
+
+Design matters size matters species matters habitat matters
+```{r}
+
+compact_experiment_results %>%
+  filter(prop_mpa < 1) %>%
+  # filter(f_v_m > 1.5) %>%
+  group_by(state_id, placement_id) %>%
+  ggplot(aes(
+    prop_mpa,
+    pmin(2,biodiv / bau_biodiv -1),
+    color =  sigma_habitat,
+    group = interaction(placement_id, state_id)
+  )) +
+  geom_line(alpha = 0.25) +
+  geom_hline(aes(yintercept = 0), linetype = 2, color = "red") +
+  facet_grid(critter ~ placement_strategy) +
+  scale_color_viridis_c(name = "Habitat Difference", guide = guide_colorbar(frame.colour = "black",ticks.colour = "black")) +
+  scale_y_continuous(labels = scales::percent,"Change in SSB/SSB0 relative to BAU") +
+  scale_x_continuous(labels = scales::label_percent(accuracy = 1), name = "MPA Size") +
+  theme(legend.position = "top")
+
+```
+
+
+
+
+```{r}
+
+critter_results <- compact_experiment_results %>%
+  group_by(state_id, placement_id) %>%
+  mutate(real_sigma_centroid = sd(centroid)) %>%
+  mutate(delta_biodiv = pmin(2,biodiv / bau_biodiv - 1),
+         loss = biodiv < bau_biodiv,
+         rec_form = as.factor(rec_form)) %>% 
+  mutate(critter = fct_relevel(critter,c("Tuna", "Marlin","Shark")),
+         rec_form = fct_recode(rec_form, "Global DD, Rec. By Habitat" = "0", "Local DD, local Recruitment" = "1", "Local DD, Disperse Recruits" = "2", "Disperse Larvae, Poset-Settlement DD" = "3"))
+
+reg_2 <-   rstanarm::stan_glm(
+  loss ~   f_v_m  + critter + seasonal_movement + adult_movement_sigma + rec_form + recruit_movement_sigma + prop_mpa + sigma_habitat + spatial_allocation,
+  family = binomial(),
+  data = critter_results %>% filter(between(prop_mpa,.2,.4), placement_strategy == "area"),
+  cores = 4,
+  chains = 4
+)
+
+fig_11 <- plot(reg_2)
+
+fig_11
+
+```
+
+
+
+We do not focus into the individual
 effects of particular variables as we found them to be highly dependent
 on the exact question asked and the set of data included, and since we
 cannot ascribe any actual likelihood to any individual state of nature
@@ -572,6 +629,11 @@ fast growth) of the tuna-like species relative to the marlin and
 shark-like species.
 
 The second is that design matters...
+
+```{r}
+
+```
+
 
 The third is that extreme outcomes (both positive and negative),
 particularly at lower MPA sizes, are largely driven by the presence of

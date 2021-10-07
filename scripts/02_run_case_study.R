@@ -1,7 +1,6 @@
 source(file.path("scripts", "00_setup.R"))
 
 
-
 # load bycatch risk layers ------------------------------------------------
 
 
@@ -163,7 +162,7 @@ casestudy <- casestudy %>%
       habitat = habitat,
       ontogenetic_shift = FALSE,
       seasonal_movement = FALSE,
-      random_rec = TRUE
+      random_rec = FALSE
     ),
     create_critters,
     marlin_inputs = marlin_inputs,
@@ -275,7 +274,7 @@ if (run_casestudy == TRUE){
   case_study_experiments <-
     expand_grid(
       placement_strategy = c("depletion", "rate", "avoid_fishing", "target_fishing", "area"),
-      prop_mpa = seq(0,.99, by = 0.01),
+      prop_mpa = seq(0,1, by = 0.01),
       prop_critters_considered = 1,
       placement_error = c(0,.2)
     )
@@ -474,55 +473,55 @@ if (optimize_casestudy == TRUE){
 
 # process results ---------------------------------------------------------
 
-ex <- optimized_networks %>%
-  filter(alpha == 0) %>%
-  slice(1)
-
-ex <- ex$network[[1]]$mpa_network %>%
-  group_by(p_protected) %>%
-  nest() %>%
-  ungroup()
-
-
-foo <- function(mpa){
-
-tmp_result <- simmar(
-  fauna = casestudy$fauna[[1]],
-  fleets = casestudy$fleet[[1]],
-  years = years,
-  mpas = list(locations = mpa,
-              mpa_year = 1),
-  initial_conditions = starting_conditions
-)
-
-res <-
-  tmp_result[[length(tmp_result)]] # for now, just calculate in the final timestep
-
-foo2 <- function(z){
-
-  out <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
-    mutate(dep = (z$ssb_p_a %>% as.data.frame() %>% rowSums())) %>%
-    mutate(dep = dep / (z$ssb0_p))
-
-}
-
-out <- map_df(res,foo2, .id = "critter")
+# ex <- optimized_networks %>%
+#   filter(alpha == 0) %>%
+#   slice(1)
 #
-# out %>%
-#   ggplot(aes(x,y,fill = dep)) +
-#   geom_tile() +
-#   facet_wrap(~critter)
-
-return(out)
-}
-
-ex <- ex %>%
-  # slice(1:10) %>%
-  mutate(cs_result = map(data, foo))
-
-mpas <- ex %>%
-  select(p_protected, data) %>%
-  unnest(cols = data)
+# ex <- ex$network[[1]]$mpa_network %>%
+#   group_by(p_protected) %>%
+#   nest() %>%
+#   ungroup()
+#
+#
+# foo <- function(mpa){
+#
+# tmp_result <- simmar(
+#   fauna = casestudy$fauna[[1]],
+#   fleets = casestudy$fleet[[1]],
+#   years = years,
+#   mpas = list(locations = mpa,
+#               mpa_year = 1),
+#   initial_conditions = starting_conditions
+# )
+#
+# res <-
+#   tmp_result[[length(tmp_result)]] # for now, just calculate in the final timestep
+#
+# foo2 <- function(z){
+#
+#   out <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
+#     mutate(dep = (z$ssb_p_a %>% as.data.frame() %>% rowSums())) %>%
+#     mutate(dep = dep / (z$ssb0_p))
+#
+# }
+#
+# out <- map_df(res,foo2, .id = "critter")
+# #
+# # out %>%
+# #   ggplot(aes(x,y,fill = dep)) +
+# #   geom_tile() +
+# #   facet_wrap(~critter)
+#
+# return(out)
+# }
+#
+# ex <- ex %>%
+#   # slice(1:10) %>%
+#   mutate(cs_result = map(data, foo))
+#
+# mpas <- ex %>%
+#   select(p_protected, data) %>%
+#   unnest(cols = data)
 
 # a = ex %>%
 #   unnest(cols = cs_result) %>%
@@ -567,7 +566,8 @@ experiment_obj <- case_study_experiments %>%
   mutate(obj = map(results, "obj")) %>%
   select(-results) %>%
   unnest(cols = obj) %>%
-  mutate(econ = econ / 1e6)
+  mutate(econ = econ / 1e6) %>%
+  filter(prop_mpa < 1)
 
 experiment_obj %>%
   ggplot(aes(biodiv, econ, color = placement_strategy)) +
@@ -837,7 +837,7 @@ ggsave("cs_fig_10a.pdf", cs_fig_10a, width = 8, height = 6)
 
 
 cs_fig_11 <- total_opt_obj %>%
-  filter(p_protected > 10) %>%
+  filter(p_protected > 1, p_protected < 50) %>%
   ggplot() +
   geom_bin2d(data = total_experiment_obj %>%  filter(prop_mpa > .1),aes(real_loss, delta_econ), show.legend = FALSE) +
   geom_point(aes(real_loss, delta_econ, group = alpha, color= alpha), alpha = 1) +

@@ -449,3 +449,20 @@ You don't see that in the data. You do see a strong correlation with revenue in 
 
 Choice depends a lot on the unts in question. IF you think that every unit of effort is discrete and per vessel, i.e. vessel I does or does not fish in that patch, then RPUE woul be the metric
 
+# 	movement stuff
+
+Very rough height of WCPO is 4800
+
+At a resolutino of 10, that's
+
+
+480 NM per cell 
+
+Median tag distance was  95% within 3614 M.
+
+
+4000 / 480
+
+Schaefer 2015 is the paper 
+
+design matter most in the in between sizes

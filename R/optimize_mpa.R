@@ -47,7 +47,7 @@ optimize_mpa <-
 
     mpas <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
       mutate(patch = 1:nrow(.)) %>%
-      mutate(mpa = FALSE)
+      mutate(mpa = TRUE)
 
     max_patches_protected <- round(patches * max_prop_mpa)
 
@@ -66,7 +66,7 @@ optimize_mpa <-
       function(candidate_patch, fauna, fleets, mpas,starting_conditions) {
         tmp_mpas <- mpas
 
-        tmp_mpas$mpa[tmp_mpas$patch %in% candidate_patch] <- TRUE
+        tmp_mpas$mpa[tmp_mpas$patch %in% candidate_patch] <- FALSE
 
         sim_mpa <- simmar(
           fauna = fauna,
@@ -165,7 +165,7 @@ optimize_mpa <-
 
       # update MPA locations
 
-      mpas$mpa[mpas$patch == top_patch] <- TRUE
+      mpas$mpa[mpas$patch == top_patch] <- FALSE
 
       mpa_network[[i]] <- mpas
 
@@ -213,14 +213,14 @@ optimize_mpa <-
 
       # update candidate cells
 
-      if (sum(!mpas$mpa) > 1) {
+      if (sum(mpas$mpa) > 1) {
         candidate_patches <-
-          sample(patch_value$patch[!mpas$mpa],
-                 ceiling(sum(!mpas$mpa) * prop_sampled),
-                 prob = patch_value$obj_value[!mpas$mpa] + 1e-3)
+          sample(patch_value$patch[mpas$mpa],
+                 ceiling(sum(mpas$mpa) * prop_sampled),
+                 prob = patch_value$obj_value[mpas$mpa] + 1e-3)
 
       } else {
-        candidate_patches <- patch_value$patch[!mpas$mpa]
+        candidate_patches <- patch_value$patch[mpas$mpa]
       }
 
       message(glue::glue("{scales::percent(i / max_patches_protected)} done"))
@@ -268,7 +268,7 @@ optimize_mpa <-
 
     outcomes <- baseline_outcome %>%
       bind_rows(tibble(
-        p_protected = 1:max_patches_protected,
+        p_protected = max_patches_protected:1,
         out = results
       )) %>%
       mutate(bio = map(out, "biodiv"),
@@ -320,7 +320,7 @@ optimize_mpa <-
 
 
     out_mpa_network <-
-      tibble(p_protected = 1:max_patches_protected,
+      tibble(p_protected = max_patches_protected:1,
              mpa = mpa_network) %>%
       unnest(cols = mpa)
 

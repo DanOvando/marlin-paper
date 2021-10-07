@@ -36,7 +36,7 @@ create_critters <-
     rec_form <-  sample(c(0, 1,2,3), 1, replace = TRUE)
 
     } else {
-      rec_form <- 1
+      rec_form <- 2 # local density dependence then disperse recruits per recruit movement
     }
     # rec_form <- 1 # sample(c(0, 1, 2, 3), 1, replace = TRUE)
 
@@ -57,8 +57,8 @@ create_critters <-
       seasonal_habitat = hab,
       recruit_habitat = recruit_habitat,
       adult_movement = 0,
-      adult_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
-      recruit_movement_sigma = runif(1, min = .75 * resolution, max = 3 * resolution),
+      adult_movement_sigma = 4,
+      recruit_movement_sigma = 2,
       rec_form = rec_form,
       fec_form = ifelse(str_detect(sciname,"carcharhinus"),"pups","weight"),
       pups = 6,
