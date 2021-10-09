@@ -276,7 +276,8 @@ if (run_casestudy == TRUE){
       placement_strategy = c("depletion", "rate", "avoid_fishing", "target_fishing", "area"),
       prop_mpa = seq(0,1, by = 0.01),
       prop_critters_considered = 1,
-      placement_error = c(0,.2)
+      placement_error = c(0),
+      mpa_response = c("stay")
     )
 
   a <- Sys.time()
@@ -285,7 +286,8 @@ if (run_casestudy == TRUE){
     mutate(results = future_pmap(list(placement_strategy = placement_strategy,
                                prop_mpa = prop_mpa,
                                prop_critters_considered = prop_critters_considered,
-                               placement_error = placement_error),
+                               placement_error = placement_error,
+                               mpa_response = mpa_response),
                           run_mpa_experiment,
                           starting_conditions = starting_conditions,
                           proc_starting_conditions = proc_starting_conditions,
@@ -567,7 +569,15 @@ experiment_obj <- case_study_experiments %>%
   select(-results) %>%
   unnest(cols = obj) %>%
   mutate(econ = econ / 1e6) %>%
-  filter(prop_mpa < 1)
+  filter(prop_mpa < 1) %>%
+  mutate(bycatch = !(str_detect(critter, "thunnus") | str_detect(critter,"katsuwonus")))
+
+
+experiment_obj <- experiment_obj %>%
+  left_join(bau, by = "critter") %>%
+  mutate(delta_biodiv = biodiv - bau_biodiv,
+         delta_econ = econ - bau_econ)
+
 
 experiment_obj %>%
   ggplot(aes(biodiv, econ, color = placement_strategy)) +
@@ -599,7 +609,9 @@ opt_obj <- optimized_networks %>%
   mutate(obj = map(network,"outcomes")) %>%
   select(-network) %>%
   unnest(cols = obj) %>%
-  mutate(econ = econ / 1e6)
+  mutate(econ = econ / 1e6) %>%
+  mutate(bycatch = !(str_detect(critter, "thunnus") | str_detect(critter,"katsuwonus")))
+
 
 obj_objective_value <- optimized_networks %>%
   mutate(obj = map(network,"objective")) %>%
@@ -626,10 +638,6 @@ opt_obj %>%
 # combine experiment and optimization, and then calculate change in objective function relative to status quo
 #
 
-experiment_obj <- experiment_obj %>%
-  left_join(bau, by = "critter") %>%
-  mutate(delta_biodiv = biodiv - bau_biodiv,
-         delta_econ = econ - bau_econ)
 
 experiment_obj %>%
   ggplot(aes(prop_mpa, delta_econ)) +
@@ -659,7 +667,10 @@ total_opt_obj <- opt_obj %>%
     obj_fun = unique(obj),
     real_loss =  mean(ssb_v_ssb0 <= (0.9 *bau_biodiv)),
     loss = mean(ssb_v_ssb0 <= bau_biodiv),
-    total_loss = sum(ssb_v_ssb0 - bau_biodiv),
+    total_ssb_change = sum(ssb_v_ssb0 - bau_biodiv),
+    total_ssb_loss = sum((ssb_v_ssb0 - bau_biodiv)[ssb_v_ssb0 < bau_biodiv], na.rm = TRUE),
+    total_bycatch_ssb_change = sum((ssb_v_ssb0 - bau_biodiv)[bycatch == TRUE]),
+    total_ssb_loss = sum((ssb_v_ssb0 - bau_biodiv)[ssb_v_ssb0 < bau_biodiv & bycatch], na.rm = TRUE),
     econ = sum(econ),
             biodiv = sum(ssb_v_ssb0),
             bau_econ = sum(bau_econ),
@@ -687,7 +698,10 @@ total_experiment_obj <- experiment_obj %>%
   summarise(
     loss = mean(biodiv <= bau_biodiv),
     real_loss = mean(biodiv <= (0.9 * bau_biodiv)),
-    total_loss = sum(biodiv - bau_biodiv),
+    total_ssb_loss = sum((biodiv - bau_biodiv)[biodiv < bau_biodiv], na.rm = TRUE),
+    total_ssb_change = sum(biodiv - bau_biodiv),
+    total_bycatch_ssb_change = sum((biodiv - bau_biodiv)[bycatch == TRUE]),
+    total_ssb_loss = sum((biodiv - bau_biodiv)[biodiv < bau_biodiv & bycatch], na.rm = TRUE),
     econ = sum(econ),
     biodiv = sum(biodiv),
     bau_econ = sum(bau_econ),

@@ -202,10 +202,14 @@ optimize_mpa <-
 
         econ <- profit_mpa
 
+        yield_mpa <-  (map_dbl(res, ~ sum(.x$c_p_fl, na.rm = TRUE)))
+
+
       out <-
         list(
           biodiv = tibble(critter = names(biodiv), ssb_v_ssb0 = biodiv),
-          econ = tibble(critter = names(econ), econ = econ)
+          econ = tibble(critter = names(econ), econ = econ),
+          yield = tibble(critter = names(yield_mpa), yield = yield_mpa)
         )
       # keep just biomass and catch for now: you can always use the MPA layer at that step to recreate the whole sim if you need
 
@@ -249,17 +253,18 @@ optimize_mpa <-
       econ_sq <-
         (map_dbl(starting_conditions, ~ sum(.x$r_p_a_fl, na.rm = TRUE)))
 
-      profit_mpa <-  (map_dbl(res, ~ sum(.x$prof_p_fl, na.rm = TRUE)))
+      profit_sq <-  (map_dbl(res, ~ sum(.x$prof_p_fl, na.rm = TRUE)))
 
-      econ <- profit_mpa
+      econ <- profit_sq
 
-    # econ <-
-    #   (map_dbl(res, ~ sum(.x$r_p_a_fl, na.rm = TRUE))) #  calculate econ component of objective function, currently revenues across all fleets and species
+      yield <-  (map_dbl(res, ~ sum(.x$c_p_fl, na.rm = TRUE)))
 
     out <-
       list(
         biodiv = tibble(critter = names(biodiv), ssb_v_ssb0 = biodiv),
-        econ = tibble(critter = names(econ), econ = econ)
+        econ = tibble(critter = names(econ), econ = econ),
+        yield = tibble(critter = names(yield), yield = yield)
+
       )
 
     baseline_outcome <- tibble(p_protected = 0, out = list(out))
@@ -272,63 +277,23 @@ optimize_mpa <-
         out = results
       )) %>%
       mutate(bio = map(out, "biodiv"),
-             econ = map(out, "econ")) %>%
-      unnest(cols = c(bio, econ), names_repair = "universal") %>%
-      select(-`critter...5`) %>%
+             econ = map(out, "econ"),
+             yield = map(out, "yield")) %>%
+      unnest(cols = c(bio, econ, yield), names_repair = "universal") %>%
+      select(-`critter...5`,-`critter...7`) %>%
       rename(critter = `critter...3`)
-
-    # outcomes %>%
-    #   ggplot(aes(p_protected, ssb_v_ssb0, color = critter)) +
-    #   geom_line()
-
-    #
-    # outcomes %>%
-    #   ggplot(aes(p_protected, econ, color = critter)) +
-    #   geom_line() +
-    #   facet_wrap(~critter, scales = "free_y")
-
-    # outcomes %>%
-    #   ggplot(aes(ssb_v_ssb0, econ, color = p_protected)) +
-    #   geom_line(size = 1.4) +
-    #   scale_color_viridis_c(name = "MPA Size") +
-    #   facet_wrap(~critter, scales = "free")
 
     objective <-  outcomes %>%
       group_by(p_protected) %>%
       summarise(ssb = sum(ssb_v_ssb0),
-                econ = sum(econ)) %>%
+                econ = sum(econ),
+                yield = sum(yield)) %>%
       mutate(obj = alpha * scales::rescale(ssb) + (1 - alpha) * (scales::rescale(econ)))
-
-    # objective %>%
-    #   ggplot(aes(p_protected, obj)) +
-    #   geom_point()
-    #
-    # objective %>%
-    #   ggplot(aes(p_protected, econ)) +
-    #   geom_point()
-
-    #
-    # objective %>%
-    #   ggplot(aes(ssb, econ, color = p_protected)) +
-    #   geom_point() +
-    #   scale_color_viridis_c()
-    #
-    # objective %>%
-    #   ggplot(aes(ssb, econ, color = p_protected)) +
-    #   geom_point() +
-    #   scale_color_viridis_c()
-
 
     out_mpa_network <-
       tibble(p_protected = max_patches_protected:1,
              mpa = mpa_network) %>%
       unnest(cols = mpa)
-
-    # out_mpa_network %>%
-    #   ggplot(aes(x,y,fill = mpa)) +
-    #   geom_tile() +
-    #   facet_wrap( ~ p_protected)
-
 
     return(list(
       outcomes = outcomes,

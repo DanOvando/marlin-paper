@@ -7,10 +7,14 @@ run_mpa_experiment <-
            fauna,
            fleets,
            placement_error = 0,
+           mpa_response = "stay",
            prop_critters_considered,
            random_mpas = FALSE,
            max_delta = 1,
            resolution) {
+
+
+    fleets <-  purrr::modify_in(fleets, list(2, "mpa_response"), ~ mpa_response)
 
     n_mpa <- round(prop_mpa * resolution^2)
 
@@ -162,10 +166,16 @@ run_mpa_experiment <-
       pivot_longer(everything(), names_to = "critter",values_to = "econ")
     #  calculate econ component of objective function, currently revenues across all fleets and species
 
+    yield <-
+      (map_df(mpa_sim[[length(mpa_sim)]], ~ sum(.x$c_p_fl, na.rm = TRUE))) %>%
+      pivot_longer(everything(), names_to = "critter",values_to = "yield")
+    #  calculate econ component of objective function, currently revenues across all fleets and species
+
     # out <- tibble(biodiv = biodiv, econ = econ)
 
     objective_outcomes <- biodiv %>%
-      left_join(econ, by = "critter")
+      left_join(econ, by = "critter") %>%
+      left_join(yield, by = "critter")
 
     outcomes <- list()
 

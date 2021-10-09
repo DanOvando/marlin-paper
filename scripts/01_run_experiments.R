@@ -3,7 +3,7 @@ source(file.path("scripts", "00_setup.R"))
 
 # generate state experiments. This is a somewhat tricky process where the actual generated values are created for many variables in create_experiment_critters
 
-n_states <- 500
+n_states <- 600
 
 if (run_experiments) {
   state_experiments <-
@@ -124,6 +124,7 @@ if (run_experiments) {
         min = 0.01 * resolution,
         max = .5 * resolution
       ),
+      hyper = sample(c(1,1.5),nrow(.), replace = TRUE),
       rec_form = sample(c(0, 1, 2, 3), nrow(.), replace = TRUE)
     )
 
@@ -143,7 +144,8 @@ if (run_experiments) {
           f_v_m = f_v_m,
           adult_movement_sigma = adult_movement_sigma,
           recruit_movement_sigma = recruit_movement_sigma,
-          rec_form = rec_form
+          rec_form = rec_form,
+          hyper = hyper
         ),
         create_experiment_critters,
         marlin_inputs = marlin_inputs,
@@ -939,48 +941,19 @@ fig_9
 
 critter_results <- results %>%
   group_by(state_id, placement_id) %>%
-  mutate(delta_biodiv = pmin(2,biodiv / bau_biodiv - 1),
+  mutate(delta_biodiv = pmin(2,biodiv / bau_biodiv),
          loss = biodiv < bau_biodiv,
          real_loss = biodiv <= (0.9 * bau_biodiv))
+
+critter_results %>%
+  ggplot(aes(delta_biodiv)) +
+  geom_histogram() +
+  scale_x_continuous(labels = scales::percent) +
+  geom_vline(xintercept = 0.9)
 
 
 mean(critter_results$loss, na.rm = TRUE)
 
-tree_1 <-   rpart::rpart(
-  real_loss ~ f_v_m  + critter + seasonal_movement + adult_movement_sigma + rec_form + recruit_movement_sigma + placement_strategy + prop_mpa + sigma_habitat + spatial_allocation,
-  data = critter_results %>% filter(prop_mpa > .2, prop_mpa < 0.4),
-  method = "class"
-)
-#
-rpart.plot(tree_1, type = 5)
-
-
-reg_1 <-   rstanarm::stan_glm(
-  delta_biodiv ~ real_sigma_centroid  + f_v_m + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma + placement_strategy + prop_mpa + sigma_habitat + centroid_distance + spatial_allocation,
-  data = critter_results %>% filter(prop_mpa < 1),
-  cores = 4,
-  chains = 4
-)
-
-critter_results %>%
-  filter(prop_mpa > .1) %>%
-  ggplot(aes(adult_movement_sigma, delta_biodiv, color = prop_mpa)) +
-  geom_point(alpha = 0.1) +
-  facet_wrap(~critter) +
-  scale_color_viridis_c()
-
-fig_10 = plot(reg_1)
-
-
-reg_2 <-   rstanarm::stan_glm(
-  loss ~   f_v_m  + critter + seasonal_movement + adult_movement_sigma + factor(rec_form) + recruit_movement_sigma + prop_mpa + sigma_habitat + spatial_allocation,
-  family = binomial(),
-  data = critter_results %>% filter(prop_mpa < 1, placement_strategy == "area"),
-  cores = 4,
-  chains = 4
-)
-
-fig_11 <- plot(reg_2)
 
 # save results ------------------------------------------------------------
 

@@ -46,11 +46,11 @@ if (!dir.exists(results_path)){
 
 run_experiments <- FALSE
 
-experiment_workers <- 10
+experiment_workers <- 1
 
-run_casestudy <- FALSE
+run_casestudy <- TRUE
 
-optimize_casestudy <- FALSE
+optimize_casestudy <- TRUE
 
 safety_stop <- FALSE
 

@@ -12,7 +12,7 @@ output:
   bookdown::html_document2: default
 bibliography: references.bib
 params:
-  run_name: ["v0.5"]
+  run_name: ["v1.1"]
 ---
 
 ```{r setup, include=FALSE}
@@ -21,6 +21,11 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, include = 
 source(here::here("scripts", "00_setup.R"))
 
 theme_set(marlin::theme_marlin())
+
+sci_to_com <- taxize::sci2comm(unique(marlin_inputs$scientific_name)) %>% 
+  bind_rows(.id = "critter") %>% 
+  pivot_longer(everything(),names_to = "critter",values_to = "common_name") %>% 
+  mutate(common_name = stringr::str_to_title(common_name))
 
 ```
 
@@ -36,7 +41,11 @@ rdatas <- results_files[str_detect(results_files,'.Rdata')]
 
 walk(rdatas, ~load(file.path(results_path,.x), envir = .GlobalEnv))
 
+
+
 ```
+
+c
 
 \*\* something to point out: increased catches are a paradox, either
 come from rebuilding stock or concentrated fishing, but trajectory can
@@ -53,7 +62,7 @@ accidentally fish harder
 
 <!-- Empirically, how do you differentiate increase in catch from fishing harder vs increases in catch from rebuilding: rebuilding has to have a decrease at first -->
 
-Marine protected areas (MPAs) are a growing part of the marine
+in the Marine protected areas (MPAs) are a growing part of the marine
 conservation toolbox, with 5.9% of the world's oceans currently in
 implemented MPAs [@grorud-colvert2021], and bodies such as the IUCN
 calling for 30% protection by 2030. The modern science of MPAs was
@@ -525,242 +534,537 @@ presence of MPAs.
 
 # Results
 
-what we found was a series of neccesary but not sufficient conditions 
+Our simulation experiments allow us to examine the wide range of effects
+that MPAs can have on groups of species depending on combinations of
+ecological, economic, and design parameters. The goal of this exercise
+is not to assign any probability to the potential impacts of MPAs; we
+have not provided any explicit probabilites to the alternative states
+modeled here, and so it may be that a state that was only modeled on a
+few occasions in our simulations is in fact highly common in the real
+world.
 
-make the tautology clear: illustrating a point, not proving a thing since clearly depends on if you assume displacement, and then degree of non-overlap etc. 
+What these experiments are designed to do is illustrate the range of
+outcomes that are possible from MPAs under the types of conditions
+evaluated here, and evaluate which drivers are potentially the most
+influential in affecting particular outcomes, such as unintended
+conservation consequences. Our case study of a WCPO-esque system is
+intended then to reduce the parameter space enough that we can examine
+the relative tradeoffs and value of optimization for economic and
+conservation objectives in a pelagic system.
+
+One clear caveat across all of these results is that we have made two
+very strong assumptions around the behavior of the fishing fleet. The
+first is that we assume that effort is displaced, not removed, by the
+creation of MPAs. This is a widely debated question around MPAs, and the
+real impacts of MPAs on fishing effort will clearly be setting
+dependent. For example, large-scale pelagic fishing fleets already have
+high rates of vessel movement built into their economic models, and so
+may be more likely to move rather than exit the fishery in response to
+MPAs. In contrast, smaller scale coastal fishing operations may simply
+exit the fishery if their local fishing grounds are placed in MPAs.
+There is clear evidence of effort displacement in many fisheries though
+(citation), and moreover a motivation for this study was to evaluate the
+potential unintended consequences of MPAs from effort displacement on
+target and bycatch species. If MPAs do not produce increases in fishing
+effort outside their borders, then the conservation effects of MPAs have
+to be positive for all species concerned.
+
+The second is that we do not account for evolution of total effort. Our
+assumption is that while fleets can make economic decisions based around
+where to allocate their effort in space, the total pool of effort they
+exert is fixed (we would note that the underling `marlin` model does
+have capacity for more realistic fleet models such as open-access
+dynamics). This is clearly an incorrect assumption over the long term,
+but allows us to focus on the impacts of the other drivers considered
+here. A more through consideration of the impacts of fleet model
+structure on MPA outcomes is generally needed, and is critical for any
+tactical efforts at MPA modeling.
+
+<!-- what we found was a series of neccesary but not sufficient conditions  -->
+
+<!-- make the tautology clear: illustrating a point, not proving a thing since clearly depends on if you assume displacement, and then degree of non-overlap etc.  -->
 
 ## Generalized Experiments
 
 We focused first on the range of impacts that MPAs can have on mature
 biomass across the range of variables explored. To illustrate, we pulled
-out two example simulations, one where MPAs provide relatively large
+out two example simulations, one where MPAs provided relatively large
 benefits across all three species, and a second where MPAs actually
 produced substantial losses in some species. In the "best case"
 scenario, each of the three species shares a common habitat
 distribution, and so protection of the central habitat of one species
 results in protection for all species. In the "worst case" scenario,
-each of the species have markedly different centroids. An MPA designed
-primarily around the tuna and marlin populations then ends up displacing
-effort into the shark habitat, producing benefits for the first two
-species but driving the shark population down.
+each of the species have . An MPA designed primarily around the tuna and
+marlin populations then ends up displacing effort into the shark
+habitat, producing benefits for the first two species but driving the
+shark population down XX (Fig.\@ref(fig:fig-info)).
 
 ```{r fig-info, fig.cap="Illustration of ways in which variables can interact to affect MPA outcomes."}
 
 knitr::include_graphics(file.path(results_path,"fig_info.pdf"))
 ```
 
-the point is not once answer
+```{r}
+
+critter_results <- compact_experiment_results %>%
+  filter(bau_biodiv > 0, prop_mpa > 0) %>% 
+  group_by(state_id, placement_id) %>%
+  mutate(real_sigma_centroid = sd(centroid)) %>%
+  mutate(delta_biodiv = pmin(1,biodiv - bau_biodiv),
+         loss = biodiv < bau_biodiv,
+         real_loss = biodiv < (0.9 * bau_biodiv),
+         rec_form = as.factor(rec_form)) %>% 
+  mutate(critter = fct_relevel(critter,c("Tuna", "Marlin","Shark")),
+         rec_form = fct_recode(rec_form, "Global DD, Rec. By Habitat" = "0", "Local DD, local Recruitment" = "1", "Local DD, Disperse Recruits" = "2", "Disperse Larvae, Poset-Settlement DD" = "3"))
+
+```
 
 Looking at the full
 `r n_distinct(total_experiment_results$placement_id) * n_distinct(total_experiment_results$state_id)`
 experiments run, the results were highly variable, with MPAs capable of
 producing substantial conservation gains to substantial conservation
-losses and everything in between. 
+losses and everything in between. Across our simulations, gains were
+much more common than losses, with losses of any magnitude occurring in
+`r scales::percent(mean(critter_results$loss))` of simulations with
+MPAs, but losses of 10% or greater of SSB in only
+`r scales::percent(mean(critter_results$real_loss))` of simulations.
+However we stress again that we can assign no probabilities to any of
+these outcomes in the real world; this simply tells us that under the
+range of conditions, selected to represent plausible states of nature,
+there are many more ways for MPAs to provide a conservation effect
+greater than or equal to 0 than there are for them to provide a net loss
+for some species.
 
+The question of interest then are which of the considered drivers appear
+to be the most influential in affecting the magnitude and direction of
+conservation effects of MPAs. Fishing mortality is the most obvious
+answer; if fishing mortality is zero in the absence of an MPA then
+clearly a no-take MPA will have no effect. As such we do not focus on
+that metric here, focusing instead on other key drivers identified by
+our simulation. Four visually prominent factors were MPA size, species,
+design strategy, and degree of habitat difference. The degree to which
+MPAs of a given size impact spawning biomass depends on a host of
+factors. The potential for conservation losses are intuitively convex in
+MPA size: effects of any kind are low when MPA size is low, and
+conservation losses must be zero when MPA size is 100% (which this graph
+doesnot quite reach), with peak losses in our simulations occuring
+between MPA sizes of XX and XX. Life history plays a clear role our
+stylized with shark and marlin populations being much more likely to
+experience net conservation losses as a function of MPA placement than
+the more resilient tunas. High degree of habitat differences can lead to
+both to the potential for large conservation gains or losses depending
+on whether a more isolated species is located primarily inside or
+outside of MPAs (Fig.\@ref(fig:fig-exp-biodiv)).
 
-Design matters size matters species matters habitat matters
-```{r}
+```{r fig-exp-biodiv}
 
-compact_experiment_results %>%
+fig_exp_biodiv <- compact_experiment_results %>%
   filter(prop_mpa < 1) %>%
   # filter(f_v_m > 1.5) %>%
   group_by(state_id, placement_id) %>%
   ggplot(aes(
     prop_mpa,
-    pmin(2,biodiv / bau_biodiv -1),
+    pmin(1,biodiv - bau_biodiv),
     color =  sigma_habitat,
     group = interaction(placement_id, state_id)
   )) +
-  geom_line(alpha = 0.25) +
+  geom_line(alpha = 0.5) +
   geom_hline(aes(yintercept = 0), linetype = 2, color = "red") +
   facet_grid(critter ~ placement_strategy) +
-  scale_color_viridis_c(name = "Habitat Difference", guide = guide_colorbar(frame.colour = "black",ticks.colour = "black")) +
-  scale_y_continuous(labels = scales::percent,"Change in SSB/SSB0 relative to BAU") +
+  scale_color_viridis_c(name = "Habitat Difference", guide = guide_colorbar(frame.colour = "black",ticks.colour = "black", barwidth = unit ("15", "lines"))) +
+  scale_y_continuous("Change in SSB/SSB0 relative to BAU") +
   scale_x_continuous(labels = scales::label_percent(accuracy = 1), name = "MPA Size") +
   theme(legend.position = "top")
 
+# 
+# compact_experiment_results %>%
+#   filter(prop_mpa < 1) %>%
+#   # filter(f_v_m > 1.5) %>%
+#   group_by(state_id, placement_id) %>%
+#   ggplot(aes(
+#     prop_mpa,
+#     econ - bau_econ,
+#     color =  f_v_m,
+#     group = interaction(placement_id, state_id)
+#   )) +
+#   geom_line(alpha = 0.5) +
+#   geom_hline(aes(yintercept = 0), linetype = 2, color = "red") +
+#   facet_grid(critter ~ placement_strategy, scales = "free_y") +
+#   scale_color_viridis_c(name = "Habitat Difference", guide = guide_colorbar(frame.colour = "black",ticks.colour = "black", barwidth = unit ("15", "lines"))) +
+#   scale_y_continuous("Change in SSB/SSB0 relative to BAU") +
+#   scale_x_continuous(labels = scales::label_percent(accuracy = 1), name = "MPA Size") +
+#   theme(legend.position = "top")
+
+fig_exp_biodiv
 ```
 
+We can somewhat quantitatively evaluate the relative impact of these
+drivers using a regression, given that by construction variation in each
+of evaluated drivers are independent in our simulations. We fit a
+binomial regression to the presence or absence of of a net conservation
+loss per species as a function of the simulated experimental variables.
+The factors that according to this model most increase the probability
+of a net conservation loss occurring include habitat differences, a
+placement strategy of avoiding fishing areas, and the life history of
+the species (shark or marlin relative to tuna). The factors that most
+decrease the probability of a conservation loss from an MPA are MPA
+size, placement strategy based on local depletion (xx might remove this
+strategy as unrealistic xx), and somewhat interestingly fishing
+mortality rate (Fig.\@ref(fig:fig-loss-drivers)-A).
+
+However, this result is somewhat misleading (xx so should we just
+remove?xx). Fig.\@ref(fig:fig-exp-biodiv) shows the clearly bimodal
+nature of for example habitat differences. This analysis helps inform us
+that habitat differences are a necessary but not sufficient condition
+for MPA leakage induced conservation losses. The regression based
+results require assuming that each of the effects are independent and
+linear in nature. In fact each of these factors can interact in complex
+and non-linear ways that may not be apparent visually or through this
+type of regression analysis. To address this, we ran a random forest
+using the `ranger` package in R (citaitons) and extracted the impurity
+corrected importance scores for each of the variables. While this does
+not tell us the expected marginal effect of individual drivers, it does
+tell us which variables are critical if our goal is to accurately
+predict the potential for unintended consequences or magnitude of
+conservation gains in MPAs. Note here that variables that intuitively
+should have an impact but have no visually or statistically (in a linear
+model) clear impact on the probability of experiencing a conservation
+loss such as the dispersal distances of adults or larvae have importance
+scores comparable in magnitude to habitat differences when considered in
+the context of nonlinear effects and interactions with other variables
+(Fig.\@ref(fig:fig-loss-drivers)-B).
+
+```{r fig-loss-drivers}
+
+# loss_reg <-   rstanarm::stan_glm(
+#   loss ~   f_v_m  + critter + seasonal_movement + adult_movement_sigma + rec_form + recruit_movement_sigma + prop_mpa + sigma_habitat + spatial_allocation + placement_strategy + hyper,
+#   family = binomial(),
+#   data = critter_results %>% filter(between(prop_mpa,.2,.4)),
+#   cores = 4,
+#   chains = 4
+# )
 
 
-
-```{r}
-
-critter_results <- compact_experiment_results %>%
-  group_by(state_id, placement_id) %>%
-  mutate(real_sigma_centroid = sd(centroid)) %>%
-  mutate(delta_biodiv = pmin(2,biodiv / bau_biodiv - 1),
-         loss = biodiv < bau_biodiv,
-         rec_form = as.factor(rec_form)) %>% 
-  mutate(critter = fct_relevel(critter,c("Tuna", "Marlin","Shark")),
-         rec_form = fct_recode(rec_form, "Global DD, Rec. By Habitat" = "0", "Local DD, local Recruitment" = "1", "Local DD, Disperse Recruits" = "2", "Disperse Larvae, Poset-Settlement DD" = "3"))
-
-reg_2 <-   rstanarm::stan_glm(
-  loss ~   f_v_m  + critter + seasonal_movement + adult_movement_sigma + rec_form + recruit_movement_sigma + prop_mpa + sigma_habitat + spatial_allocation,
+loss_reg <-   glm(
+  loss ~   f_v_m  + critter + seasonal_movement + adult_movement_sigma + rec_form + recruit_movement_sigma + prop_mpa + sigma_habitat + spatial_allocation + placement_strategy + hyper,
   family = binomial(),
-  data = critter_results %>% filter(between(prop_mpa,.2,.4), placement_strategy == "area"),
+  data = critter_results %>% filter(between(prop_mpa,.2,.4))
+)
+
+
+loss_reg_coefs <- broom::tidy(loss_reg) %>%
+  mutate(lower = estimate - 1.96 * std.error,
+         upper = estimate + 1.96 * std.error) %>%
+  mutate(
+    term = str_replace(term, "placement_strategy", "Placement Strategy: "),
+    term = str_replace(term, "rec_form", "DD Timing: "),
+    term = str_replace(term, "spatial_allocation", "Fleet Allocation: "),
+    term = str_replace(term, "hyper", "Hyperallometry present"),
+    term = str_replace(term, "prop_mpa", "MPA size"),
+    term = str_replace(term, "sigma_habitat", "Habitat differences"),
+     term = str_remove_all(term, "critter")
+  )
+
+loss_coef_plot <- loss_reg_coefs %>%
+  ggplot() +
+  geom_hline(aes(yintercept = 0)) +
+  geom_pointrange(aes(
+    forcats::fct_reorder(term, estimate),
+    estimate,
+    ymin = lower,
+    ymax = upper
+  )) +
+  scale_y_continuous(name = "Log-odds Ratio Effect") +
+  scale_x_discrete(name = '') +
+  coord_flip()
+
+
+
+tmp_critter <-
+  critter_results %>% filter(between(prop_mpa, .2, .4)) %>%
+  select(-habitat) %>% 
+  mutate(fctr_loss = factor(loss))
+# 
+# tmp_rcp <- recipes::recipe(loss ~ ., data = tmp_critter) %>% 
+#   themis::step_upsample(fctr_loss, over_ratio = 0.75) %>% 
+#   recipes::prep(training = tmp_critter, retain = TRUE) %>% 
+#   recipes::juice()
+
+loss_rf <-   ranger::ranger(
+  loss ~   f_v_m  + critter + seasonal_movement + adult_movement_sigma + rec_form + recruit_movement_sigma + prop_mpa + sigma_habitat + spatial_allocation + placement_strategy + hyper,
+  data = tmp_critter,
+  importance = "impurity"
+)
+
+loss_importance <- data.frame(importance = loss_rf$variable.importance %>% sort()) %>% 
+  rownames_to_column(var = "term")
+
+
+loss_importance_plot <- loss_importance %>% 
+  ggplot(aes(forcats::fct_reorder(term, importance), importance)) + 
+  geom_col() +
+  scale_y_continuous(name = "Variable Importance") +
+  scale_x_discrete(name = '') +
+  coord_flip()
+
+fig_loss_drivers <- loss_coef_plot + loss_importance_plot
+
+fig_loss_drivers
+```
+
+```{r fig-delta-drivers, eval = FALSE}
+
+delta_reg <-   rstanarm::stan_glm(
+  delta_biodiv ~   f_v_m  + critter + seasonal_movement + adult_movement_sigma + rec_form + recruit_movement_sigma + prop_mpa + sigma_habitat + spatial_allocation + hyper,
+  data = critter_results %>% filter(between(prop_mpa,.2,.4)),
   cores = 4,
   chains = 4
 )
 
-fig_11 <- plot(reg_2)
 
-fig_11
+tmp_critter <-
+  critter_results %>% filter(between(prop_mpa, 0.2, 0.4)) %>%
+  select(-habitat) %>% 
+  mutate(fctr_loss = factor(loss))
+# 
+# tmp_rcp <- recipes::recipe(loss ~ ., data = tmp_critter) %>% 
+#   themis::step_upsample(fctr_loss, over_ratio = 0.75) %>% 
+#   recipes::prep(training = tmp_critter, retain = TRUE) %>% 
+#   recipes::juice()
 
-```
+delta_rf <-   ranger::ranger(
+  delta_biodiv ~   f_v_m  + critter + seasonal_movement + adult_movement_sigma + rec_form + recruit_movement_sigma + prop_mpa + sigma_habitat + spatial_allocation + placement_strategy + hyper,
+  data = tmp_critter,
+  importance = "impurity"
+)
 
+delta_rf$variable.importance %>% sort()
 
-
-We do not focus into the individual
-effects of particular variables as we found them to be highly dependent
-on the exact question asked and the set of data included, and since we
-cannot ascribe any actual likelihood to any individual state of nature
-simulated here.
-
-However, three important features do emerge. The first is that life
-history plays an important role in the potential for unintended
-conservation consequences from MPAs. All else equal, MPAs were much less
-likely to produce losses in spawning biomass for our tuna-like species
-than the marlin or shark-like species. Given that within the broad life
-history traits we do vary adult and larval movement, fishing mortality,
-as well as the timing of density dependence, we believe this result is
-mostly due to the high resilience (high steepness, low age at maturity,
-fast growth) of the tuna-like species relative to the marlin and
-shark-like species.
-
-The second is that design matters...
-
-```{r}
-
-```
-
-
-The third is that extreme outcomes (both positive and negative),
-particularly at lower MPA sizes, are largely driven by the presence of
-small range sizes interacting with seasonal migrations. Across species,
-simulations without seasonal migrations and small ranges were much more
-likely to produce extreme results than those with seasonal migrations
-and/or larger ranges. Presence of seasonal migrations acts as a
-dilutant: As a given static MPA only provides protection, or displaces
-fishing effort, onto a particular area in only half of the year, both
-the benefits and costs of MPAs are smaller. When seasonal migrations are
-not present and the species range is small, MPAs are more capable of
-providing either large benefits or large losses.
-
-\\Big message: even constrained by the same initial depletion and core
-biology (e.g. movement rates), a wide range of outcomes are possible for
-each species for a given MPA size, dependent on the design strategy,
-habitat overlap, migrations, quality of information, etc. Across the
-board as MPA size increases the ratio of positive to negative outcomes
-increases, until all species achieve their maximum conservation
-potential in every iteration at 100% MPA. HOwever, every species
-experienced a set of simulations, roughyl xx%, that resulted in net
-losses in SSB/SSB0 relative to BAU. Losses were smaller than potential
-gaines, but reached meaningful levels in some species, and interestingly
-peaked in many cases right before max MPA (reflecting concentration of
-fishing in small amounts of habitat in habited by the species).Important
-to stress in here that there are no probabilities in this, no way of
-knowing which state is more probable than others, just given the range
-of things simulated more ways for a bigger positive effect. Also make
-clear though, biggish losses (10% or more) possible, but rare.
-
-## Case Study
-
-The general experiments conducted show two general insights
-
-1.  Even conditional on fishing exploitation and general life history
-    strategy, the effects of MPAs on a group of species with technical
-    interactions is highly variable and dependent on habitat
-    distribution, design decisions, and data quality. xx make this more
-    explicit.
-
-2.  Some degree of unintended conservation consequences occured across
-    nearly all of our simulations below MPA coverage near 100%, though
-    small losses were much more common than large. Different design
-    strategies are better suited to avoiding unintended consequences.
-
-There two general results beg some important questions. First, are
-unintended consequences inevitable given the kinds of technical
-interactions explored here, or can optimized MPA networks reduce or
-eliminate these unintended consequences. Second, one clear solution to
-the problem of unintended consequences is to simply make the MPAs large:
-if MPAs cover 100% of the area there can be no direct unintended
-conservation consequences. The potential for negative impacts on
-economic fishery outcomes increases as MPAs reach large size though.
-What then are the tradeoffs between reducing the potential for
-unintended conservation consequences and fishery revenues?
-
-To address these questions, we ran a more limited "case study" set of
-simulations, based on the dynamics of the WCPO tuna fisheries. Rather
-than iterating over different movement dynamics and habitat
-configurations, we fix habitat layers based on reported CPUE for the
-species in question, and xx other things we fix xx.
-
-For this subset of simulations then, along with the various "rule of
-thumb" MPA design strategies we ran an optimization routine (see section
-XX) across a range of objective function weightings, in the manner of
-@rassweiler2014. This allowed us to assess 1) the degree to which
-unintended conservation consequences of MPAs can be reduced by optimized
-design and 2) the magnitude of tradeoffs between conservation outcomes
-and fishery revenues under both rule-of-thumb and optimized MPA
-networks.
-
-key results: optimization helps (Nobel prize please). Can reduce percent
-of species with conservation loss down to 25% pretty quickly if you
-prioritize conservation. Rule of thumb designs like targeting fishing
-can get there with perfect information and when considering all animals,
-but can be pretty far from optimal with imperfect information or when
-only considering a subset of animals in the planning process (that's
-what all the different points represent). Some rules of thumb are more
-sensitive to these decision than others. E.g. rate can get you optimal,
-but goes off the rails pretty quickly with bad information.
-
-There is also a pretty clear breakpoint in results between basically
-trying for conservation or trying for economics, and not a lot of wiggle
-room in between (the two general bands of lines). xx check to what
-extent this depends on the way you scale the two objective function
-components xx.
-
-```{r, fig.cap="Percent of species with some conservation loss as a function of MPA size. Points are draws from rule-of-thumb scenarios, lines are results of optimization routine across a gradient of conservation weighting."}
-
-```
-
-Key results: Even with optimization, you can basically either be in a
-world with 50% or more of species having some level of unintended
-conservation consequence, but no economic loss / some economic gain, or
-you can be in a world with lower unintended consequences, but economic
-losses. But, even rule of thumb approaches can get you to some places
-with relatively little unintended consequences at relatively minimal
-economic loss.
-
-```{r, fig.cap="Tradeoff between unitendedn consequences and fisheries revenue. Filled polygons in background represent rule-of-thumb results, with redder colors indicating higher density of points. Points are results of optimization, with color indicating conservation weighting in optimization. Black diagonal line shows 1:1 relationship"}
-
+plot(delta_reg)
 
 
 ```
 
-Key results: Presence of and magnitude of unintended consequences pretty
-sensitive to design descisions. On a macro scale though far less so. In
-terms of change in total SSB/SSB0 (metric of biodiversity, i.e. maxed
-out when all species are unfished) and change in revenue, there is
-basically a pretty simple linear tradeoff between biodiversity and
-revenue, with a slope less than negative 1, meaning that 1% increase in
-biodiversity comes at a greater than 1% loss in fishery revenue. This
-stacks up pretty nicely with @rassweiler2014., where value of
-optimization was low when overfishing of valuable species isn't
-prevalent, as is the case here. So, design and optimization can help a
-lot with the more "micro" level outcomes (e.g. making sure that
-biodiversity gaines aren't coming from massive gains in one species to
-detriment of other), but on a macro level pretty insensitive in this
-case study.
+## WCPO Case Study
 
-```{r, fig.cap="Tradeoff frontier between revenue and biodiversity xx across different rule odf thumb design strategies. Points indicate role of thumb results, lines are results of optimized networks across a gradient of conservation weighting."}
+The generalized experiments help us understand the potential impacts of
+the evaluated drivers, but also highlight the challenge in making
+definitive statements about the effect of a given driver on the outcomes
+of pelagic(?) MPAs, given the complex ways in which all of these factors
+interact, even within a relatively simple model such as this one. In
+order to help illustrate how addressing the kinds of spatial dynamics
+and technical interactions included in our model can affect and benefit
+marine spatial planning, we then ran a case study intended to loosely
+reflect the dynamics of WCPO tuna, billfish, and shark fisheries and
+populations.
+
+This case study allows us to focus in on important questions around the
+relative performance of "rule of thumb" MPA design strategies relative
+to optimized networks. We ran a spatial optimization routine (see
+section XX) across a range of objective function weightings, in the
+manner of @rassweiler2014. This allowed us to assess 1) the potential
+risk of unintended conservation consequences from MPAs in this WCPO
+bycatch study and the 2) assess value of optimization in this WCPO case
+study in achieving economic and conservation objectives.
+
+Given the set of parameters simulated here, we find little intrinsic
+risk for large-scale unintended losses in total spawning biomass caused
+by MPA effort displacement in the WCPO case study. Each of the design
+scenarios produced at least some small loss in biomass for one or more
+species at some MPA size. However, these losses were generally small and
+isolated to a subset of species within a small MPA size range, with the
+exception of the "Avoid_fishing" MPA placement strategy that resulted in
+net losses for most species at large MPA sizes (though simply minimal
+impact at smaller sizes). All design strategies except "Avoid_fishing"
+and "Rate" resulted in relatively rapid declines in profits for the
+three main tuna fisheries (skipjack, yellowfin, and bigeye). Both
+"Avoid_fishing" and "Rate" mainlined profits close to business as usual
+up to a large MPA size, but did so at the expense of conservation
+benefits (Fig.\@ref(fig:fig-cs-critters)).
+
+```{r fig-cs-critters, fig.cap = "Simulated trajectories of changes in profits and spawning stock biomass (SSB) for selected species caught in the WCPO. Each column represents a different MPA design strategy, see Table.XX for definitions. Optimized refers to an MPA network optimized to maximize total SSB across all species."}
+
+
+opt_comparison <- opt_obj %>%
+  filter(alpha == max(alpha)) %>%
+  mutate(placement_error = 0,
+         prop_mpa = p_protected / 100,
+         placement_strategy = "Optimized") %>%
+  select(critter, placement_error, delta_biodiv, delta_econ, prop_mpa,placement_strategy)
+
+capitalize <- function(string) {
+  substr(string, 1, 1) <- toupper(substr(string, 1, 1))
+  string
+}
+
+ experiment_obj %>% 
+   select(colnames(opt_comparison)) %>% 
+  bind_rows(opt_comparison) %>% 
+   mutate(placement_strategy = fct_relevel(placement_strategy,"Optimized")) %>% 
+   left_join(sci_to_com, by = "critter") %>% 
+  filter(placement_error == min(placement_error)) %>% 
+   rename("Change in SSB" = delta_biodiv, "Change in Profits" = delta_econ) %>% 
+  pivot_longer(c("Change in SSB", "Change in Profits"), names_to = "metric", values_to = "value") %>% 
+  ggplot(aes(prop_mpa, value, color = common_name)) + 
+   scale_color_discrete(name = '') +
+   geom_hline(aes(yintercept = 0), linetype = 2)+
+  geom_line(show.legend = TRUE) + 
+   scale_y_continuous(name = '') +
+   scale_x_continuous(name = "MPA Size",labels = scales::percent, guide = guide_axis(n.dodge = 2)) +
+  facet_grid(metric~placement_strategy, scales = "free_y", switch = "y", labeller = labeller(placement_strategy = capitalize)) + 
+   theme(strip.text.x = element_text(size = 8), 
+         legend.position = "top", 
+         legend.text = element_text(size = 8))
+
+
+```
+
+Viewed as totals, we found a small parameter space under the "Area" and
+"Avoid_fishing" design strategies where MPAs were capable of causing a
+net decrease in total spawning stock biomass across all evaluated
+species. However, the efficiency frontier indicates that these points
+are not Pareto efficient, and MPA design configurations exist that
+achieve the same levels of economic performance while producing a net
+gain in spawning biomass. Optimal MPA design was able to slow the
+tradeoff between total profits and bycatch spawning biomass, but for any
+conservation weighting any increases in total biomass of bycatch species
+came at a decrease in total profits. However we also found limited need
+for optimized networks, with the "Depletion" design scenario essentially
+following the Pareto frontier (Fig.\@ref(fig:fig-cs-totals)).
+
+```{r fig-cs-totals, fig.cap = "Efficiency frontiers for changes in total profits and total bycatch spawning stock biomass (SSB). Color gradient line shows optimized pareto frontier, with color showing weighting of conservation (total spawning stock biomass) in the objective function. Red points show outcomes of 'rule of thumb' MPA design strategies. "}
+ total_opt_obj %>%
+  group_by(alpha) %>%
+  filter(obj_fun == max(obj_fun)) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_line(aes(total_bycatch_ssb_change, delta_econ, color = alpha), size = 1.5) +
+  geom_point(
+    data = total_experiment_obj,
+    aes(total_bycatch_ssb_change, delta_econ),
+    size = 2,
+    alpha = 0.1,
+    fill = "red",
+    shape = 21
+  ) +
+  geom_vline(aes(xintercept = 0), linetype = 2) +
+  geom_hline(aes(yintercept = 0), linetype = 2) +
+  geom_abline(intercept = 0, slope = -1) +
+  facet_wrap(~placement_strategy, scales = "free_y", labeller = labeller(placement_strategy = capitalize)) + 
+  scale_color_viridis_c(name = "Conservation Weighting in Optimization",
+                        guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = unit("15", "lines"))) +
+  scale_x_continuous(name = "Change in Total Bycatch SSB") +
+  scale_y_continuous(name = "Change in Total Profits ") +
+  theme(axis.text.x = element_text(size = 8),
+        legend.position = "top")
+
+```
+
+```{r, eval = FALSE}
+
+
+ total_opt_obj %>%
+  group_by(alpha) %>%
+  filter(obj_fun == max(obj_fun)) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_line(aes(delta_biodiv, delta_econ, color = alpha), size = 2) +
+  geom_point(
+    data = total_experiment_obj,
+    aes(delta_biodiv, delta_econ),
+    size = 2,
+    alpha = 0.1,
+    fill = "red",
+    shape = 21
+  ) +
+  geom_vline(aes(xintercept = 0), linetype = 2) +
+  geom_hline(aes(yintercept = 0), linetype = 2) +
+  geom_abline(intercept = 0, slope = -1) +
+  facet_wrap( ~ placement_strategy) +
+  scale_color_viridis_c(name = "Conservation Weighting in Optimization") +
+  scale_x_continuous(name = "Change in Total Biodiversity Relative to BAU ") +
+  scale_y_continuous(name = "Change in Total Profits Relative to BAU ") +
+  theme(axis.text.x = element_text(size = 8),
+        legend.position = "top")
+
+
 
 ```
 
 # Discussion
 
-motivated by but not limited to pelagic ecosystems
+MPAs can be a powerful tool for providing conservation benefits across
+large swaths of species and space. Under the appropriate circumstances
+they can also provide benefits to food security and economic outcomes.
+However, while extremely simple in concept, predicting the likely
+effects of MPAs across groups of species and fishing fleets becomes
+increasingly complicated as the systems being studied deviate from
+assumptions of homogenously distributed species with perfectly selective
+fleets. In this paper we used a new bio-economic model to demonstrate
+how a range of variables often omitted in MPA modeling can act to
+influence the outcomes of MPAs on conservation and economic objectives.
+We demonstrate that unintended conservation losses are possible, but
+under a range of specific conditions, and under most simulated cases did
+not occur. MPAs were capable of causing small losses in biomass for the
+WCPO case study, but only for a subset of design strategies and species,
+most of which could be overcome by optimized design.
+
+Our results indicate that as suggested by theory (citation) and
+empirical evidence (citation), MPAs can indeed have unintended
+consequences for conservation if they result in effort displacement
+rather than attrition. However, our model found these to be a minority
+of the simulations tested. This does in no way suggests that leakage may
+not a problem for specific MPA. But, it also indicates that across the
+range of plausible parameter combinations that we explored it was much
+more common for MPAs to provide net conservation benefits even if effort
+is displaced. This suggests then that we should of course not dismiss
+the conservation benefits of MPAs in the presence of effort
+displacement, but also that users must be aware of the potential for
+unintended consequences that can indeed occur. While many different
+factors interact in complex ways to affect the potential for unintended
+conservation consequences, the most obvious is the degree of difference
+in the habitats utilized by the species within an ecosystem in which an
+MPA is to be placed. As a starting point, it is critical that
+communities engaged in MSP processes create a localized assessment of
+the degree of habitat overlap across potentially affected species to
+assess the potential risk of unintended consequences.
+
+The MPA literature is highly dominated by modeling studies (citation).
+What then is the added value of the model and results presented here?
+Our model contains many features missing from many general MPA models,
+including size structure, seasonal movement, larval and adult habitats
+and dispersal, and critically technical interactions xx clearer term for
+this xx across species. A reader might reasonably ask about a range of
+other factors not included, such as time-varying parameters and species
+interactions. One could of course continue to add features to the model
+until it reaches the complexity of an end-to-end model such as Atlantis
+(citation). While such models have tremendous value, our goal here is to
+present a model that can help provide closer to tactical advice for
+users without the data or capacity for such high resolution models. One
+justification for simpler MPA models is often computational
+tractability: tracking the full age structure of multiple species and
+the economic outcomes of multiple fleets dynamically across a high
+resolution spatial grid can quickly become computationally expensive.
+Faster implementations completely written in languages such as C++
+however become inaccessible to many users. Our model seeks to fill a
+middle ground here, with the core operations run in C++ while providing
+a relatively user-friendly front end in the open-source and commonly
+used R programming language. This allows users to ask the sorts of
+questions addressed in this paper that require a more realistic model,
+without requiring inordinate amounts of data, programming expertise, or
+computational time.
+
+Caveats
+
+Note that lack of importance of density dependence timing is conditional
+on age structure, and matters more if you're doing surplus production
+modeling (cite letter)
+
+Mention hyperallometry and distinction to what that study did
+
+Perfect information
+
+Fleet model
 
 **what is the story**
 
@@ -816,6 +1120,36 @@ motivated by but not limited to pelagic ecosystems
 :::
 
 # Scraps
+
+There two general results beg some important questions. First, are
+unintended consequences inevitable given the kinds of technical
+interactions explored here, or can optimized MPA networks reduce or
+eliminate these unintended consequences. Second, one clear solution to
+the problem of unintended consequences is to simply make the MPAs large:
+if MPAs cover 100% of the area there can be no direct unintended
+conservation consequences. The potential for negative impacts on
+economic fishery outcomes increases as MPAs reach large size though.
+What then are the tradeoffs between reducing the potential for
+unintended conservation consequences and fishery revenues?
+
+To address these questions, we ran a more limited "case study" set of
+simulations, based on the dynamics of the WCPO tuna fisheries. Rather
+than iterating over different movement dynamics and habitat
+configurations, we fix habitat layers based on reported CPUE for the
+species in question, and xx other things we fix xx.
+
+The general experiments conducted show two general insights
+
+1.  Even conditional on fishing exploitation and general life history
+    strategy, the effects of MPAs on a group of species with technical
+    interactions is highly variable and dependent on habitat
+    distribution, design decisions, and data quality. xx make this more
+    explicit.
+
+2.  Some degree of unintended conservation consequences occured across
+    nearly all of our simulations below MPA coverage near 100%, though
+    small losses were much more common than large. Different design
+    strategies are better suited to avoiding unintended consequences.
 
 Thinking through the "naive" MPA design strategies to compare against
 the optimized outcomes. Thoughts at the moment below. These can be run
@@ -1045,3 +1379,55 @@ into design decisions here, depending how common tradeoffs are I think
 that will be the main focus Highlight any species that frequently
 induced tradeoffs Tee up future research MPAs in context of other
 management MPAs as risk reduction strategy Etc.
+
+We do not focus into the individual effects of particular variables as
+we found them to be highly dependent on the exact question asked and the
+set of data included, and since we cannot ascribe any actual likelihood
+to any individual state of nature simulated here.
+
+However, three important features do emerge. The first is that life
+history plays an important role in the potential for unintended
+conservation consequences from MPAs. All else equal, MPAs were much less
+likely to produce losses in spawning biomass for our tuna-like species
+than the marlin or shark-like species. Given that within the broad life
+history traits we do vary adult and larval movement, fishing mortality,
+as well as the timing of density dependence, we believe this result is
+mostly due to the high resilience (high steepness, low age at maturity,
+fast growth) of the tuna-like species relative to the marlin and
+shark-like species.
+
+The second is that design matters...
+
+```{r}
+
+```
+
+The third is that extreme outcomes (both positive and negative),
+particularly at lower MPA sizes, are largely driven by the presence of
+small range sizes interacting with seasonal migrations. Across species,
+simulations without seasonal migrations and small ranges were much more
+likely to produce extreme results than those with seasonal migrations
+and/or larger ranges. Presence of seasonal migrations acts as a
+dilutant: As a given static MPA only provides protection, or displaces
+fishing effort, onto a particular area in only half of the year, both
+the benefits and costs of MPAs are smaller. When seasonal migrations are
+not present and the species range is small, MPAs are more capable of
+providing either large benefits or large losses.
+
+\\Big message: even constrained by the same initial depletion and core
+biology (e.g. movement rates), a wide range of outcomes are possible for
+each species for a given MPA size, dependent on the design strategy,
+habitat overlap, migrations, quality of information, etc. Across the
+board as MPA size increases the ratio of positive to negative outcomes
+increases, until all species achieve their maximum conservation
+potential in every iteration at 100% MPA. HOwever, every species
+experienced a set of simulations, roughyl xx%, that resulted in net
+losses in SSB/SSB0 relative to BAU. Losses were smaller than potential
+gaines, but reached meaningful levels in some species, and interestingly
+peaked in many cases right before max MPA (reflecting concentration of
+fishing in small amounts of habitat in habited by the species).Important
+to stress in here that there are no probabilities in this, no way of
+knowing which state is more probable than others, just given the range
+of things simulated more ways for a bigger positive effect. Also make
+clear though, biggish losses (10% or more) possible, but rare.
+
