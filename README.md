@@ -46,15 +46,14 @@ benchmark, 0 means they are uncorrlated with the benchmark species, and
 ``` r
 library(marlin)
 library(tidyverse)
-#> ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.0 ──
-#> ✓ ggplot2 3.3.3     ✓ purrr   0.3.4
-#> ✓ tibble  3.0.6     ✓ dplyr   1.0.4
-#> ✓ tidyr   1.1.2     ✓ stringr 1.4.0
-#> ✓ readr   1.4.0     ✓ forcats 0.5.0
+#> ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──
+#> ✓ ggplot2 3.3.5     ✓ purrr   0.3.4
+#> ✓ tibble  3.1.4     ✓ dplyr   1.0.7
+#> ✓ tidyr   1.1.3     ✓ stringr 1.4.0
+#> ✓ readr   2.0.1     ✓ forcats 0.5.1
 #> ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
 #> x dplyr::filter() masks stats::filter()
 #> x dplyr::lag()    masks stats::lag()
-
 theme_set(marlin::theme_marlin())
 
 resolution <- 20 # resolution is in squared patches, so 20 implies a 20X20 system, i.e. 400 patches 
@@ -128,3 +127,120 @@ generate_hab <- function(species, homogifier = 1,scene,base_hab,sigma_hab = 1, b
   
 }
 ```
+
+# idea for fleet revamp
+
+I think the most straightforward route is just to build a bit more
+realism in.
+
+1.  Burn the model in
+
+2.  Calculate costs such that profit per unit effort is 0, where costs
+    are calculated based on f, not effort.
+
+3.  Redistribute effort, and going forward use open access dynamics. So,
+    if you set that up right, there will now be a tradeoff between
+    increased catch from effort concentration but also increased cost
+    from f approaching 1.
+
+Worth a shot
+
+``` r
+q <- 0.1
+
+m <- 0.2
+
+effort <- seq(0,100, by = 1)
+
+f <- effort * q
+
+b <- 100
+
+price <- 10
+
+catch <- f / (f + m) * b * (1 - exp(-(f + m)))
+
+biomass <- b * (exp(-(f + m)))
+
+revenue <- catch * price
+
+cost = effort^2
+
+
+plot(revenue - cost)
+```
+
+<img src="man/figures/README-unnamed-chunk-3-1.png" width="100%" />
+
+``` r
+plot(revenue)
+```
+
+<img src="man/figures/README-unnamed-chunk-3-2.png" width="100%" />
+
+``` r
+f <- 10 * q
+
+r1 <- 2 * (f / (f + m) * b * (1 - exp(-(f+ m))) * price - 10^2)
+
+f <- 20 * q
+
+r2 <- (f / (f + m) * b * (1 - exp(-(f+ m))) * price - 20^2)
+
+
+r1 
+#> [1] 964.6763
+r2
+#> [1] 408.3608
+```
+
+Yeah that checks out. So, the idea is what? Run the population to
+equilibrium, and then find a cost coefficient such that system-wide
+profits are zero
+
+``` r
+q <- 0.1
+
+m <- 0.2
+
+effort <-10
+
+f <- effort * q
+
+b <- 100
+
+price <- 10
+
+cost <- 10
+
+max_delta <- 0.25
+
+cost = (f / (f + m) * b * (1 - exp(-(f+ m))) * price) / effort^2
+
+p1 <- (f / (f + m) * b * (1 - exp(-(f+ m))) * price) - cost * effort^2
+
+theta = log((effort * (1 + max_delta)) / effort) / (f / (f + m) * b * (1 - exp(-(f+ m))) * price)
+
+e2 <- effort * exp(theta * (f / (f + m) * b * (1 - exp(-(f+ m))) * price))
+
+e2 / effort - 1
+#> [1] 0.25
+e2 <- effort * exp(theta * (10000))
+
+e2 / effort
+#> [1] 46.14807
+# so what if you tuned it so that if you caught all of ssb0 it would go up by 25%
+```
+
+What about a sigmoid form, so that it’s symetric in increase vs
+decrease?
+
+``` r
+p = seq(-10,10)
+
+x = 1.25 * (1 / (1 + exp(-p)))
+
+plot(p,x)
+```
+
+<img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" />

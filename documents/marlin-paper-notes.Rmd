@@ -165,3 +165,304 @@ LENNON
 Walk through some of the figures and unpack them a bit
 
 
+# comparing catches to CPUE to abundance
+
+```{r}
+
+rfmo <- "wcpfc"
+mats <- list.files(path = here("data", "tuna-catch"))
+
+# mats <- mats[str_detect(mats, "wcpfc_")]
+
+mats <- mats[str_detect(mats, paste0(rfmo,"_")) & str_detect(mats, "tonnes") & str_detect(mats, "monthly") & str_detect(mats, "2017") & str_detect(mats, "5grid")]
+
+get_layer <- function(file) {
+  # file <- mats[7]
+
+  file_comps <- str_split(file, "_", simplify = TRUE)
+  
+  species <- paste(file_comps[,7],file_comps[,8])
+  
+  species <- str_replace(species, ".tif", "")
+# 
+  hab <- stars::read_stars(here("data", "tuna-catch", file)) %>%
+    sf::st_as_sf() %>%
+    recenter_vector(center= -200)
+
+#   plot(hab)
+  
+  centers <- sf::st_centroid(hab)
+  
+  centers <- sf::st_coordinates(centers) %>% 
+    as.data.frame()
+  
+  centers$catch = as.data.frame(hab)[,1]
+    
+
+  x_binsize <- (max(centers$X) - min(centers$X) + 1) / resolution
+
+  y_binsize <- (max(centers$Y) - min(centers$Y) + 1) / resolution
+
+  if (x_binsize < 1 | y_binsize < 1) {
+    stop("resolution is too high for input data")
+  }
+
+
+  habitat <- centers %>%
+    mutate(X = X - min(X),
+           Y = Y - min(Y)) %>%
+    mutate(rough_x = floor(X / x_binsize),
+           rough_y = floor(Y / y_binsize)) %>%
+    dplyr::select(contains("rough_"), catch)
+
+
+  habitat <- habitat %>%
+    group_by(rough_x, rough_y) %>%
+    summarise(hab = sum(catch)) %>%
+    mutate(xy = rough_x * rough_y)
+
+  mod <-
+    gamm4::gamm4(hab ~ s(rough_x) + s(rough_y) + s(xy), data = habitat)
+
+  habitat_frame <-
+    expand_grid(rough_x = 1:resolution,
+                rough_y = 1:resolution) %>%
+    mutate(xy = rough_x * rough_y)
+  
+interp_habitat <- predict(mod$gam, newdata = habitat_frame)
+  
+interp_habitat <- pmax(0, interp_habitat / max(interp_habitat))
+
+habitat_frame$habitat <- interp_habitat
+
+habitat_frame %>%
+  ggplot(aes(rough_x, rough_y, fill = habitat)) +
+  geom_tile()
+
+  hab <- habitat_frame %>%
+    dplyr::select(contains("rough"), habitat) %>%
+    rename(x = rough_x, y = rough_y) %>%
+    ungroup()
+
+  out <- tibble(scientific_name = species, habitat = list(hab))
+
+
+}
+
+
+mats <- map(mats, safely(get_layer))
+
+mats_worked <- map(mats, "error") %>% map_lgl(is.null)
+
+mats <- mats[mats_worked]
+
+mats <- map(mats, "result")
+
+catch_mats <- mats %>%
+  bind_rows() %>% 
+  unnest(cols = habitat) %>% 
+  group_by(scientific_name, x, y) %>% 
+  summarise(habitat = sum(habitat)) %>% 
+  ungroup() %>% 
+  nest(habitat = c(-scientific_name)) %>% 
+  ungroup()
+
+catch_habitat <- catch_mats %>%
+  bind_rows() %>%
+  unnest(cols = habitat) %>%
+  ggplot(aes(x, y, fill = habitat)) +
+  geom_tile() +
+  facet_wrap( ~ scientific_name) +
+  scale_fill_viridis_c()
+
+catch_habitat
+
+
+```
+
+Compare to the SDM stuff
+
+```{r}
+
+mats <- list.files(path = here("data", "matrices"))
+
+mats <- mats[str_detect(mats, "longline_wcpfc")]
+
+get_layer <- function(file) {
+  # file <- mats[3]
+
+  file_comps <- str_split(file, "_", simplify = TRUE)
+
+  species <- str_replace(file_comps[, 1], "-", " ")
+
+  fleet <- file_comps[, 2]
+
+
+  hab <-
+    read_csv(here("data", "matrices", file),
+             col_names = FALSE,
+             skip = 1) %>%
+    rename(lat = X1) %>%
+    mutate(lat = 1:nrow(.)) %>%
+    pivot_longer(
+      -lat,
+      names_to = "lon",
+      values_to = "hab",
+      names_prefix = "X"
+    ) %>%
+    mutate(hab = tidyr::replace_na(hab, 0),
+           lon = as.numeric(lon) - 1)
+
+  # hab %>%
+  #   ggplot(aes(lon, lat, fill = hab)) +
+  #   geom_tile()
+  #
+
+  x_binsize <- (max(hab$lon) - min(hab$lon) + 1) / resolution
+
+  y_binsize <- (max(hab$lat) - min(hab$lat) + 1) / resolution
+
+  if (x_binsize < 1 | y_binsize < 1) {
+    stop("resolution is too high for input data")
+  }
+
+
+  hab <- hab %>%
+    mutate(X = lon - min(lon),
+           Y = lat - min(lat)) %>%
+    mutate(rough_x = floor(X / x_binsize),
+           rough_y = floor(Y / y_binsize)) %>%
+    select(contains("rough_"), hab)
+  #
+  #   hab %>%
+  #     ggplot(aes(rough_x, rough_y, fill = hab)) +
+  #     geom_tile()
+
+  hab <- hab %>%
+    group_by(rough_x, rough_y) %>%
+    summarise(hab = sum(hab)) %>%
+    mutate(xy = rough_x * rough_y)
+
+  mod <-
+    gamm4::gamm4(hab ~ s(rough_x) + s(rough_y) + s(xy), data = hab)
+
+  hab$interp_cpue <- as.numeric(predict(mod$gam))
+
+  hab$habitat <- pmax(0, hab$interp_cpue / max(hab$interp_cpue))
+
+
+  if (sqrt(nrow(hab)) != resolution) {
+    stop("habitat layer does not match simulation resolution")
+  }
+  hab <- hab %>%
+    select(contains("rough"), habitat) %>%
+    rename(x = rough_x, y = rough_y) %>%
+    ungroup()
+
+  # hab %>%
+  #   ggplot(aes(rough_x, rough_y, fill = habitat)) +
+  #   geom_tile()
+
+  out <- tibble(scientific_name = species, habitat = list(hab))
+
+
+}
+
+
+mats <- map(mats, get_layer)
+
+sdm_habitat <- mats %>%
+  bind_rows() %>%
+  unnest(cols = habitat) %>%
+  filter(scientific_name %in% unique(catch_mats$scientific_name)) %>% 
+  ggplot(aes(x, y, fill = habitat)) +
+  geom_tile() +
+  facet_wrap( ~ scientific_name) +
+  scale_fill_viridis_c()
+
+
+sdm_habitat
+
+
+catch_habitat / sdm_habitat
+```
+
+
+# RPUE vs REvenue vs PPUE
+
+So there are clearly some differences between the outcomes with the three fleet models. 
+
+when the fleet distributes itself based on RPUE, as you start to fish things down the "best" patches start to look worse relative to the worst patches. This is because as you start to allocate more and more effort towards the high revenye patches, ther marginal benefit goes down, since the marginal increase in f per unit increase in E starts to decrease. So, the best revenye patch is 53 times better than the worst, but the best RPUE patch is only 7 time bigger than the worst. 
+
+So RPUE is closer to PPUE, since it captures the effect that the demonitator starts to grow faster than the numerator at high E. Whereas with just revenue, as you increase effort the value of that patch just keeps going up, assuming a constant supply of fish. So you're including the "stock effect" sort of, and then with PPUE you add in the fact that not only do you get diminishing returns in E, but it costs you money to exert E. 
+
+The revenue model says that even if it takes you infinite effort to get 101 units, and 1 effort to get 100 units, go to 101 units. 
+
+So that bets two questions. 1 is there any logical reason for revenue in a real world setting where it would be distributed by revenue, not by RPUE? 
+
+A fleet's objective function is maximize profits, either individually or in total. Let's think about in total then. The fleet will pick the the total amount of effort that maximizes profits, conditional on distributing those profits to mazimize profits per unit effort, right? 
+
+The other is, did the solving the increased revenus through overfishing by mPA get solved by the open access or by the fleet model? GOod test, set alpha = 0, set fleet to RPUE, but also open access, see if that fixes it. 
+
+If it doesn't another thing to consider it to modify the objective function to maximize RPUE or something like that to try and reflect costs 
+
+the fundamental issues is that the fleet model and the optimization can have two different objectives. When you allocate around RPUE and optimize around revenue, the fleet is "suboptimal" since it allocqtes a bit less effort to the best patches, since their RPUE is a little lower thanks to the baranov. 
+
+When you allocate by revenue you are least being internally consistent, i.e. the fleet is just maximizing revenue, and then you optimize around that. So, that seems like the best option until you figure out how to deal with profits / costs intelligently. 
+
+Which is a strategy: shift the optimization to be around profits not revenue, which because you are assuming constant effort unless you include an exponent on effort, which causes a whole new set of problems since minute differences in the spatial distribution can change the outcomes, then optimizing around RPUE should be the same as optimizing around profits? So changing the optimization to profits should do nothing. becuase it's just going to be the same thing, except minus cost * constant effort. 
+
+The only reason anyof this really matters is it if has a big impact on the bycatch implications. So, go back and run the experiments. If the revenue vs rpue this is intrinsic, then you need to consider it. If it's just a trait ot he WCPO scenario, then interestinh and flag and use this to discuss the critical need for better fleet modeling with Jim. 
+
+Fishing the line is the culprit i think. in order for unintended consequences to occue, species have to live in different places. when you disteirbute by revenue, fishing the line is much more pronouned: people stick by the MPA edge. But, when you do RPUE, the near-MPA area starts to lose its appeal after a bit and people wander to new areas, causing problems. 
+
+So, I think the solution is
+
+1. store profit per fleet per patch in simmar so you can stop having to wrangle it
+
+2. optimize around profits
+
+3. Distribute fleet based on profits 
+
+4. Turn off open access
+
+This means that if you assume 0 profits at start, then you can only go down profit wise from overfished, but could in theory go up from rebuilding. 
+
+So, that means that you're capturing the assumption that there's a reason why things are underfished now, but still allows for rebulding benefits
+
+In order for this to have any spatial effect you need to have an exponent on effort cost or something like that. Otherwise, maximizing revenue is the exact same thing as maximizing profits - a constant (base_effort * cost_per_unit_effort). 
+
+All of this serves two purposes. 1st to make things internally consistent for the optimization and the fleet model. 2nd to stop the "optimal" thing being to corral the fleet into catching more. \
+
+An alternative would be to introduce a port and include a distance from fleet thing? But I think you can rationalize the exponent based on competition, gear competition (e.g. need to pull in longline and reset a bunch), and hold capacity? though does that really hold in the real world? I think it would have to be things like longer soak times needed?
+
+
+The other thing that matter here is how you are thinking about the market. If it's one mobile fleet  then it makes sense ot pool revenues and costs everywhere. But, if it were a bunch of independent fleets in each patch, that get some displaced into them, then the decreased profit margins in indiivual patches start to matter
+
+OK the only thing clear in this is that you do nede to actually run the damn counterfactual, it doesn't take long soj ust do it. 
+
+sigh ok calling it. But for tomorrow, the key is to go back into simmar, and calculate profits by species, by first tallying fleet wide profits, and then dividing by the proportino of revenue by species 
+
+Within the simulation model, if the spatial allocation was RPUE, then effort in the current time step would be exactly proportional to RPUE in the prior time step. 
+
+You don't see that in the data. You do see a strong correlation with revenue in the prior time step. Really hard to say if that is causal, i.e. are fleets chasing revenue or is it a site effect or what, but it's at elast a piece of evidence. So, I think you go with revenue in the model, and use the experiments to make the case in the discussion the discussion that any tactical modeling needs to understand how the fleet actually responds and distributes itself. 
+
+Choice depends a lot on the unts in question. IF you think that every unit of effort is discrete and per vessel, i.e. vessel I does or does not fish in that patch, then RPUE woul be the metric
+
+# 	movement stuff
+
+Very rough height of WCPO is 4800
+
+At a resolutino of 10, that's
+
+
+480 NM per cell 
+
+Median tag distance was  95% within 3614 M.
+
+
+4000 / 480
+
+Schaefer 2015 is the paper 
+
+design matter most in the in between sizes

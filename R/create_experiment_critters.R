@@ -8,6 +8,7 @@ create_experiment_critters <-
            seasonal_movement = FALSE,
            ontogenetic_shift = FALSE,
            f_v_m,
+           hyper = 1,
            rec_form) {
     # sciname <- marlin_inputs$scientific_name[[1]]
     #
@@ -67,6 +68,7 @@ create_experiment_critters <-
       pups = 6,
       # weight_a = ifelse(str_detect(sciname,"carcharhinus"),2,NA),
       seasons = seasons,
+      fec_expo = hyper,
       steepness =  ifelse(is.nan(
         mean(tmp_inputs$steepness, na.rm = TRUE)
       ), 0.8, mean(tmp_inputs$steepness, na.rm = TRUE)),

@@ -34,7 +34,7 @@ foos <- list.files(here("R"))
 
 walk(foos, ~ source(here("R", .x)))
 
-results_name <- "tester"
+results_name <- "v1.1"
 
 results_path <- here("results", results_name)
 
@@ -44,9 +44,9 @@ if (!dir.exists(results_path)){
   dir.create(file.path(results_path,"sims"))
 }
 
-run_experiments <- TRUE
+run_experiments <- FALSE
 
-experiment_workers <- 4
+experiment_workers <- 10
 
 run_casestudy <- FALSE
 
@@ -64,6 +64,8 @@ seasons <- 2
 
 time_step <- 1 / seasons
 
+max_delta <- 1
+
 workers <- round(parallel::detectCores() - 8)
 
 steps <- years * seasons
@@ -72,7 +74,6 @@ time_steps <- seq(0,years - 1, by = time_step)
 
 theme_set(marlin::theme_marlin())
 
-tune_type <- "v1.0"
 
 # load data ---------------------------------------------------------------
 
