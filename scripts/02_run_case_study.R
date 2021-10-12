@@ -557,9 +557,17 @@ bau_econ <-
   pivot_longer(everything(), names_to = "critter",values_to = "bau_econ")
 #  calculate econ component of objective function, currently revenues across all fleets and species
 
+bau_yield <-
+  (map_df(starting_conditions, ~ sum(.x$c_p_fl, na.rm = TRUE))) %>%
+  pivot_longer(everything(), names_to = "critter",values_to = "bau_yield")
+#  calculate yield component of objective function, currently revenues across all fleets and species
+
+
 bau <- bau_econ %>%
   left_join(bau_biodiv, by = "critter") %>%
-  mutate(bau_econ = bau_econ / 1e6)
+  left_join(bau_yield, by = "critter") %>%
+  mutate(bau_econ = bau_econ / 1e6,
+         bau_yield = bau_yield / 1e6)
 
 
 # calculate objective function for experiments
@@ -568,7 +576,8 @@ experiment_obj <- case_study_experiments %>%
   mutate(obj = map(results, "obj")) %>%
   select(-results) %>%
   unnest(cols = obj) %>%
-  mutate(econ = econ / 1e6) %>%
+  mutate(econ = econ / 1e6,
+         yield = yield / 1e6) %>%
   filter(prop_mpa < 1) %>%
   mutate(bycatch = !(str_detect(critter, "thunnus") | str_detect(critter,"katsuwonus")))
 
@@ -576,7 +585,8 @@ experiment_obj <- case_study_experiments %>%
 experiment_obj <- experiment_obj %>%
   left_join(bau, by = "critter") %>%
   mutate(delta_biodiv = biodiv - bau_biodiv,
-         delta_econ = econ - bau_econ)
+         delta_econ = econ - bau_econ,
+         delta_yield = yield - bau_yield)
 
 
 experiment_obj %>%
@@ -609,7 +619,8 @@ opt_obj <- optimized_networks %>%
   mutate(obj = map(network,"outcomes")) %>%
   select(-network) %>%
   unnest(cols = obj) %>%
-  mutate(econ = econ / 1e6) %>%
+  mutate(econ = econ / 1e6,
+         yield = yield / 1e6) %>%
   mutate(bycatch = !(str_detect(critter, "thunnus") | str_detect(critter,"katsuwonus")))
 
 
@@ -655,7 +666,8 @@ cs_fig_2 <- experiment_obj %>%
 opt_obj <- opt_obj %>%
   left_join(bau, by = "critter") %>%
   mutate(delta_biodiv = ssb_v_ssb0 - bau_biodiv,
-         delta_econ = econ - bau_econ)
+         delta_econ = econ - bau_econ,
+         delta_yield = yield - bau_yield)
 
 opt_frontier <- opt_obj %>%
   group_by(alpha) %>%
@@ -672,12 +684,15 @@ total_opt_obj <- opt_obj %>%
     total_bycatch_ssb_change = sum((ssb_v_ssb0 - bau_biodiv)[bycatch == TRUE]),
     total_ssb_loss = sum((ssb_v_ssb0 - bau_biodiv)[ssb_v_ssb0 < bau_biodiv & bycatch], na.rm = TRUE),
     econ = sum(econ),
+    yield = sum(yield),
             biodiv = sum(ssb_v_ssb0),
             bau_econ = sum(bau_econ),
+    bau_yield = sum(bau_yield),
             bau_biodiv = sum(bau_biodiv)) %>%
   ungroup() %>%
   mutate(delta_biodiv = biodiv - bau_biodiv,
-         delta_econ = econ - bau_econ)
+         delta_econ = econ - bau_econ,
+         delta_yield = yield - bau_yield)
 
 total_opt_frontier <- total_opt_obj %>%
   group_by(alpha) %>%
@@ -704,12 +719,15 @@ total_experiment_obj <- experiment_obj %>%
     total_ssb_loss = sum((biodiv - bau_biodiv)[biodiv < bau_biodiv & bycatch], na.rm = TRUE),
     econ = sum(econ),
     biodiv = sum(biodiv),
+    yield = sum(yield),
     bau_econ = sum(bau_econ),
-    bau_biodiv = sum(bau_biodiv)
+    bau_biodiv = sum(bau_biodiv),
+    bau_yield = sum(bau_yield)
   ) %>%
   ungroup() %>%
   mutate(delta_biodiv = biodiv - bau_biodiv,
-         delta_econ = econ - bau_econ)
+         delta_econ = econ - bau_econ,
+         delta_yield = yield - bau_yield)
 
 
 cs_fig_6 <- total_experiment_obj %>%
