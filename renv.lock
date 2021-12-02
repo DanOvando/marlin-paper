@@ -413,10 +413,10 @@
     },
     "cpp11": {
       "Package": "cpp11",
-      "Version": "0.4.0",
+      "Version": "0.4.1",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "40ba3fd26c8f61d8d14d334bc7761df9"
+      "Hash": "70976176dfd7f179f212783aab2547b1"
     },
     "crayon": {
       "Package": "crayon",
@@ -525,10 +525,10 @@
     },
     "e1071": {
       "Package": "e1071",
-      "Version": "1.7-6",
+      "Version": "1.7-9",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "9a374a10e3c0dbf1a0e207af019bfcea"
+      "Hash": "32885be243a29301c90d33db37c3aad8"
     },
     "ellipsis": {
       "Package": "ellipsis",
@@ -1182,10 +1182,10 @@
     },
     "proxy": {
       "Package": "proxy",
-      "Version": "0.4-25",
+      "Version": "0.4-26",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "29a4dd5b440af584aed8c448d8eefb6e"
+      "Hash": "50b405c6419e921b9e9360cc9ebbcf2d"
     },
     "ps": {
       "Package": "ps",
@@ -1287,10 +1287,10 @@
     },
     "renv": {
       "Package": "renv",
-      "Version": "0.13.2",
+      "Version": "0.14.0",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "079cb1f03ff972b30401ed05623cbe92"
+      "Hash": "30e5eba91b67f7f4d75d31de14bbfbdc"
     },
     "reprex": {
       "Package": "reprex",
@@ -1326,6 +1326,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "b70a512d3fdc7f21076530e5daa19883"
+    },
+    "rgdal": {
+      "Package": "rgdal",
+      "Version": "1.5-27",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "ab3f3a61eb777b62c1bc0d341fd1f990"
     },
     "ritis": {
       "Package": "ritis",
@@ -1446,6 +1453,13 @@
       "Repository": "CRAN",
       "Hash": "74b905b0076e1de6e27f540c95ba68d5"
     },
+    "s2": {
+      "Package": "s2",
+      "Version": "1.0.7",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "cedf9ef196a446ee8080c14267e69410"
+    },
     "sass": {
       "Package": "sass",
       "Version": "0.4.0",
@@ -1476,15 +1490,15 @@
     },
     "sf": {
       "Package": "sf",
-      "Version": "0.9-9",
+      "Version": "1.0-5",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "sf",
       "RemoteUsername": "r-spatial",
       "RemoteRef": "HEAD",
-      "RemoteSha": "adf7410a5c55695b4c8db97a5258ec87c931320a",
-      "Hash": "98ae2aa64ead906de82c97c67cfa8926"
+      "RemoteSha": "649ae108aa524721387a044afee03d58f999f354",
+      "Hash": "a4084fc97b1b90e512cfec63f080808c"
     },
     "shape": {
       "Package": "shape",
@@ -1663,10 +1677,10 @@
     },
     "units": {
       "Package": "units",
-      "Version": "0.7-1",
+      "Version": "0.7-2",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "1eb71bc3895bf5a047485c16758c4862"
+      "Hash": "e0f85712d5371ab2841f63cdb33fe0f0"
     },
     "urltools": {
       "Package": "urltools",
@@ -1751,6 +1765,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "ad03909b44677f930fa156d47d7a3aeb"
+    },
+    "wk": {
+      "Package": "wk",
+      "Version": "0.5.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "60e191a866c5649a8f58a458f5e60edf"
     },
     "worrms": {
       "Package": "worrms",
