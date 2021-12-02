@@ -272,6 +272,7 @@ if (run_experiments) {
   state_experiments <- state_experiments %>%
     select(-tmp)
 
+  stop()
 
   placement_experiments <- expand_grid(
     placement_strategy = c(
@@ -282,8 +283,8 @@ if (run_experiments) {
       "area"
     ),
     prop_mpa = seq(0, 1, by = 0.05),
-    prop_critters_considered = 1,
-    placement_error = c(0,.2)
+    critters_considered = seq(1,n_distinct(names(state_experiments$fauna[[1]])), by = 1),
+    placement_error = c(0)
   ) %>%
     group_by_at(colnames(.)[!colnames(.) %in% c("temp", "prop_mpa")]) %>%
     nest() %>%
@@ -420,7 +421,7 @@ if (run_experiments) {
           run_mpa_experiment,
           placement_strategy = placement_experiments$placement_strategy[p],
           prop_mpa = placement_experiments$prop_mpa[p],
-          prop_critters_considered = placement_experiments$prop_critters_considered[p],
+          critters_considered = placement_experiments$critters_considered[p],
           placement_error = placement_experiments$placement_error[p],
           resolution = resolution,
           .options = furrr_options(seed = 42),
@@ -535,7 +536,27 @@ calc_sigma_habitat <- function(tmp_state){
     as.matrix()
 
 
+  # habitat <- tmp_state %>%
+  #   select(scientific_name, contains("sigma_"), habitat) %>%
+  #   unnest(cols = habitat) %>%
+  #   mutate(
+  #     scientific_name = fct_recode(
+  #       scientific_name,
+  #       "Shark" = "carcharhinus longimanus",
+  #       "Tuna" = "katsuwonus pelamis",
+  #       "Marlin" = "kajikia audax"
+  #     )
+  #   ) %>%
+  #   group_by(x,y) %>%
+  #   summarise(habprod = prod(habitat))
+  #
+  # browser()
+
+  # sigma_habitat <- sum(sqrt(habitat$habprod))
+
   sigma_habitat <- sd(sqrt(habitat))
+
+
 
 }
 
@@ -577,7 +598,7 @@ total_results <- results %>%
   group_by(
     placement_id,
     placement_strategy,
-    prop_critters_considered,
+    critters_considered,
     placement_error,
     state_id,
     prop_mpa
@@ -605,7 +626,7 @@ total_results %>%
 # total_results %>%
 #   ggplot(
 #     aes(
-#       prop_critters_considered,
+#       critters_considered,
 #       loss,
 #       color = sigma_centroid,
 #       alpha = sigma_hab,
@@ -798,7 +819,7 @@ fig_2 <- total_results %>%
 # effect of degree of habitat overlap.. collapse into something?
 fig_3 <- total_results %>%
   filter(
-    prop_critters_considered == max(prop_critters_considered),
+    critters_considered == max(critters_considered),
     placement_error == min(placement_error)
   ) %>%
   ggplot(aes(prop_mpa, loss, color = (sigma_centroid))) +
@@ -808,7 +829,7 @@ fig_3 <- total_results %>%
 
 fig_4 <- total_results %>%
   filter(
-    prop_critters_considered == max(prop_critters_considered),
+    critters_considered == max(critters_considered),
     round(prop_mpa, 1) == 0.3
   ) %>%
   ggplot(aes(placement_error, loss, color = (sigma_centroid))) +
@@ -820,7 +841,7 @@ fig_5 <- total_results %>%
     placement_error == min(placement_error),
     round(prop_mpa, 1) == 0.3
   ) %>%
-  ggplot(aes(prop_critters_considered, loss, color = (sigma_centroid))) +
+  ggplot(aes(critters_considered, loss, color = (sigma_centroid))) +
   geom_jitter() +
   facet_wrap(~ placement_strategy)
 
@@ -848,7 +869,7 @@ total_results %>%
 total_results %>%
   filter(prop_mpa > 0,
          placement_error == 0,
-         prop_critters_considered == 1) %>%
+         critters_considered == 1) %>%
   ggplot(aes(prop_mpa, total_loss, color = factor(sigma_centroid))) +
   geom_jitter(show.legend = FALSE) +
   facet_wrap(~ placement_strategy)

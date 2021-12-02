@@ -15,6 +15,8 @@ library(googledrive)
 
 library(gamm4)
 
+library(rgdal)
+
 library(sf)
 
 library(mvtnorm)
@@ -46,7 +48,7 @@ if (!dir.exists(results_path)){
 
 run_experiments <- FALSE
 
-experiment_workers <- 10
+experiment_workers <- 8
 
 run_casestudy <- FALSE
 

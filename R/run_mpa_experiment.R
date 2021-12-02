@@ -3,12 +3,11 @@ run_mpa_experiment <-
            starting_conditions,
            proc_starting_conditions,
            prop_mpa = 0.3,
-           prop_species = 1,
            fauna,
            fleets,
            placement_error = 0,
            mpa_response = "stay",
-           prop_critters_considered,
+           critters_considered = NA,
            random_mpas = FALSE,
            max_delta = 1,
            resolution) {
@@ -22,8 +21,11 @@ run_mpa_experiment <-
 
     # starting <- starting_conditions[[length(starting_conditions)]]
 
+    if (is.na(critters_considered)){
+      n_critters_considered <-  length(fauna)
+    }
 
-    critters_considered <- sample(names(fauna), round(prop_critters_considered * n_distinct(names(fauna))), replace = FALSE)
+    critters_considered <- sample(names(fauna), n_critters_considered, replace = FALSE)
 
     if (placement_strategy == "depletion"){
 

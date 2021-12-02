@@ -275,7 +275,7 @@ if (run_casestudy == TRUE){
     expand_grid(
       placement_strategy = c("depletion", "rate", "avoid_fishing", "target_fishing", "area"),
       prop_mpa = seq(0,1, by = 0.01),
-      prop_critters_considered = 1,
+      critters_considered = length(fauna),
       placement_error = c(0),
       mpa_response = c("stay")
     )
@@ -285,7 +285,7 @@ if (run_casestudy == TRUE){
     ungroup() %>%
     mutate(results = future_pmap(list(placement_strategy = placement_strategy,
                                prop_mpa = prop_mpa,
-                               prop_critters_considered = prop_critters_considered,
+                               critters_considered = critters_considered,
                                placement_error = placement_error,
                                mpa_response = mpa_response),
                           run_mpa_experiment,
@@ -708,7 +708,7 @@ cs_fig_5 <- experiment_obj %>%
 total_experiment_obj <- experiment_obj %>%
   group_by(placement_strategy,
            prop_mpa,
-           prop_critters_considered,
+           critters_considered,
            placement_error) %>%
   summarise(
     loss = mean(biodiv <= bau_biodiv),
@@ -833,6 +833,32 @@ cs_fig_10 <- total_opt_obj %>%
   scale_color_viridis_c(name = "Conservation Weighting in Optimization") +
   scale_x_continuous(name = "Change in Total Biodiversity Relative to BAU ") +
   scale_y_continuous(name = "Change in Total Profits Relative to BAU ") +
+  theme(axis.text.x = element_text(size = 8),
+        legend.position = "top")
+
+
+
+cs_fig_10_yield <- total_opt_obj %>%
+  group_by(alpha) %>%
+  filter(obj_fun == max(obj_fun)) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_line(aes(delta_biodiv, delta_yield, color = alpha), size = 2) +
+  geom_point(
+    data = total_experiment_obj,
+    aes(delta_biodiv, delta_yield),
+    size = 2,
+    alpha = 0.1,
+    fill = "red",
+    shape = 21
+  ) +
+  geom_vline(aes(xintercept = 0), linetype = 2) +
+  geom_hline(aes(yintercept = 0), linetype = 2) +
+  geom_abline(intercept = 0, slope = -1) +
+  facet_wrap( ~ placement_strategy) +
+  scale_color_viridis_c(name = "Conservation Weighting in Optimization") +
+  scale_x_continuous(name = "Change in Total Biodiversity Relative to BAU ") +
+  scale_y_continuous(name = "Change in Total Yield Relative to BAU ") +
   theme(axis.text.x = element_text(size = 8),
         legend.position = "top")
 
