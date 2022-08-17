@@ -12,8 +12,7 @@ run_mpa_experiment <-
            max_delta = 1,
            resolution) {
 
-
-    fleets <-  purrr::modify_in(fleets, list(2, "mpa_response"), ~ mpa_response)
+    fleets <-  purrr::modify_in(fleets, list(1, "mpa_response"), ~ mpa_response)
 
     n_mpa <- round(prop_mpa * resolution^2)
 
@@ -22,10 +21,10 @@ run_mpa_experiment <-
     # starting <- starting_conditions[[length(starting_conditions)]]
 
     if (is.na(critters_considered)){
-      n_critters_considered <-  length(fauna)
+      critters_considered <-  length(fauna)
     }
 
-    critters_considered <- sample(names(fauna), n_critters_considered, replace = FALSE)
+    critters_considered <- sample(names(fauna), critters_considered, replace = FALSE)
 
     if (placement_strategy == "depletion"){
 

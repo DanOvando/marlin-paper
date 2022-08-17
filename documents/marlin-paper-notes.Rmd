@@ -466,3 +466,12 @@ Median tag distance was  95% within 3614 M.
 Schaefer 2015 is the paper 
 
 design matter most in the in between sizes
+
+# calculating heterogeneity
+
+shannon equity index
+
+shanon entropyindex
+
+See 
+Dépalle, M., Sanchirico, J.N., Thébaud, O., O’Farrell, S., Haynie, A.C., Perruso, L., 2021. Scale-dependency in discrete choice models: A fishery application. Journal of Environmental Economics and Management 105, 102388. https://doi.org/10.1016/j.jeem.2020.102388

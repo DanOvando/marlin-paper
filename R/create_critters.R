@@ -54,11 +54,11 @@ create_critters <-
 
     critter <- marlin::create_critter(
       scientific_name = sciname,
-      seasonal_habitat = hab,
+      base_habitat = hab,
       recruit_habitat = recruit_habitat,
       adult_movement = 0,
-      adult_movement_sigma = 4,
-      recruit_movement_sigma = 2,
+      adult_diffusion = 4,
+      recruit_diffusion = 2,
       rec_form = rec_form,
       fec_form = ifelse(str_detect(sciname,"carcharhinus"),"pups","weight"),
       pups = 6,
@@ -74,17 +74,5 @@ create_critters <-
       ), 1e4, mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE))
     )
 
-
-    # # later sub in a lookup table for this
-    # trait_frame <- tibble(
-    #   seasonal_habitat = list(habitat$data[[which(habitat$species_sciname == sciname)]]),
-    #   adult_movement = 1,
-    #   adult_movement_sigma = runif(1,min = 1, max = 30),
-    #   seasons = seasons,
-    #   init_explt = sample(c(.05,.1,.2), 1, replace = TRUE),
-    #   rec_form = sample(c(0,1,2,3),1, replace = TRUE),
-    #   fec_form = c("power"),
-    #   weight_a = NA
-    # )
 
   }

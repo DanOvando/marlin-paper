@@ -7,12 +7,12 @@ author:
     - Echelle Burns
 date: "`r Sys.Date()`"
 output: 
+  bookdown::pdf_document2:
+    number_sections: false
+  bookdown::html_document2: default
   bookdown::word_document2:
     number_sections: false
     reference_docx: template.docx
-  bookdown::html_document2: default
-  bookdown::pdf_document2:
-    number_sections: false
 header-includes:
   - \usepackage{setspace}\doublespacing
   - \usepackage{lineno}\linenumbers
@@ -34,11 +34,6 @@ sci_to_com <- taxize::sci2comm(unique(marlin_inputs$scientific_name)) %>%
   pivot_longer(everything(),names_to = "critter",values_to = "common_name") %>% 
   mutate(common_name = stringr::str_to_title(common_name))
 
-
-capitalize <- function(string) {
-  substr(string, 1, 1) <- toupper(substr(string, 1, 1))
-  string
-}
 
 ```
 
@@ -84,6 +79,8 @@ conservation toolbox. One of the goals of global MPA expansion is to protect and
 - Expand more on the WCPO case study and make the paper a bit more *about* that: make clearer how the model could be used in a real-world setting
 
 - Link better to Will White and company's work on MPA modeling etc
+
+- Include partial dependency plots for variable importance plot
 
 # Introduction
 
@@ -752,14 +749,14 @@ worst_result_plot <- worst_result %>%
   ggplot() +
   geom_text(data = tibble(
     x = .1,
-    y = max(worst_result$biodiv - worst_result$bau_biodiv)
+    y = max(worst_result$biodiv - worst_result$bau_biodiv) * .9
   ),
   aes(x = x, y = y, label = "Worst Case"),
   size = 4) +
   geom_hline(yintercept = 0, linetype = 2) +
   geom_line(aes(prop_mpa, biodiv - bau_biodiv, color = critter),
             show.legend = FALSE, size = 1.25) +
-  scale_x_continuous(labels = scales::percent, name = "MPA Size") +
+  scale_x_continuous(labels = scales::label_percent(accuracy = 1), name = "MPA Size") +
   scale_y_continuous(
     name = ''
   )
@@ -813,11 +810,11 @@ best_result_plot <- best_result %>%
   geom_line(aes(prop_mpa, biodiv - bau_biodiv, color = critter), size = 1.25) +
   geom_text(data = tibble(
     x = .1,
-    y = max(best_result$biodiv - best_result$bau_biodiv)
+    y = max(best_result$biodiv - best_result$bau_biodiv) * .9
   ),
   aes(x = x, y = y, label = "Best Case"),
   size = 4) +
-  scale_x_continuous(labels = scales::percent, name = "") +
+  scale_x_continuous(labels = scales::label_percent(accuracy = 1), name = "") +
   scale_y_continuous("Change in SSB/SSB0") +
   theme(legend.position = "top") +
   scale_color_discrete(name = element_blank()) +

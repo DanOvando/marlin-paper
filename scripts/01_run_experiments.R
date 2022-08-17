@@ -3,7 +3,7 @@ source(file.path("scripts", "00_setup.R"))
 
 # generate state experiments. This is a somewhat tricky process where the actual generated values are created for many variables in create_experiment_critters
 
-n_states <- 600
+n_states <- 5
 
 if (run_experiments) {
   state_experiments <-
@@ -35,13 +35,6 @@ if (run_experiments) {
              base_centroid = c(resolution / 2, resolution / 2) ,
              critters,
              resolution) {
-      # base_centroid <- c(10,10)
-      # sigma_hab = .2
-
-      # sigma_block <- 0.1
-
-      # bycatch_corr <- -1
-
 
       base_layer <-
         tidyr::expand_grid(x = 1:resolution, y = 1:resolution)
@@ -70,31 +63,13 @@ if (run_experiments) {
           mutate(habitat = dnorm(distance, 0, sigma_hab)) %>%
           select(x, y, habitat)
 
-
-
-
         tmp$habitat <- tmp$habitat - min(tmp$habitat)
 
-        # tmp %>%
-        #   ggplot(aes(x, y, fill = habitat)) +
-        #   geom_tile() +
-        #   scale_fill_viridis_c()
-        #
 
         critters$habitat[[i]] <-  tmp
 
 
       }
-
-
-      # (critters$habitat[[1]] %>%
-      #     ggplot(aes(x,y,fill = habitat))+
-      #     geom_tile() +
-      #     scale_fill_viridis_c()) +
-      #   (critters$habitat[[10]] %>%
-      #      ggplot(aes(x,y,fill = habitat))+
-      #      geom_tile() +
-      #      scale_fill_viridis_c())
 
       return(critters)
     }
@@ -114,12 +89,12 @@ if (run_experiments) {
     mutate(
       seasonal_movement = sample(c(TRUE,FALSE), nrow(.), replace = TRUE),
       f_v_m = sample(c(0.4,0.8,1.6), nrow(.), replace = TRUE),
-      adult_movement_sigma = runif(
+      adult_diffusion = runif(
         nrow(.),
         min = 0.01 * resolution,
         max = .5 * resolution
       ),
-      recruit_movement_sigma = runif(
+      recruit_diffusion = runif(
         nrow(.),
         min = 0.01 * resolution,
         max = .5 * resolution
@@ -142,8 +117,8 @@ if (run_experiments) {
           habitat = habitat,
           seasonal_movement = seasonal_movement,
           f_v_m = f_v_m,
-          adult_movement_sigma = adult_movement_sigma,
-          recruit_movement_sigma = recruit_movement_sigma,
+          adult_diffusion = adult_diffusion,
+          recruit_diffusion = recruit_diffusion,
           rec_form = rec_form,
           hyper = hyper
         ),
@@ -272,8 +247,6 @@ if (run_experiments) {
   state_experiments <- state_experiments %>%
     select(-tmp)
 
-  stop()
-
   placement_experiments <- expand_grid(
     placement_strategy = c(
       "depletion",
@@ -283,7 +256,7 @@ if (run_experiments) {
       "area"
     ),
     prop_mpa = seq(0, 1, by = 0.05),
-    critters_considered = seq(1,n_distinct(names(state_experiments$fauna[[1]])), by = 1),
+    critters_considered = seq(1,length(state_experiments$fauna[[1]]), by = 1),
     placement_error = c(0)
   ) %>%
     group_by_at(colnames(.)[!colnames(.) %in% c("temp", "prop_mpa")]) %>%
@@ -805,160 +778,12 @@ fig_1 <- total_results %>%
   scale_y_continuous(name = "% Species With Loss", labels = scales::percent) +
   scale_fill_viridis_c()
 
-# interesting message: lots of ways for at least some species to have loss across a range of MPA sizes. But, significant losses are much rarer. So, lots of ways to provide no effect
-fig_2 <- total_results %>%
-  ggplot(aes(prop_mpa, signif_loss)) +
-  geom_jitter(alpha = 0.25) +
-  geom_bin2d() +
-  facet_wrap( ~ placement_strategy) +
-  scale_x_continuous(name = "% MPA", labels = scales::percent) +
-  scale_y_continuous(name = "% Species With Loss", labels = scales::percent) +
-  scale_fill_viridis_c()
-
-
-# effect of degree of habitat overlap.. collapse into something?
-fig_3 <- total_results %>%
-  filter(
-    critters_considered == max(critters_considered),
-    placement_error == min(placement_error)
-  ) %>%
-  ggplot(aes(prop_mpa, loss, color = (sigma_centroid))) +
-  geom_jitter(show.legend = TRUE, alpha = 0.5) +
-  facet_wrap(~ placement_strategy) +
-  scale_color_viridis_c()
-
-fig_4 <- total_results %>%
-  filter(
-    critters_considered == max(critters_considered),
-    round(prop_mpa, 1) == 0.3
-  ) %>%
-  ggplot(aes(placement_error, loss, color = (sigma_centroid))) +
-  geom_jitter() +
-  facet_wrap(~ placement_strategy)
-
-fig_5 <- total_results %>%
-  filter(
-    placement_error == min(placement_error),
-    round(prop_mpa, 1) == 0.3
-  ) %>%
-  ggplot(aes(critters_considered, loss, color = (sigma_centroid))) +
-  geom_jitter() +
-  facet_wrap(~ placement_strategy)
 
 reg_1 <-
   glm(
     loss ~ sigma_hab + sigma_centroid + placement_error,
     data = total_results %>% filter(round(prop_mpa, 1) == 0.3)
   )
-
-
-# fig_4 <- results %>%
-#   left_join(excols, by = "xid") %>%
-#   ggplot(aes(prop_mpa, biodiv - bau_biodiv, color = factor(sigma_centroid))) +
-#   geom_hline(aes(yintercept = 0), linetype = 2, color = "red") +
-#   geom_jitter(alpha = 0.1) +
-#   facet_wrap( ~ critter, scales = "free_y") +
-#   scale_x_continuous(labels = scales::percent, name = "% MPA") +
-#   scale_y_continuous(name = "Change in SSB/SSB0")
-
-total_results %>%
-  ggplot(aes(total_loss, delta_econ)) +
-  geom_point() +
-  facet_wrap(~ placement_strategy)
-
-total_results %>%
-  filter(prop_mpa > 0,
-         placement_error == 0,
-         critters_considered == 1) %>%
-  ggplot(aes(prop_mpa, total_loss, color = factor(sigma_centroid))) +
-  geom_jitter(show.legend = FALSE) +
-  facet_wrap(~ placement_strategy)
-
-
-
-
-fig_6 <- results %>%
-  group_by(state_id, placement_id) %>%
-  mutate(real_sigma_centroid = sd(centroid)) %>%
-  ggplot(aes(
-    prop_mpa,
-    biodiv - bau_biodiv,
-    color = seasonal_movement,
-    group = interaction(placement_id, state_id)
-  )) +
-  geom_line(alpha = 0.2) +
-  facet_grid(critter ~ placement_strategy) +
-  scale_color_viridis_d()
-
-fig_7 <- results %>%
-  group_by(state_id, placement_id) %>%
-  mutate(real_sigma_centroid = sd(centroid)) %>%
-  ggplot(aes(
-    prop_mpa,
-    pmin(2,biodiv / bau_biodiv - 1),
-    color = factor(f_v_m),
-    group = interaction(placement_id, state_id)
-  )) +
-  geom_line(alpha = 0.2) +
-  facet_grid(critter ~ placement_strategy) +
-  scale_color_viridis_d()
-
-
-
-fig_8 <- results %>%
-  filter(prop_mpa < 1) %>%
-  # filter(f_v_m > 1.5) %>%
-  group_by(state_id, placement_id) %>%
-  ggplot(aes(
-    prop_mpa,
-    pmin(2,biodiv / bau_biodiv -1),
-    color =  sigma_habitat,
-    group = interaction(placement_id, state_id)
-  )) +
-  geom_line(alpha = 0.5) +
-  geom_hline(aes(yintercept = 0), linetype = 2, color = "red") +
-  facet_grid(critter ~ placement_strategy) +
-  scale_color_viridis_c(name = "Habitat Difference") +
-  scale_y_continuous(labels = scales::percent,"Change in SSB/SSB0 relative to BAU") +
-  scale_x_continuous(labels = scales::label_percent(accuracy = 1), name = "MPA Size") +
-  theme(legend.position = "top")
-
-
-fig_9 <- results %>%
-  group_by(state_id, placement_id) %>%
-  mutate(real_sigma_centroid = sd(centroid)) %>%
-  ggplot(aes(
-    prop_mpa,
-    pmin(2,biodiv / bau_biodiv -1),
-    color = factor(spatial_allocation),
-    group = interaction(placement_id, state_id)
-  )) +
-  geom_line(alpha = 0.3) +
-  facet_grid(critter ~ placement_strategy)+
-  scale_color_discrete(name = "Spatial Allocation Strategy") +
-  theme(legend.position = "top") +
-  scale_y_continuous(name = "MPA Effect on SSB/SSB0")
-  # scale_color_viridis_d()
-
-fig_9
-
-
-# fig_10 <- results %>%
-#   left_join(states, by = c("state_id", "critter")) %>%
-#   group_by(state_id, placement_id) %>%
-#   mutate(real_sigma_centroid = sd(centroid)) %>%
-#   ggplot(aes(
-#     prop_mpa,
-#     biodiv - bau_biodiv,
-#     color = spatial_q,
-#     group = interaction(placement_id, state_id)
-#   )) +
-#   geom_line(alpha = 0.2) +
-#   facet_grid(critter ~ placement_strategy) +
-#   scale_color_viridis_d()
-#
-# fig_10
-
 
 critter_results <- results %>%
   group_by(state_id, placement_id) %>%
@@ -976,6 +801,94 @@ critter_results %>%
 mean(critter_results$loss, na.rm = TRUE)
 
 
+results %>%
+  ggplot(aes(pmin(1, biodiv - bau_biodiv),fill = factor(critters_considered))) +
+  geom_density(alpha = 0.25) +
+  facet_wrap(~placement_strategy)
+
+fig_exp_biodiv <- results %>%
+  filter(prop_mpa < 1) %>%
+  # filter(f_v_m > 1.5) %>%
+  group_by(state_id, placement_id) %>%
+  ggplot(aes(
+    prop_mpa,
+    pmin(1,biodiv - bau_biodiv),
+    color =  critters_considered,
+    group = interaction(placement_id, state_id)
+  )) +
+  geom_line(alpha = 0.5) +
+  geom_hline(aes(yintercept = 0), linetype = 2, color = "red") +
+  facet_grid(critter ~ placement_strategy, labeller = labeller(placement_strategy = capitalize)) +
+  scale_color_viridis_c(name = "Habitat Difference", guide = guide_colorbar(frame.colour = "black",ticks.colour = "black", barwidth = unit ("15", "lines"))) +
+  scale_y_continuous("Change in SSB/SSB0 relative to BAU") +
+  scale_x_continuous(labels = scales::label_percent(accuracy = 1), name = "MPA Size") +
+  theme(legend.position = "top")
+
+
+fig_exp_biodiv
+
+
+
+loss_reg <-   glm(
+  loss ~   f_v_m  + critter + seasonal_movement + adult_diffusion + rec_form + recruit_diffusion + prop_mpa + sigma_habitat + spatial_allocation + placement_strategy + hyper,
+  family = binomial(),
+  data = critter_results %>% filter(between(prop_mpa,.2,.4))
+)
+
+
+loss_reg_coefs <- broom::tidy(loss_reg) %>%
+  mutate(lower = estimate - 1.96 * std.error,
+         upper = estimate + 1.96 * std.error) %>%
+  mutate(
+    term = str_replace(term, "placement_strategy", "Placement Strategy: "),
+    term = str_replace(term, "rec_form", "DD Timing: "),
+    term = str_replace(term, "spatial_allocation", "Fleet Allocation: "),
+    term = str_replace(term, "hyper", "Hyperallometry present"),
+    term = str_replace(term, "prop_mpa", "MPA size"),
+    term = str_replace(term, "sigma_habitat", "Habitat differences"),
+    term = str_remove_all(term, "critter")
+  )
+
+loss_coef_plot <- loss_reg_coefs %>%
+  ggplot() +
+  geom_hline(aes(yintercept = 0)) +
+  geom_pointrange(aes(
+    forcats::fct_reorder(term, estimate),
+    estimate,
+    ymin = lower,
+    ymax = upper
+  )) +
+  scale_y_continuous(name = "Log-odds Ratio Effect") +
+  scale_x_discrete(name = '') +
+  coord_flip()
+
+
+
+tmp_critter <-
+  critter_results %>% filter(between(prop_mpa, .2, .4)) %>%
+  select(-habitat) %>%
+  mutate(fctr_loss = factor(loss))
+
+loss_rf <-   ranger::ranger(
+  loss ~   f_v_m  + critter + seasonal_movement + adult_movement_sigma + rec_form + recruit_movement_sigma + prop_mpa + sigma_habitat + spatial_allocation + placement_strategy + hyper + critters_considered,
+  data = tmp_critter,
+  importance = "impurity"
+)
+
+loss_importance <- data.frame(importance = loss_rf$variable.importance %>% sort()) %>%
+  rownames_to_column(var = "term")
+
+
+loss_importance_plot <- loss_importance %>%
+  ggplot(aes(forcats::fct_reorder(term, importance), importance)) +
+  geom_col() +
+  scale_y_continuous(name = "Variable Importance") +
+  scale_x_discrete(name = '') +
+  coord_flip()
+
+fig_loss_drivers <- loss_coef_plot + loss_importance_plot
+
+fig_loss_drivers
 # save results ------------------------------------------------------------
 
 
