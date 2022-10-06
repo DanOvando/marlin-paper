@@ -54,13 +54,10 @@ for (s in seq_along(unique(species))){
 }
 
 get_layer <- function(file) {
-  # file <- mats[3]
 
   file_comps <- str_split(file, "_", simplify = TRUE)
 
   species <- str_replace(file_comps[, 1], "-", " ")
-
-  # fleet <- file_comps[, 2]
 
 
   hab <-
@@ -274,7 +271,7 @@ if (run_casestudy == TRUE){
   case_study_experiments <-
     expand_grid(
       placement_strategy = c("depletion", "rate", "avoid_fishing", "target_fishing", "area"),
-      prop_mpa = seq(0,1, by = 0.01),
+      prop_mpa = seq(0,1, by = 0.33),
       critters_considered = length(fauna),
       placement_error = c(0),
       mpa_response = c("stay")
@@ -314,7 +311,7 @@ write_rds(case_study_experiments, file = file.path(results_path, "case_study_exp
 # optimize network --------------------------------------------------------
 if (optimize_casestudy == TRUE){
 
-  optimized_networks <- tibble(alpha = seq(0,1, length.out = 20))
+  optimized_networks <- tibble(alpha = seq(0,1, length.out = 5))
 
   # optimized_networks <- tibble(alpha = c(0,1))
 

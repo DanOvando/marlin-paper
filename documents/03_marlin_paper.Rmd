@@ -136,7 +136,9 @@ different habitat distributions. For example, @abbott2012 demonstrated
 that an MPA designed to protect red king crab (*Paralithodes
 camtschaticus*) caused an unintended increase in bycatch of Pacific
 halibut (*Hippoglossus stenolepis*) by the displaced bottom-trawl
-fishery. Policy leakage is not a unique feature to MPAs, e.g. XX include non-marine examples XX, but
+fishery. 
+
+Policy leakage is not a unique feature to MPAs, e.g. XX include non-marine examples XX, but
 the potential impacts of MPAs on target and bycatch species taking into
 account the potential for these leakage effects has received relatively
 little generalized attention in the literature [see @abbott2012;
@@ -199,8 +201,6 @@ simulate bycatch dynamics of MPAs in pelagic ecosystems.
 
 Below we provide a summary of the `marlin` model, as well as details of
 the generalized simulation exercises and case study analyses.
-
-## `marlin`
 
 ####  Fleet Dynamics
 

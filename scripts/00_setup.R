@@ -11,8 +11,6 @@ library(ggridges)
 
 library(googledrive)
 
-# library(data.table)
-
 library(gamm4)
 
 library(rgdal)
@@ -50,11 +48,11 @@ run_experiments <- TRUE
 
 experiment_workers <- 8
 
-run_casestudy <- FALSE
+run_casestudy <- TRUE
 
-optimize_casestudy <- FALSE
+optimize_casestudy <- TRUE
 
-safety_stop <- TRUE
+safety_stop <- FALSE
 
 draws <- 20
 

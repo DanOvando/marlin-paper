@@ -1,8 +1,6 @@
 compile_fleet_highf <- function(fauna, tune_type = "explt",  effort_cost_exponent = 1.3,
                           spatial_allocation = "rpue") {
 
-  # browser()
-  # fauna <- wtf
 
   fleets <- list(
     "longline" = create_fleet(
@@ -49,17 +47,6 @@ compile_fleet_highf <- function(fauna, tune_type = "explt",  effort_cost_exponen
           sel_unit = "length"
 
         ),
-        # "kajikia audax" = Metier$new(
-        #   critter = fauna$`kajikia audax`,
-        #   price = 5.16,
-        #   sel_form = "logistic",
-        #   sel_start = 175,
-        #   sel_delta = 0.01,
-        #   catchability = .1,
-        #   p_explt = .99,
-        #   sel_unit = "length"
-        #
-        # ),
         "carcharhinus longimanus" = Metier$new(
           critter = fauna$`carcharhinus longimanus`,
           price = 1.89,
@@ -71,28 +58,6 @@ compile_fleet_highf <- function(fauna, tune_type = "explt",  effort_cost_exponen
           sel_unit = "length"
 
         ),
-        # "istiompax indica" = Metier$new(
-        #   critter = fauna$`istiompax indica`,
-        #   price = 2.74,
-        #   sel_form = "logistic",
-        #   sel_start = 100,
-        #   sel_delta = 0.01,
-        #   catchability = .1,
-        #   p_explt = .99,
-        #   sel_unit = "length"
-        #
-        # ),
-        # "makaira mazara" = Metier$new(
-        #   critter = fauna$`makaira mazara`,
-        #   price = 3.74,
-        #   sel_form = "logistic",
-        #   sel_start = 150,
-        #   sel_delta = 0.01,
-        #   catchability = .1,
-        #   p_explt = .95,
-        #   sel_unit = "length"
-        #
-        # ),
         "carcharhinus falciformis" = Metier$new(
           critter = fauna$`carcharhinus falciformis`,
           price = 2.16,
@@ -139,7 +104,8 @@ compile_fleet_highf <- function(fauna, tune_type = "explt",  effort_cost_exponen
       ),
       effort_cost_exponent = effort_cost_exponent,
       base_effort = resolution^2,
-      spatial_allocation = spatial_allocation
+      spatial_allocation = spatial_allocation,
+      resolution = fauna[[1]]$resolution
     ),
     "purseseine" = create_fleet(
       list(
@@ -187,17 +153,6 @@ compile_fleet_highf <- function(fauna, tune_type = "explt",  effort_cost_exponen
           sel_unit = "length"
 
         ),
-        # "kajikia audax" = Metier$new(
-        #   critter = fauna$`kajikia audax`,
-        #   price = 5.16,
-        #   sel_form = "logistic",
-        #   sel_start = 175,
-        #   sel_delta = 0.01,
-        #   catchability = .1,
-        #   p_explt = .01,
-        #   sel_unit = "length"
-        #
-        # ),
         "carcharhinus longimanus" = Metier$new(
           critter = fauna$`carcharhinus longimanus`,
           price = 1.89,
@@ -209,28 +164,6 @@ compile_fleet_highf <- function(fauna, tune_type = "explt",  effort_cost_exponen
           sel_unit = "length"
 
         ),
-        # "istiompax indica" = Metier$new(
-        #   critter = fauna$`istiompax indica`,
-        #   price = 2.74,
-        #   sel_form = "logistic",
-        #   sel_start = 50,
-        #   sel_delta = 0.01,
-        #   catchability = .1,
-        #   p_explt = .01,
-        #   sel_unit = "length"
-        #
-        # ),
-        # "makaira mazara" = Metier$new(
-        #   critter = fauna$`makaira mazara`,
-        #   price = 3.74,
-        #   sel_form = "logistic",
-        #   sel_start = 1000,
-        #   sel_delta = 0.01,
-        #   catchability = .1,
-        #   p_explt = 0.05,
-        #   sel_unit = "length"
-        #
-        # ),
         "carcharhinus falciformis" = Metier$new(
           critter = fauna$`carcharhinus falciformis`,
           price = 2.16,
@@ -277,7 +210,8 @@ compile_fleet_highf <- function(fauna, tune_type = "explt",  effort_cost_exponen
       ),
       effort_cost_exponent = effort_cost_exponent,
       base_effort = resolution^2,
-      spatial_allocation = spatial_allocation
+      spatial_allocation = spatial_allocation,
+      resolution = fauna[[1]]$resolution
     )
   )
 

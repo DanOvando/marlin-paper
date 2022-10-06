@@ -72,8 +72,8 @@ optimize_mpa <-
           fauna = fauna,
           fleets = fleets,
           years = years,
-          mpas = list(locations = tmp_mpas,
-                      mpa_year = 1),
+          manager = list(mpas = list(locations = tmp_mpas,
+                      mpa_year = 1)),
           initial_conditions = starting_conditions
         )
 
@@ -175,8 +175,8 @@ optimize_mpa <-
         fauna = fauna,
         fleets = fleets,
         years = years,
-        mpas = list(locations = mpas,
-                    mpa_year = 1),
+        manager = list(mpas = list(locations = mpas,
+                    mpa_year = 1)),
         initial_conditions = starting_conditions
       )
 

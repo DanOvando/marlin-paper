@@ -56,7 +56,6 @@ create_critters <-
       scientific_name = sciname,
       base_habitat = hab,
       recruit_habitat = recruit_habitat,
-      adult_movement = 0,
       adult_diffusion = 4,
       recruit_diffusion = 2,
       rec_form = rec_form,
