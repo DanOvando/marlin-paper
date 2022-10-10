@@ -10,12 +10,11 @@ tune_type <- "explt"
 
 experiment_workers <- 8
 
-run_casestudy <- TRUE
+run_coral_example <- TRUE
 
 years <- 50
-# generate state experiments. This is a somewhat tricky process where the actual generated values are created for many variables in create_experiment_critters
-# https://sustainablefish.org/roundtable/indonesian-snapper-and-grouper/
 
+# https://sustainablefish.org/roundtable/indonesian-snapper-and-grouper/
 
 # https://www.tandfonline.com/doi/full/10.1080/23308249.2018.1542420?casa_token=oyFyrvo42J4AAAAA%3A3OklvuxmJxB8TpTVomWzRawFsNRUX4WgwnMa_mcTECTLZn-OatxfLBgU2OES-KYynzhXMyfTC9smdQ
 #
@@ -38,6 +37,7 @@ long_spawning_ground <- expand.grid(x = 1:resolution, y = 1:resolution) %>%
   mutate(habitat = dnorm(x, reefs$x[1], reef_width / 2) * dnorm(y, reefs$y[1], reef_width / 2))
 
 
+
 for (i in 1:nrow(reefs)){
 
   long_reef_habitat$habitat <- long_reef_habitat$habitat + dnorm(long_reef_habitat$x, reefs$x[i], reef_width) * dnorm(long_reef_habitat$y, reefs$y[i], reef_width)
@@ -48,7 +48,25 @@ long_spawning_ground %>%
   ggplot(aes(x,y,fill = habitat)) +
   geom_tile()
 
+long_reef_habitat %>%
+  ggplot(aes(x,y,fill = habitat)) +
+  geom_tile()
+
 reef_habitat <- long_reef_habitat %>%
+  pivot_wider(names_from = y, values_from = habitat) %>%
+  select(-x) %>%
+  as.matrix()
+
+
+deep_reef_habitat <- long_reef_habitat %>%
+  mutate(habitat = habitat * 1 / (1 + exp(-(x - resolution / 2)))) %>%
+  pivot_wider(names_from = y, values_from = habitat) %>%
+  select(-x) %>%
+  as.matrix()
+
+
+shallow_reef_habitat <- long_reef_habitat %>%
+  mutate(habitat = habitat * (1 - 1 / (1 + exp(-(x - resolution / 2))))) %>%
   pivot_wider(names_from = y, values_from = habitat) %>%
   select(-x) %>%
   as.matrix()
@@ -68,17 +86,33 @@ ports <-  data.frame(x =  c(1,1), y = c(2,15))
 
 snapper <- create_critter(
   scientific_name = "lutjanus malabaricus",
-  base_habitat = lapply(1:seasons,function(x) reef_habitat),
-  recruit_habitat = reef_habitat,
+  base_habitat = lapply(1:seasons,function(x) shallow_reef_habitat),
+  recruit_habitat = shallow_reef_habitat,
   adult_diffusion = 2, # standard deviation of the number of patches moved by adults
   recruit_diffusion = 10,
-  fished_depletion = 0.2, # desired equilibrium depletion with fishing (1 = unfished, 0 = extinct),
   density_dependence = "post_dispersal", # recruitment form, where 1 implies local recruitment
   seasons = seasons,
   resolution = resolution,
-  init_explt = 1.2,
+  init_explt = 0.125,
   ssb0 = 100000
 )
+
+# deep water snapper
+
+deep_snapper <- create_critter(
+  scientific_name = "Pristipomoides filamentosus",
+  base_habitat = lapply(1:seasons,function(x) deep_reef_habitat),
+  recruit_habitat = deep_reef_habitat,
+  adult_diffusion = 1, # standard deviation of the number of patches moved by adults
+  recruit_diffusion = 5,
+  density_dependence = "post_dispersal", # recruitment form, where 1 implies local recruitment
+  seasons = seasons,
+  resolution = resolution,
+  init_explt = 0.5,
+  ssb0 = 10000,
+  steepness = 0.6
+)
+
 
 # grouper
 
@@ -87,13 +121,14 @@ grouper <- create_critter(
   scientific_name = "Epinephelus fuscoguttatus",
   base_habitat = list(reef_habitat, reef_habitat, reef_habitat, spawning_ground),
   recruit_habitat = spawning_ground,
+  fec_expo = 1.5,
   adult_diffusion = 10,
-  recruit_diffusion = 5,
+  recruit_diffusion = 40,
   fished_depletion = .25,
   density_dependence = "pre_dispersal",
   seasons = seasons,
   resolution = resolution,
-  init_explt = 0.7,
+  init_explt = 0.75,
   steepness = 0.6,
   spawning_seasons = c(4),
   ssb0 = 50000,
@@ -123,9 +158,13 @@ reef_shark <- create_critter(
 fauna <-
   list(
     "snapper" = snapper,
+    "deep_snapper" = deep_snapper,
     "grouper" = grouper,
     "reef_shark" = reef_shark
   )
+
+
+fauna$deep_snapper$plot()
 
 
 fauna$snapper$plot()
@@ -138,7 +177,7 @@ fauna$reef_shark$plot()
 # create fleet ------------------------------------------------------------
 
 
-fleets <- list(fleet_one = create_fleet(
+fleet_one = create_fleet(
   list(
     snapper = Metier$new(
       critter = fauna$snapper,
@@ -146,6 +185,15 @@ fleets <- list(fleet_one = create_fleet(
       sel_form = "dome",
       sel_start = 0.1,
       sel_delta = .2,
+      p_explt = 1
+    ),
+    deep_snapper = Metier$new(
+      critter = fauna$deep_snapper,
+      price = 0,
+      sel_form = "logistic",
+      sel_start = 2,
+      sel_delta = .2,
+      p_explt = 1
     ),
     grouper = Metier$new(
       critter = fauna$grouper,
@@ -153,6 +201,7 @@ fleets <- list(fleet_one = create_fleet(
       sel_form = "dome",
       sel_start = 0.1,
       sel_delta = .2,
+      p_explt = 1
     ),
     reef_shark = Metier$new(
       critter = fauna$reef_shark,
@@ -160,9 +209,10 @@ fleets <- list(fleet_one = create_fleet(
       sel_form = "logistic",
       sel_start = 0.25,
       sel_delta = .2,
+      p_explt = 1
     )
   ),
-  ports = ports,
+  ports = ports[1,],
   cost_per_unit_effort = 1,
   cost_per_distance = 2,
   responsiveness = 0.4,
@@ -171,7 +221,57 @@ fleets <- list(fleet_one = create_fleet(
   mpa_response = "stay",
   fleet_model = "open access",
   spatial_allocation = "ppue"
-))
+)
+
+fleet_two <- create_fleet(
+  list(
+    snapper = Metier$new(
+      critter = fauna$snapper,
+      price = 3,
+      sel_form = "logistic",
+      sel_start = 0.1,
+      sel_delta = .2,
+      p_explt = 2
+    ),
+    deep_snapper = Metier$new(
+      critter = fauna$deep_snapper,
+      price = 6,
+      sel_form = "logistic",
+      sel_start = 0.25,
+      sel_delta = .2,
+      p_explt = 1
+    ),
+    grouper = Metier$new(
+      critter = fauna$grouper,
+      price = 1,
+      sel_form = "dome",
+      sel_start = 0.1,
+      sel_delta = .2,
+      p_explt = .25
+    ),
+    reef_shark = Metier$new(
+      critter = fauna$reef_shark,
+      price = 0,
+      sel_form = "logistic",
+      sel_start = 0.25,
+      sel_delta = .2,
+      p_explt = 0
+    )
+  ),
+  ports = ports[2,],
+  cost_per_unit_effort = 1,
+  cost_per_distance = 2,
+  responsiveness = 0.4,
+  cr_ratio = 1,
+  resolution = resolution,
+  mpa_response = "stay",
+  fleet_model = "constant effort",
+  spatial_allocation = "ppue"
+)
+
+
+fleets <- list(fleet_one = fleet_one,
+               fleet_two = fleet_two)
 
 fleets$fleet_one$metiers$grouper$sel_at_age %>% plot()
 
@@ -282,7 +382,7 @@ patch_recruits <-
 patch_recruits %>%
   group_by(critter, step) %>%
   ungroup() %>%
-  filter(critter == "grouper", step == round(step), step < 10) %>%
+  filter(critter == "grouper", step < 10) %>%
   ggplot(aes(x,y, fill = recruits))+
   geom_tile() +
   facet_wrap(~step) +
@@ -367,24 +467,23 @@ mpa_sim <- simmar(
 
     old_profits %>%
       bind_rows(new_profits) %>%
-      filter(step >= 70) %>%
       ggplot(aes(step, profit)) +
       geom_line()
 
 # running mpa experiments -------------------------------------------------
 
-if (run_casestudy == TRUE){
+if (run_coral_example == TRUE){
 
   plan(multisession, workers = experiment_workers)
 
   case_study_experiments <-
     expand_grid(
       placement_strategy = c("rate", "avoid_fishing", "target_fishing", "area"),
-      fleet_model = c("open access", "constant effort"),
       prop_mpa = seq(0, 1, by = 0.05),
       critters_considered = length(fauna),
       placement_error = c(0),
-      mpa_response = c("stay")
+      mpa_response = c("stay"),
+      iter = 1
     )
 
   a <- Sys.time()
@@ -397,13 +496,13 @@ if (run_casestudy == TRUE){
           prop_mpa = prop_mpa,
           critters_considered = critters_considered,
           placement_error = placement_error,
-          mpa_response = mpa_response,
-          fleet_model = fleet_model
+          mpa_response = mpa_response
         ),
         run_mpa_experiment,
         starting_conditions = starting_conditions,
         proc_starting_conditions = proc_starting_conditions,
         resolution = resolution,
+        fleet_model = NA,
         fauna = fauna,
         fleets = fleets,
         years = 20,
@@ -449,40 +548,79 @@ examine_results <- coral_mpa_experiements %>%
   unnest(cols = obj)
 
 examine_results %>%
-  ggplot(aes(prop_mpa, biodiv, color = placement_strategy, linetype = fleet_model)) +
+  mutate(mpa_bin = cut(prop_mpa,4)) %>%
+  ggplot(aes(biodiv, yield, color = placement_strategy)) +
+  geom_point() +
+  facet_grid(critter~mpa_bin, scales = "free")
+
+examine_results %>%
+  filter(between(prop_mpa, 0.29, 0.31)) %>%
+  ggplot(aes(biodiv, yield, color = placement_strategy)) +
+  geom_point() +
+  facet_wrap(~critter, scales = "free")
+
+examine_results %>%
+  ggplot(aes(prop_mpa, biodiv, color = placement_strategy)) +
   geom_line() +
   facet_wrap(~critter) +
   scale_y_continuous(limits = c(0, 1.5))
 
+
+# REALLY interesting. the rate strategy looks for places with the highest rates of the most depleted species, sharks and closes those first. But, those are in the far east, since that's the only place sharks are left when the simulation starts. So, you protect the current home of the sharks, while fishing harder in the historic home, driving down the other species that live closer to shore
+
+
 examine_results %>%
-  ggplot(aes(prop_ssb0_mpa, biodiv, color = placement_strategy, linetype = fleet_model)) +
+  ggplot(aes(prop_ssb0_mpa, biodiv, color = placement_strategy)) +
   geom_line() +
   facet_wrap(~critter) +
   scale_y_continuous(limits = c(0, 1.5))
 
+
 examine_results %>%
-  ggplot(aes(prop_mpa, yield, color = placement_strategy, linetype = fleet_model)) +
+  group_by(prop_mpa, placement_strategy) %>%
+  summarise(yield = sum(yield)) %>%
+  ggplot(aes(prop_mpa, yield, color = placement_strategy)) +
+  geom_line()
+
+examine_results %>%
+  ggplot(aes(prop_ssb0_mpa,  yield, color = placement_strategy)) +
   geom_line() +
   facet_wrap(~critter, scales = "free_y")
 
 
 examine_results %>%
-  group_by(prop_mpa, placement_strategy, fleet_model) %>%
-  summarise(yield = sum(yield)) %>%
-  ggplot(aes(prop_mpa, yield, color = placement_strategy, linetype = fleet_model)) +
-  geom_line()
+  pivot_longer(starts_with("fleet_"), names_to = "fleet", values_to = "fleet_yield") %>%
+  ggplot(aes(prop_ssb0_mpa, fleet_yield, color = placement_strategy)) +
+  geom_line() +
+  facet_grid(critter ~ fleet, scales = "free")
 
 
 examine_results %>%
-  group_by(prop_ssb0_mpa, placement_strategy, fleet_model) %>%
-  summarise(yield = sum(yield)) %>%
-  ggplot(aes(prop_ssb0_mpa, yield, color = placement_strategy, linetype = fleet_model)) +
-  geom_line()
+  pivot_longer(starts_with("fleet_"), names_to = "fleet", values_to = "fleet_yield") %>%
+  group_by(prop_mpa, fleet, placement_strategy) %>%
+  summarise(yield = sum(fleet_yield)) %>%
+  ggplot(aes(prop_mpa, yield, color = placement_strategy)) +
+  geom_line() +
+  facet_wrap(~ fleet, scales = "free")
+
+
+
+# looking at fleet one, you could get up to a biodiv of near 2 while increasing yield, while fleet one will take a hit or lose severely to get to that level
+examine_results %>%
+  pivot_longer(starts_with("fleet_"), names_to = "fleet", values_to = "fleet_yield") %>%
+  group_by(prop_mpa, fleet, placement_strategy) %>%
+  summarise(yield = sum(fleet_yield),biodiv = sum(unique(biodiv))) %>%
+  ggplot(aes(biodiv, yield, color = placement_strategy)) +
+  geom_point() +
+  facet_wrap(~ fleet, scales = "free")
+
+
+
 
 examine_results %>%
-  group_by(prop_mpa, placement_strategy, fleet_model) %>%
+  group_by(prop_mpa, placement_strategy) %>%
   summarise(profits = sum(econ)) %>%
-  ggplot(aes(prop_mpa, profits, color = placement_strategy, linetype = fleet_model)) +
+  ggplot(aes(prop_mpa, profits, color = placement_strategy)) +
   geom_line()
 
 

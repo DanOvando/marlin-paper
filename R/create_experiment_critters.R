@@ -70,7 +70,6 @@ create_experiment_critters <-
     if (ontogenetic_shift) {
       recruit_habitat <-
         -hab[[spawning_seasons[[1]]]] - min(-hab[[spawning_seasons[[1]]]]) # place recruits in different places than adults
-
       # set recruitment form to allow for recruit habitat
       #
       rec_form <- 0

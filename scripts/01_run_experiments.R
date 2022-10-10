@@ -3,7 +3,7 @@ source(file.path("scripts", "00_setup.R"))
 
 # generate state experiments. This is a somewhat tricky process where the actual generated values are created for many variables in create_experiment_critters
 
-n_states <- 2
+n_states <- 250
 
 
 if (run_experiments) {
@@ -77,6 +77,8 @@ if (run_experiments) {
       return(critters)
     }
 
+  port_locations <- tibble(x = c(1, resolution), y = c(1, resolution)) # coordinates to test impact of highly disparate ports
+
 
   state_experiments <- state_experiments %>%
     mutate(
@@ -93,7 +95,7 @@ if (run_experiments) {
       seasonal_movement = sample(c(FALSE,TRUE), nrow(.), replace = TRUE),
       spawning_aggregation = sample(c(TRUE,FALSE), nrow(.), replace = TRUE),
       spawning_season = sample(1:seasons, nrow(.), replace = TRUE),
-      f_v_m = sample(c(0.4,0.8,1.6), nrow(.), replace = TRUE),
+      f_v_m = runif(nrow(.), 0.2,1.6),
       adult_diffusion = runif(
         nrow(.),
         min = 0,
@@ -104,10 +106,11 @@ if (run_experiments) {
         min = 0,
         max = resolution
       ),
-      hyper = sample(c(1,1.5),nrow(.), replace = TRUE),
+      hyper = runif(nrow(.), 1,2),
       density_dependence = sample(c("global_habitat", "local_habitat", "pre_dispersal", "post_dispersal"), nrow(.), replace = TRUE)
     ) %>%
-    mutate(spawning_season = ifelse(spawning_aggregation, spawning_season, NA))
+    mutate(spawning_season = ifelse(spawning_aggregation, spawning_season, NA),
+           ontogenetic_shift = sample(c(FALSE,TRUE), nrow(.), replace = TRUE))
 
   state_experiments$habitat[[sample(1:n_states, 1)]] %>%
     ggplot(aes(x, y, fill = habitat)) +
@@ -127,7 +130,8 @@ if (run_experiments) {
           adult_diffusion = adult_diffusion,
           recruit_diffusion = recruit_diffusion,
           density_dependence = density_dependence,
-          hyper = hyper
+          hyper = hyper,
+          ontogenetic_shift = ontogenetic_shift
         ),
         create_experiment_critters,
         marlin_inputs = marlin_inputs,
@@ -154,9 +158,20 @@ if (run_experiments) {
 
   # create fleets -----------------------------------------------------------
   # create fleet objects
+
+
   state_experiments <- state_experiments %>%
     ungroup() %>%
-    mutate(fleet = map2(fauna,data, compile_experiment_fleet))
+    mutate(use_ports = sample(c(FALSE,TRUE), nrow(.), replace = TRUE)) %>%
+    mutate(fleet = pmap(
+      list(
+        fauna = fauna,
+        state = data,
+        use_ports = use_ports
+      ),
+      compile_experiment_fleet,
+      port_locations = port_locations
+    ))
 
   # add in starting conditions
   init_condit <- function(fauna, fleets, years = 100) {
@@ -192,7 +207,6 @@ if (run_experiments) {
 
   placement_experiments <- expand_grid(
     placement_strategy = c(
-      "depletion",
       "rate",
       "avoid_fishing",
       "target_fishing",
@@ -208,7 +222,6 @@ if (run_experiments) {
     mutate(placement_id = 1:nrow(.)) %>%
     unnest(cols = data)
   # safety stop -------------------------------------------------------------
-
   if (safety_stop) {
     i <- sample(1:n_states, 1)
     # i = 1
@@ -241,7 +254,7 @@ if (run_experiments) {
 
     sample_mpas <- place_mpa(
       target_fauna = "carcharhinus longimanus",
-      size = 0,
+      size = 0.4,
       fauna = state_experiments$fauna[[1]],
       placement_error = 0,
       place_randomly = FALSE
@@ -773,6 +786,60 @@ critter_results %>%
 mean(critter_results$loss, na.rm = TRUE)
 
 
+# marginal effects idea
+
+
+
+var_effects <- results %>%
+  ungroup() %>%
+  mutate(biodiv_effect = biodiv / bau_biodiv - 1,
+         econ_effect = econ / bau_econ - 1) %>%
+  select(
+    biodiv_effect,
+    f_v_m,
+    econ_effect,
+    critter,
+    adult_diffusion,
+    recruit_diffusion,
+    density_dependence,
+    placement_strategy,
+    sigma_habitat,
+    hyper,
+    seasonal_movement,
+    fleet_model,
+    spawning_aggregation,
+    seasonal_movement,
+    prop_mpa
+  )
+
+
+biodiv_effects <- var_effects %>%
+  filter(between(prop_mpa,0.29, .31)) %>%
+  ggplot(aes(sigma_habitat, pmin(2.5,biodiv_effect), color = f_v_m)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+biodiv_effects
+
+econ_effects <- var_effects %>%
+  filter(between(prop_mpa,0.29, .31)) %>%
+  ggplot(aes(sigma_habitat, pmin(2.5,econ_effect), color = f_v_m)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+econ_effects
+
+
+
+biodiv_effects <- var_effects %>%
+  filter(between(prop_mpa,0.29, .31)) %>%
+  ggplot(aes(spawning_aggregation, pmin(2.5,biodiv_effect))) +
+  stat_halfeye()+
+  # geom_point() +
+  geom_smooth(method = "lm")
+
+biodiv_effects
+
 results %>%
   ggplot(aes(pmin(1, biodiv - bau_biodiv),fill = factor(critters_considered))) +
   geom_density(alpha = 0.25) +
@@ -802,49 +869,51 @@ fig_exp_biodiv
 # critter_results %>%
 #   ggplot(aes(sigma_habitat, delta_biodiv)) +
 #   geom_point()
-
-loss_reg <-   glm(
-  loss ~   f_v_m  + critter + seasonal_movement + adult_diffusion + rec_form + recruit_diffusion + prop_mpa + sigma_habitat + spatial_allocation + placement_strategy + hyper,
-  family = binomial(),
-  data = critter_results %>% filter(between(prop_mpa,.2,.4))
-)
-
-
-loss_reg_coefs <- broom::tidy(loss_reg) %>%
-  mutate(lower = estimate - 1.96 * std.error,
-         upper = estimate + 1.96 * std.error) %>%
-  mutate(
-    term = str_replace(term, "placement_strategy", "Placement Strategy: "),
-    term = str_replace(term, "rec_form", "DD Timing: "),
-    term = str_replace(term, "spatial_allocation", "Fleet Allocation: "),
-    term = str_replace(term, "hyper", "Hyperallometry present"),
-    term = str_replace(term, "prop_mpa", "MPA size"),
-    term = str_replace(term, "sigma_habitat", "Habitat differences"),
-    term = str_remove_all(term, "critter")
-  )
-
-loss_coef_plot <- loss_reg_coefs %>%
-  ggplot() +
-  geom_hline(aes(yintercept = 0)) +
-  geom_pointrange(aes(
-    forcats::fct_reorder(term, estimate),
-    estimate,
-    ymin = lower,
-    ymax = upper
-  )) +
-  scale_y_continuous(name = "Log-odds Ratio Effect") +
-  scale_x_discrete(name = '') +
-  coord_flip()
+#
+# loss_reg <-   glm(
+#   loss ~   f_v_m  + critter + seasonal_movement + adult_diffusion + rec_form + recruit_diffusion + prop_mpa + sigma_habitat + spatial_allocation + placement_strategy + hyper,
+#   family = binomial(),
+#   data = critter_results %>% filter(between(prop_mpa,.2,.4))
+# )
+#
+#
+# loss_reg_coefs <- broom::tidy(loss_reg) %>%
+#   mutate(lower = estimate - 1.96 * std.error,
+#          upper = estimate + 1.96 * std.error) %>%
+#   mutate(
+#     term = str_replace(term, "placement_strategy", "Placement Strategy: "),
+#     term = str_replace(term, "rec_form", "DD Timing: "),
+#     term = str_replace(term, "spatial_allocation", "Fleet Allocation: "),
+#     term = str_replace(term, "hyper", "Hyperallometry present"),
+#     term = str_replace(term, "prop_mpa", "MPA size"),
+#     term = str_replace(term, "sigma_habitat", "Habitat differences"),
+#     term = str_remove_all(term, "critter")
+#   )
+#
+# loss_coef_plot <- loss_reg_coefs %>%
+#   ggplot() +
+#   geom_hline(aes(yintercept = 0)) +
+#   geom_pointrange(aes(
+#     forcats::fct_reorder(term, estimate),
+#     estimate,
+#     ymin = lower,
+#     ymax = upper
+#   )) +
+#   scale_y_continuous(name = "Log-odds Ratio Effect") +
+#   scale_x_discrete(name = '') +
+#   coord_flip()
 
 
 
 tmp_critter <-
   critter_results %>% filter(between(prop_mpa, .2, .4)) %>%
   select(-habitat) %>%
-  mutate(fctr_loss = factor(loss))
+  mutate(fctr_loss = factor(loss)) %>%
+  ungroup() %>%
+  mutate(rando = rnorm(nrow(.)))
 
 loss_rf <-   ranger::ranger(
-  loss ~   f_v_m  + critter + seasonal_movement + adult_diffusion + rec_form + recruit_diffusion + prop_mpa + sigma_habitat + spatial_allocation + placement_strategy + hyper + critters_considered,
+  loss ~   f_v_m  + critter + seasonal_movement + adult_diffusion + density_dependence + recruit_diffusion + prop_mpa + sigma_habitat + spatial_allocation + placement_strategy + hyper + critters_considered + rando,
   data = tmp_critter,
   importance = "impurity"
 )

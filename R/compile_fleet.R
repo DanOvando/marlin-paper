@@ -1,5 +1,5 @@
-compile_fleet <- function(fauna, tune_type = "explt",  effort_cost_exponent = 1.3,
-                          spatial_allocation = "rpue") {
+compile_fleet <- function(fauna, tune_type = "explt",  effort_cost_exponent = 1,
+                          spatial_allocation = "ppue", fleet_model = "constant effort") {
 
 
   fleets <- list(
@@ -105,7 +105,8 @@ compile_fleet <- function(fauna, tune_type = "explt",  effort_cost_exponent = 1.
       effort_cost_exponent = effort_cost_exponent,
       base_effort = resolution^2,
       spatial_allocation = spatial_allocation,
-      resolution = resolution
+      resolution = resolution,
+      fleet_model = fleet_model
     ),
     "purseseine" = create_fleet(
       list(
@@ -208,6 +209,7 @@ compile_fleet <- function(fauna, tune_type = "explt",  effort_cost_exponent = 1.
           sel_unit = "length"
         )
       ),
+      fleet_model = fleet_model,
       effort_cost_exponent = effort_cost_exponent,
       base_effort = resolution^2,
       spatial_allocation = spatial_allocation,

@@ -19,15 +19,19 @@ run_mpa_experiment <-
 
     fleets <-  purrr::modify_in(fleets, list(1, "mpa_response"), ~ mpa_response)
 
+    if (!is.na(fleet_model)) {
+      fleets <-
+        purrr::modify_in(fleets, list(1, "fleet_model"), ~ fleet_model)
 
-    fleets <-  purrr::modify_in(fleets, list(1, "fleet_model"), ~ fleet_model)
+
+    }
 
     n_mpa <- round(prop_mpa * resolution^2)
 
     # set up open access
 
     #
-    if (is.na(critters_considered)){
+    if (all(is.na(critters_considered))){
       critters_considered <-  length(fauna)
     }
 
@@ -191,10 +195,14 @@ run_mpa_experiment <-
     }
 
 
+    fleet_econ <- map_df(mpa_sim[[length(mpa_sim)]], ~ colSums(.x$prof_p_fl, na.rm = TRUE), .id = "critter")
+
     econ <-
       (map_df(mpa_sim[[length(mpa_sim)]], ~ sum(.x$prof_p_fl, na.rm = TRUE))) %>%
       pivot_longer(everything(), names_to = "critter",values_to = "econ")
     #  calculate econ component of objective function, currently revenues across all fleets and species
+
+    fleet_yield <- (map_df(mpa_sim[[length(mpa_sim)]], ~ colSums(.x$c_p_fl, na.rm = TRUE), .id = "critter"))
 
     yield <-
       (map_df(mpa_sim[[length(mpa_sim)]], ~ sum(.x$c_p_fl, na.rm = TRUE))) %>%
@@ -203,7 +211,8 @@ run_mpa_experiment <-
 
     objective_outcomes <- biodiv %>%
       left_join(econ, by = "critter") %>%
-      left_join(yield, by = "critter")
+      left_join(yield, by = "critter") %>%
+      left_join(fleet_yield, by = "critter")
 
     outcomes <- list()
 

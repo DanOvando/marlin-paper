@@ -1,8 +1,10 @@
 compile_experiment_fleet <-
   function(fauna,
            state,
+           use_ports,
+           port_locations,
            tune_type = "explt",
-           effort_cost_exponent = 1.3) {
+           effort_cost_exponent = 1) {
     if (all(state$spatial_q == TRUE)) {
       tuna_spatial_q <-
         state$habitat[state$scientific_name == "katsuwonus pelamis"][[1]] %>%
@@ -29,6 +31,12 @@ compile_experiment_fleet <-
 
       shark_spatial_q <- NA
 
+    }
+
+    if (use_ports == TRUE){
+      ports <- port_locations
+    } else {
+      ports <- NULL
     }
 
     fleets <- list(
@@ -73,11 +81,13 @@ compile_experiment_fleet <-
         ),
         base_effort = resolution ^ 2,
         cost_per_unit_effort = 10,
+        cost_per_distance = 20,
         effort_cost_exponent = effort_cost_exponent,
         spatial_allocation = state$spatial_allocation[1],
         resolution = resolution,
         fleet_model = state$fleet_model[1],
-        mpa_response = state$mpa_response[1]
+        mpa_response = state$mpa_response[1],
+        ports = ports
       )
     )
 
