@@ -10,7 +10,7 @@ tune_type <- "explt"
 
 experiment_workers <- 8
 
-run_coral_example <- TRUE
+run_coral_example <- FALSE
 
 years <- 50
 
@@ -472,6 +472,9 @@ mpa_sim <- simmar(
 
 # running mpa experiments -------------------------------------------------
 
+    write_rds(list(fauna = fauna, fleets = fleets), file = file.path(results_path, "coral_fauna_and_fleets.rds"))
+
+
 if (run_coral_example == TRUE){
 
   plan(multisession, workers = experiment_workers)
@@ -517,6 +520,44 @@ if (run_coral_example == TRUE){
   future::plan(future::sequential)
 
   write_rds(coral_mpa_experiements, file = file.path(results_path, "coral_mpa_experiements.rds"))
+
+
+  optimized_networks <- tibble(alpha = seq(0, 1, by = .1)) %>%
+    ungroup() %>%
+    mutate(
+      opt_mpa = map(
+        list(alpha = alpha),
+        marlin::optimize_mpa,
+        fauna = fauna,
+        fleets = fleets,
+        resolution = resolution,
+        starting_conditions = reef_sim[[length(reef_sim)]],
+        max_prop_mpa = 0.3,
+        prop_sampled = 0.1
+      )
+    )
+
+
+  foo <- function(beta,alpha){
+
+    print(alpha)
+
+    print(beta)
+  }
+
+  A = map(list(alpha = "there", beta = "world"), foo)
+
+  mpa_network <-
+    optimize_mpa(
+      fauna = fauna,
+      fleets = fleets,
+      resolution = resolution,
+      starting_conditions = reef_sim[[length(reef_sim)]],
+      alpha = 0.75,
+      max_prop_mpa = 0.1
+    )
+
+
 
 } else {
 

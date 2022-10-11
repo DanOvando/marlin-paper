@@ -12,7 +12,8 @@ run_mpa_experiment <-
            random_mpas = FALSE,
            max_delta = 1,
            resolution,
-           years = 50) {
+           years = 50,
+           future_habitat = list()) {
 
     options(dplyr.summarise.inform = FALSE)
 
@@ -172,17 +173,18 @@ run_mpa_experiment <-
     # run MPA simulation
 
     starting_step = as.numeric(last(names(starting_conditions)))
-
     mpa_sim <- simmar(
       fauna = fauna,
       fleets = fleets,
       years = years,
       manager = list(mpas = list(locations = mpas,
                   mpa_year = ceiling(starting_step))),
+      habitat = future_habitat,
       starting_step = starting_step,
       keep_starting_step = FALSE,
       initial_conditions = starting_conditions[[length(starting_conditions)]]
     )
+
 
     # process results
 

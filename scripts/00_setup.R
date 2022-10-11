@@ -46,6 +46,10 @@ if (!dir.exists(results_path)){
 
 run_experiments <- TRUE
 
+run_blue_water_example <- FALSE
+
+run_coral_example <- FALSE
+
 experiment_workers <- 8
 
 run_casestudy <- TRUE
@@ -56,7 +60,7 @@ safety_stop <- FALSE
 
 draws <- 20
 
-resolution <- 10 # resolution is in squared patches, so 20 implies a 20X20 system, i.e. 400 patches
+resolution <- 20 # resolution is in squared patches, so 20 implies a 20X20 system, i.e. 400 patches
 
 years <- 80
 

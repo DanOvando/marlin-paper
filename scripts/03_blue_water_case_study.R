@@ -10,8 +10,6 @@ tune_type <- "explt"
 
 experiment_workers <- 8
 
-run_casestudy <- TRUE
-
 years <- 50
 
 
@@ -134,6 +132,7 @@ get_layer <- function(file) {
 }
 
 
+
 mats <- map(best_mat, get_layer)
 
 check_habitat <- mats %>%
@@ -147,6 +146,8 @@ check_habitat <- mats %>%
 
 mats <- mats %>%
   bind_rows()
+
+
 
 # create experiments ------------------------------------------------------
 
@@ -219,9 +220,87 @@ starting_conditions <-
 proc_starting_conditions <- process_marlin(starting_conditions)
 
 plot_marlin(proc_starting_conditions, max_scale = FALSE)
-if (run_casestudy == TRUE){
+
+plot_marlin(proc_starting_conditions, max_scale = TRUE, plot_type = 'space')
+
+
+write_rds(list(fauna = fauna, fleets = fleets), file = file.path(results_path, "blue_water_fauna_and_fleets.rds"))
+
+if (run_blue_water_example == TRUE){
+
+  experiment_years <- 20
 
   future::plan(future::multisession, workers = experiment_workers)
+
+
+  # create range shifts
+
+
+  habitat_storage <- vector(mode = "list", length = experiment_years)
+
+
+  future_habitat <- purrr::map(set_names(c("xiphias gladius","thunnus obesus","carcharhinus longimanus")), ~ habitat_storage)
+
+
+
+  for (s in seq_along(future_habitat)) {
+    for (year in 1:experiment_years) {
+      tmp_hab <-
+        mats$habitat[[which(mats$scientific_name == names(future_habitat[s]))]] %>%
+        mutate(xy = x * y)
+
+      future_hab <- tmp_hab %>%
+        mutate(y = y + .5 * year) %>%
+        mutate(xy = x * y)
+
+      mod <-
+        gamm4::gamm4(habitat ~ s(x) + s(y) + s(xy), data = future_hab)
+
+      tmp_hab$habitat <- as.numeric(predict(mod$gam, newdata = tmp_hab))
+
+      tmp_hab$habitat <- pmax(0, tmp_hab$habitat)
+
+
+      new_matrix <- tmp_hab %>%
+        select(-xy) %>%
+        pivot_wider(names_from = y, values_from = habitat) %>%
+        select(-x) %>%
+        as.matrix()
+
+      # image(new_matrix)
+
+      future_habitat[[s]][[year]] <- new_matrix
+
+    }
+
+  }
+
+  # image(future_habitat$`thunnus obesus`[[experiment_years]])
+
+
+  # sim_climate <- simmar(fauna = fauna,
+  #                       fleets = fleets,
+  #                       habitat = future_habitat,
+  #                       years = experiment_years)
+
+  # grid <- expand_grid(x = 1:resolution, y= 1:resolution) %>%
+  #   mutate(patch = 1:nrow(.))
+  #
+  # patch_biomass <-
+  #   map_df(sim_climate, ~ map_df(.x, ~tibble(biomass = rowSums(.x$ssb_p_a), patch = 1:nrow(.x$ssb_p_a)), .id = "critter"), .id = "step") %>%
+  #   mutate(step = as.numeric(step)) %>%
+  #   left_join(grid, by = "patch")
+  #
+  # patch_biomass %>%
+  #   group_by(critter, step) %>%
+  #   mutate(sbiomass = biomass / sum(biomass)) %>%
+  #   ungroup() %>%
+  #   filter(critter == "thunnus obesus", step == min(step) | step == max(step)) %>%
+  #   ggplot(aes(x,y, fill = sbiomass))+
+  #   geom_tile() +
+  #   facet_wrap(~step) +
+  #   scale_fill_viridis_c()
+
 
   case_study_experiments <-
     expand_grid(
@@ -253,7 +332,8 @@ if (run_casestudy == TRUE){
         resolution = resolution,
         fauna = fauna,
         fleets = fleets,
-        years = 20,
+        future_habitat = future_habitat,
+        years = experiment_years,
         .options = furrr_options(seed = 42),
         .progress = TRUE
       )
@@ -310,7 +390,7 @@ examine_results %>%
 examine_results %>%
   ggplot(aes(prop_mpa, biodiv, color = placement_strategy)) +
   geom_line() +
-  facet_wrap(~critter) +
+  facet_wrap(~critter, scales = "free_y") +
   scale_y_continuous(limits = c(0, 1.5))
 
 
