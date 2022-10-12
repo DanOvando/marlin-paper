@@ -314,7 +314,7 @@ if (run_blue_water_example == TRUE){
     )
 
   a <- Sys.time()
-  blue_water_experiments <- case_study_experiments %>%
+  blue_water_climate_experiments <- case_study_experiments %>%
     ungroup() %>%
     mutate(
       results = future_pmap(
@@ -342,6 +342,38 @@ if (run_blue_water_example == TRUE){
 
   Sys.time() - a
 
+
+  write_rds(blue_water_climate_experiments, file = file.path(results_path, "blue_water_climate_experiments.rds"))
+
+
+  a <- Sys.time()
+  blue_water_experiments <- case_study_experiments %>%
+    ungroup() %>%
+    mutate(
+      results = future_pmap(
+        list(
+          placement_strategy = placement_strategy,
+          prop_mpa = prop_mpa,
+          critters_considered = critters_considered,
+          placement_error = placement_error,
+          mpa_response = mpa_response,
+          fleet_model = fleet_model
+        ),
+        run_mpa_experiment,
+        starting_conditions = starting_conditions,
+        proc_starting_conditions = proc_starting_conditions,
+        resolution = resolution,
+        fauna = fauna,
+        fleets = fleets,
+        years = experiment_years,
+        .options = furrr_options(seed = 42),
+        .progress = TRUE
+      )
+    ) %>%
+    mutate(prop_ssb0_mpa = map_dbl(results, ~sum(.x$mpa$ssb0[.x$mpa$mpa == TRUE], na.rm = TRUE) / sum(.x$mpa$ssb0)))
+
+  Sys.time() - a
+
   future::plan(future::sequential)
 
   write_rds(blue_water_experiments, file = file.path(results_path, "blue_water_experiments.rds"))
@@ -350,12 +382,18 @@ if (run_blue_water_example == TRUE){
 
   blue_water_experiments <- read_rds(file = file.path(results_path, "blue_water_experiments.rds"))
 
+  blue_water_climate_experiments <- read_rds(file = file.path(results_path, "blue_water_climate_experiments.rds"))
 
 }
 
 blue_water_experiments$mpas <- map(blue_water_experiments$results, "mpa")
 
 blue_water_experiments$obj <- map(blue_water_experiments$results, "obj")
+
+blue_water_climate_experiments$mpas <- map(blue_water_climate_experiments$results, "mpa")
+
+blue_water_climate_experiments$obj <- map(blue_water_climate_experiments$results, "obj")
+
 
 
 examine_mpas <- blue_water_experiments %>%
@@ -372,8 +410,25 @@ mpas <- examine_mpas %>%
   facet_wrap(~placement_strategy)
 
 
-examine_results <- blue_water_experiments %>%
-  unnest(cols = obj)
+static_results <- blue_water_experiments %>%
+  unnest(cols = obj) %>%
+  mutate(climate = FALSE)
+
+climate_results <- blue_water_climate_experiments %>%
+  unnest(cols = obj) %>%
+  mutate(climate = TRUE)
+
+blue_water_results <-static_results %>%
+  bind_rows(climate_results)
+
+
+blue_water_results %>%
+  group_by(placement_strategy, prop_mpa, climate) %>%
+  summarise(biodiv = sum(biodiv), yield = sum(yield)) %>%
+  ggplot(aes(prop_mpa, biodiv, color = climate)) +
+  geom_line() +
+  facet_wrap(~placement_strategy)
+
 
 examine_results %>%
   mutate(mpa_bin = cut(prop_mpa,4)) %>%

@@ -538,6 +538,8 @@ results <- results %>%
   mutate(bau_biodiv = biodiv[prop_mpa == 0],
          bau_econ = econ[prop_mpa == 0])
 
+write_rds(results, file.path(results_path,"driver_results.rds"))
+
 results %>%
   ggplot(aes(biodiv - bau_biodiv)) +
   geom_histogram()

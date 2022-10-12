@@ -27,6 +27,10 @@ library(rpart.plot)
 
 library(rstanarm)
 
+library(ggrepel)
+
+library(ggdist)
+
 options(dplyr.summarise.inform = FALSE)
 
 
@@ -44,11 +48,11 @@ if (!dir.exists(results_path)){
   dir.create(file.path(results_path,"sims"))
 }
 
-run_experiments <- TRUE
+run_experiments <- FALSE
 
 run_blue_water_example <- FALSE
 
-run_coral_example <- FALSE
+run_coral_example <- TRUE
 
 experiment_workers <- 8
 

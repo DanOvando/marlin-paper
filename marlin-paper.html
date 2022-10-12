@@ -10,9 +10,9 @@
 <meta name="author" content="Darcy Bradley">
 <meta name="author" content="Lennon Thomas">
 <meta name="author" content="Echelle Burns">
-<meta name="dcterms.date" content="2022-09-16">
+<meta name="dcterms.date" content="2022-10-11">
 
-<title>Efficient Simulation of Economic and Ecological Dynamics for Marine Spatial Planning</title>
+<title>Efficient Simulation of Economic and Ecological Dynamics in Aquatic Systems</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -65,7 +65,7 @@ div.csl-indent {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Efficient Simulation of Economic and Ecological Dynamics for Marine Spatial Planning</h1>
+<h1 class="title">Efficient Simulation of Economic and Ecological Dynamics in Aquatic Systems</h1>
 </div>
 
 
@@ -85,7 +85,7 @@ div.csl-indent {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 16, 2022</p>
+      <p class="date">October 11, 2022</p>
     </div>
   </div>
     
@@ -182,14 +182,22 @@ div.csl-indent {
 • Not Found: 0</code></pre>
 </div>
 </div>
-<p>need to cotnrast with SEAPODYM</p>
+<p>need to contrast with SEAPODYM</p>
+<!-- Single column, double line spaced -->
+<!-- Within the word count (no more than 7000-8000 words for Standard Articles, 3000-4000 words for Applications and Practical Tools) -->
+<!-- Continuous line and page numbering throughout -->
+
+<!-- Clearly defined manuscript structure as standard: Author details, Abstract (must be numbered 1-4 according to Manuscript Specifications), Keywords, Introduction, Materials and Methods, Results, Discussion, Figures and Tables with captions -->
+<!-- Figures and Tables can be embedded within the text where referenced to facilitate reviewing -->
+<!--         Author Contributions (if >1 author – see Authorship Policy). -->
+<!--         Statement of where you intend to archive your data -->
 <section id="introduction" class="level2">
 <h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
 <p>Communities around the world are increasingly looking to spatial strategies for managing marine ecosystems. For example, the “30x30” movement calls for implementation of marine protected areas, a form of spatial management, across 30% of the world’s oceans by 2030. While the objectives of individual spatial management strategies vary widely, spatial management strategies are often supported based on their ability to provide protection to broad swaths of marine ecosystems with one management action, with potentially fewer costs and complications than for example assessing, setting, and enforcing catch quotas for individual species.</p>
 <p>However, the design of spatial management strategies faces numerous challenges. Marine ecosystems are highly dynamic and opaque, and extractive entities such as fishing fleets respond to changes in marine ecosystems in highly complex ways. These dynamics post challenges even for single-species assessment and management strategies <span class="citation" data-cites="field2006a">(<a href="#ref-field2006a" role="doc-biblioref">Field et al. 2006</a>)</span>, which are only amplified when we consider management policies specifically designed around spatial features in the oceans. For example, policies such as MPAs designed for both conservation and food security must consider factors such as the optimal size and placement of a protected area network given a wide array of life history, exploitation levels, fleet dynamics, and preferred habitats, all of which may change over time, particularly given the impacts of climate change.</p>
 <p>These challenges are amplified by the fact that our knowledge regarding the design and implementation of spatial management strategies such as MPAs is largely based on theoretical studies; the size of protected areas <span class="citation" data-cites="ovando2021a">(<a href="#ref-ovando2021a" role="doc-biblioref">Ovando et al. 2021</a>)</span> and time required<span class="citation" data-cites="nickols2019">(<a href="#ref-nickols2019" role="doc-biblioref">Nickols et al. 2019</a>)</span> to see substantial effects from many MPAs means that we have relatively little empirical evidence as to their large-scale effects under a range of social-ecological settings <span class="citation" data-cites="mcclanahan2021">(<a href="#ref-mcclanahan2021" role="doc-biblioref">McClanahan 2021</a>)</span>.</p>
-<p>Many models have been developed to support the theory and design of spatial management strategies <span class="citation" data-cites="fulton2015">(<a href="#ref-fulton2015" role="doc-biblioref">Fulton et al. 2015</a>)</span>. However, they have tended to fall into one of either highly complex and tactical models designed for use in a specific location, or to be highly stylized representations intended to provide theoretical insights with less relevance for highly specific design questions. This complex landscape presents a challenge to stakeholders charged with marine spatial planning exercises lacking accesible models suited for more tactical applications, and a barrier to the scientific community, wherein comparisons across spatial management simulation studies are clouded by discrepancies in underlying model structures beyond differences in the core phenomenon in question.</p>
-<p>In part to help address this challenge, we present here a novel bio-economic modeling framework called <code>marlin</code> that allows for efficient simulation of spatio-temporal biological and economic dynamics. <code>marlin</code> allows users to simulation the impacts spatial policies such as MPAs across a range of species targeted by various fleets across heterogeneous and dynamic seascapes. Here we present the core methods and functionality of this framework, and demonstrate its use in two xx case-study applications. In the first, we show how <code>marlin</code> can be used to assess critical drivers for positive outcomes and unintended consequences of MPAs as a bycatch-mitigation strategy. In the second, we present a more tactical application, demonstrating how <code>marlin</code> can be used to compare and design MPA networks to achieve societal objectives.</p>
+<p>Many models have been developed to support the theory and design of spatial management strategies <span class="citation" data-cites="fulton2015">(<a href="#ref-fulton2015" role="doc-biblioref">Fulton et al. 2015</a>)</span>. However, they have tended to fall into one of either highly complex and tactical models designed for use in a specific location, or to be highly stylized representations intended to provide theoretical insights with less relevance for highly specific design questions. This complex landscape presents a challenge to stakeholders charged with marine spatial planning exercises lacking accessible models suited for more tactical applications, and a barrier to the scientific community, wherein comparisons across spatial management simulation studies are clouded by discrepancies in underlying model structures beyond differences in the core phenomenon in question.</p>
+<p>In part to help address this challenge, we present here a novel bio-economic modeling framework called <code>marlin</code> that allows for efficient simulation of spatio-temporal biological and economic dynamics. <code>marlin</code> allows users to simulation the impacts spatial policies such as MPAs across a range of species targeted by various fleets across heterogeneous and dynamic seascapes. Here we present the core methods and functionality of this framework, and demonstrate its use in three xx case-study applications. In the first, we show how <code>marlin</code> can be used to assess critical drivers for positive outcomes and unintended consequences of MPAs as a bycatch-mitigation strategy. In the second, we present a more tactical application, demonstrating how <code>marlin</code> can be used to compare and design MPA networks to achieve societal objectives.</p>
 <ul>
 <li><p>MPAs increasingly part of plan</p></li>
 <li><p>A model based field - hard to do experiments at the time and scale needed</p></li>
@@ -213,7 +221,7 @@ div.csl-indent {
 <p>Below we provide a summary of the <code>marlin</code> model, as well as details of the generalized simulation exercises and case study analyses.</p>
 <section id="fleet-dynamics" class="level3">
 <h3 class="anchored" data-anchor-id="fleet-dynamics">Fleet Dynamics</h3>
-<p>The key feature of <code>marlin</code> for the purposes of this project is the ability to capture technical interactions across species. While marlin does not simulate species interactions, fishing fleets in <code>marlin</code> are capable of targeting and affecting multiple species simultaneously. This allows us to capture for example the potential impacts of displacement of effort from one area into another across multiple species.</p>
+<p>The key feature of <code>marlin</code> for the purposes of this project is the ability to capture technical interactions across species. While marlin does not simulate species interactions, fishing fleets in <code>man</code> are capable of targeting and affecting multiple species simultaneously. This allows us to capture for example the potential impacts of displacement of effort from one area into another across multiple species.</p>
 <p>A fishing fleet or <em>metier</em> is defined in <code>marlin</code> by a total pool of effort that can have different catchability, prices, and selectivity for individual species within a simulation. For example, both a longline and purse seine fleet may capture bigeye (<em>Thunnus obesus</em>) and skipjack (<em>Katswamus pelamus</em>), but the longline fleet is much more likely to catch bigeye than skipjack, and <em>vice versa</em>. Each fishing fleet generates catches, revenues, and profits from individual species that it targets, and makes decisions based on its total objective function across all species.</p>
 <p>Revenues <em>R</em> for fleet <em>f</em> in time step <em>t</em> are given by</p>
 <p><span class="math display">\[
@@ -228,10 +236,9 @@ Y_{t,p,s,a} = \frac{F_{t,p,s,a}}{z_{t,p,s,a}} \times b_{t,p,s,a} \times (1 - e^{
 F_{t,p,s,a} = \sum_f^F\alpha_{a,s,f}q_{s,f}E_{t,p,f}
 \]</span></p>
 <p>Selectivity <span class="math inline">\(\alpha\)</span> is modeled through a logistic form per</p>
-<span class="math display">\[\begin{equation}
+<p><span id="eq-selectivity"><span class="math display">\[
 \alpha_{a,s,f}=\frac{1}{(1 + e^{-log(19)\times\frac{l_{a,s} - l^{sel}_{s,f}}{\delta^{sel}_{s,f}}})}
-  (\#eq:sel)
-\end{equation}\]</span>
+\tag{1}\]</span></span></p>
 <p>where <span class="math inline">\(l\)</span> is length at age, <span class="math inline">\(l^{sel}\)</span> is the length at 50% selectivity, and <span class="math inline">\(\delta\)</span> is the difference between the length at 50% selectivity and the length at 95% selectivity.</p>
 <p><em>z</em> is total mortality given by</p>
 <p><span class="math display">\[
@@ -337,44 +344,77 @@ n_{t,a = 1,p} = \left(\frac{0.8{\times}r0_{p}\times{h}\times{larv_{t,p}}}{0.2\ti
 <p>Lastly, this form has the advantage that the parameters are directly estimable from real data. So, if provided with say CPUE data and a tagging study, users can estimates the movement parameters in the same manner as <span class="citation" data-cites="thorson2021">(<a href="#ref-thorson2021" role="doc-biblioref"><strong>thorson2021?</strong></a>)</span>, and then pass their estimated parameters to <code>marlin</code> for simulation.</p>
 </section>
 </section>
-<section id="rule-of-thumb-mpa-design-strategies" class="level3">
-<h3 class="anchored" data-anchor-id="rule-of-thumb-mpa-design-strategies">Rule-of-thumb MPA Design Strategies</h3>
-<p>MPA design is governed by two general parameters: the number of cells to place inside an MPAs, and the design strategy used to place the MPAs.</p>
-<p>We consider 5 different MPA placement strategies.</p>
+<section id="reference-points" class="level3">
+<h3 class="anchored" data-anchor-id="reference-points">Reference Points</h3>
+<p>A note here WHy no reference points? The problem: Fmsy and MSY are selectivity dependent, and once we allow for different fleets with different selectivities that critical can move in space, that movement affects the net selectivity and fishing mortality on the population.</p>
+<p>Bmsy is also affected, since if selectivity is very low, you might need more biomass of immature individuals relative to less biomass of more mature individuals; a biomass of X can be more or less reproductively productive depending on the size / age makeup of that biomass.</p>
+<p>SSBmsy is slightly more conserved, as over the long term the key things is the flow of recruits, so we do provide an option for that</p>
+<p>There are many different strategies for estimating reference points conditional on selectivity and regimes, see references. We leave it to users to find relevant reference point as required by their methods on their own, using the sort of MSE examples available in the package.</p>
+</section>
+<section id="mpa-optimization" class="level3">
+<h3 class="anchored" data-anchor-id="mpa-optimization">MPA Optimization</h3>
+<p>Our MPA optimization algorithm seems to create an MPA network that maximizes an objective function, given by</p>
+<p><span class="math display">\[obj_p = \Phi \times scale(\sum_f^F \boldsymbol{\phi_{f,p}}) + (1 - \Phi)  scale(\boldsymbol{\sum_s^S\frac{ssb_s}{ssb0_{s,p}}})\]</span></p>
+<p>Where <em>scale</em> rescales the values to be between 0 and 1 such that the weight parameter is comparable between vectors. The algorithm works by first assigning every patch in the system to an MPA. For the first round, the algorithm then calculates the equilibrium objective function value resulting from sequentially removing each individual patch from the MPA network. The cell whose removal from the MPA produces the highest objective function value is then removed from the MPA network, and the marginal value of the objective function each of the remaining cells from the last steps are then stored. For the next steps, we sampled 25% of the remaining MPA cells with probability proportional to their marginal contribution to the objective function in the prior iteration, selecting the cell whose removal produces the highest total objective function as the cell to remove from the network, and updating the marginal value of the sampled-but-not-selected cells. This in essence is a sampling-importance-resampling algorithm. The algorithm continues until no more cells are left in the MPA. This then provides for a given objective weighting value <span class="math inline">\(\Phi\)</span> the near-optimal MPA network at every MPA size from 0 to 100%. We say “near” as they is some path dependency here, in that for example the network that maximizes the objective function with 40% of the MPAs does not necessarily contain the optimal network at 30%. However, the reversed nature of the algorithm, starting at 100% MPA coverage and working better, produces a more stable network with regards to this problem than starting at 0% and growing to 100%.</p>
+</section>
+<section id="use-cases" class="level3">
+<h3 class="anchored" data-anchor-id="use-cases">Use Cases</h3>
+<p>We include three examples demonstrating how <code>marlin</code> can be used to support marine spatial planning. In the first, we show how <code>marlin</code> can be used to compare the total and distributional impacts of marine protected areas design in a heavily fished coral reef ecosystem. In the second, we demonstrate how <code>marlin</code> can be used to assess components of climate resilience of alternative MPA design strategies. In the third, we show how <code>marlin</code> can be used to run large-scale simulation testing of management strategies.</p>
+<section id="rule-of-thumb-mpa-design-strategies" class="level4">
+<h4 class="anchored" data-anchor-id="rule-of-thumb-mpa-design-strategies">Rule-of-thumb MPA Design Strategies</h4>
+<p>Across all of our case studies we make use of four potential “rule of thumb” MPA design strategies:</p>
 <ol type="1">
-<li><p>Depletion: MPA locations are prioritized in proportion to the spawning stock biomass of the most depleted species pre-MPA. So, patches with high spawning biomass of highly depleted species are prioritized over patches with high spawning biomass of lightly depleted species.</p></li>
 <li><p>Rate: MPAs are placed in based on the pre-MPA depletion-weighted catch relative to the total catch in a patch. So, patches with high rates of catch of depleted species relative to total catch are prioritized.</p></li>
 <li><p>Avoid_fishing: MPAs locations are prioritized inversely to fishery catches. So, patches with low catches are prioritized over patches with high catches.</p></li>
 <li><p>Target_fishing: MPAs locations are prioritized proportionally to fishery catches. So, patches with high total catches are prioritized over patches with low catches.</p></li>
 <li><p>Area: For the “area” strategy, we simply assign patches in sequential order until the desired total MPA size is reached.</p></li>
 </ol>
-<!-- The information used to inform each MPA design strategy (except area) -->
-<!-- can include a multiplicative observation error term $\sigma_{obs}$ where -->
-<!-- $$information \sim lnorm(data,\sigma_{obs}) $$ -->
-<!-- For example, for the depletion scenario, $\sigma_{obs}$ controls the -->
-<!-- accuracy of the spatial depletion data used to prioritize MPA placement. -->
+<p>MPAs never to our knowledge randomly placed; their locations are decided based on stakeholder negotiation based on available information and objectives. In theory the design MPA networks can be optimized through the use of a modeling framework, and indeed conditional on the validity of the model itself this process is likely to produce better outcomes than manually-designed strategies <span class="citation" data-cites="rassweiler2012 rassweiler2014">(<a href="#ref-rassweiler2012" role="doc-biblioref">Rassweiler, Costello, and Siegel 2012</a>; <a href="#ref-rassweiler2014" role="doc-biblioref">Rassweiler et al. 2014</a>)</span>. However, in practice the ability of communities to conduct numerical optimization of MPA networks can be constrained by the number of objectives and dimensionality of the operating model, or by simple capacity of local stakeholders. As such, we show here how <code>marlin</code> can be used to examine the performance of potentially sub-optimal but more broadly usable design strategies xx.</p>
 </section>
+<section id="coral-reefs" class="level4">
+<h4 class="anchored" data-anchor-id="coral-reefs">Coral Reefs</h4>
+<p>In our coral reef example, we model the dynamics of four species: a grouper (XX), a shallow-reef snapper (xx), a deep-water snapper (XX), and a reef shark (XX). Groupers undergo a mass migration to a spawning aggregation once per year, followed by the sharks. Shallow-reef snappers stay in reefs closer to shower year-round, while deep-water snappers stay in the deeper reefs (<a href="#fig-coral">Figure&nbsp;1</a>).</p>
+<p>These species are targeted by two different fleets. Fleet one primarily targets the grouper and nearshore snapper populations, while obtaining some funds from sharks. Fleet one has a dome shaped selectivity pattern for both grouper and shallow-reef snapper due to demand for “plate sized” fish (citation), and logistic selectivity for sharks, as any shark caught is retained. This fleet operates under open-access dynamics, as fishing is not the primary means of subsistence and so short-term effort expands and contracts in respond to profitability of the primarily grouper-driven fishery xx.</p>
+<p>The second fleet primarily targets the deep-water snapper population. While plate-sized snapper are still prized from this population, we model fleet two’s selectivity as logistic due to high levels of discard mortality for deep-water snapper resulting from barotrauma (xx). This fleet catches some grouper, though less than fleet one, and catches no sharks due to the requirements of a certification program through which they sell their deep-water snapper. This fleet is a subsistence fleet, where the local community takes every possible opportunity to fish that they can, and as such we model it as a “constant effort” fishery.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-coral" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="marlin-paper_files/figure-html/fig-coral-1.png" class="img-fluid figure-img" width="672"></p>
+<p></p><figcaption class="figure-caption">Figure 1: Distribution of animals each season under unfished conditions. Numbers show the approximate location of each fleet’s port.</figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We then simulate the impacts of MPAs…</p>
 </section>
-<section id="mpa-optimization" class="level2">
-<h2 class="anchored" data-anchor-id="mpa-optimization">MPA Optimization</h2>
-<p>Our MPA optimization algorithm seems to create an MPA network that maximizes an objective function, given by</p>
-<p><span class="math display">\[obj_p = \Phi \times scale(\sum_f^F \boldsymbol{\phi_{f,p}}) + (1 - \Phi)  scale(\boldsymbol{\sum_s^S\frac{ssb_s}{ssb0_{s,p}}})\]</span></p>
-<p>Where <em>scale</em> rescales the values to be between 0 and 1 such that the weight parameter is comparable between vectors. The algorithm works by first assigning every patch in the system to an MPA. For the first round, the algorithm then calculates the equilibrium objective function value resulting from sequentially removing each individual patch from the MPA network. The cell whose removal from the MPA produces the highest objective function value is then removed from the MPA network, and the marginal value of the objective function each of the remaining cells from the last steps are then stored. For the next steps, we sampled 25% of the remaining MPA cells with probability proportional to their marginal contribution to the objective function in the prior iteration, selecting the cell whose removal produces the highest total objective function as the cell to remove from the network, and updating the marginal value of the sampled-but-not-selected cells. This in essence is a sampling-importance-resampling algorithm. The algorithm continues until no more cells are left in the MPA. This then provides for a given objective weighting value <span class="math inline">\(\Phi\)</span> the near-optimal MPA network at every MPA size from 0 to 100%. We say “near” as they is some path dependency here, in that for example the network that maximizes the objective function with 40% of the MPAs does not necessarily contain the optimal network at 30%. However, the reversed nature of the algorithm, starting at 100% MPA coverage and working better, produces a more stable network with regards to this problem than starting at 0% and growing to 100%.</p>
+<section id="pelagic-systems" class="level4">
+<h4 class="anchored" data-anchor-id="pelagic-systems">Pelagic Systems</h4>
+<p>We modeled our pelagic use case loosely on the characteristics of the Western and Central Pacific Ocean tuna fisheries. We simulate trajectories of XX species commonly caughts in the region, including both the highly abundance skipjack tuna (<em>Katsuwonus pelamis</em>) to the heavily depleted oceanic whitetip shark (<em>Carcharhinus longimanus</em>). We pulled publicly available data on catch-per-unit-effort of each of these species from the WCPO as a proxy for baseline habitat distributions (Fig.XX). However, for the pelagic case study we simulate a scenario where climate change is inducing a northerly migration of XX degress per year in XX species.</p>
+<p>These species are targeted by a longline fleet that targets large adult tunas such as bigeye and yellowfin primarily for high-grade consumption, and a purse-seine fishery that primarily targets skipjack tunas for bulk canning. XX. Both fleets are subject to a quota XX add this back in XX.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-blue" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="marlin-paper_files/figure-html/fig-blue-1.png" class="img-fluid figure-img" width="672"></p>
+<p></p><figcaption class="figure-caption">Figure 2: Distribution of animals under unfished conditions for blue-water simulation.</figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
 </section>
-<section id="generalized-experiments" class="level2">
-<h2 class="anchored" data-anchor-id="generalized-experiments">Generalized Experiments</h2>
-<p>Two features of marine ecosystems that are often omitted from theoretical and simulation-based considerations of marine spatial planning are <em>technical interactions</em> and <em>species on the move</em>. May canonical MPA models, informed by planning efforts centered around relatively static features such as coral reefs, have assumed that species inhabit a fixed and often uniform (e.g. <span class="citation" data-cites="hastings2017">Hastings, Gaines, and Costello (<a href="#ref-hastings2017" role="doc-biblioref">2017</a>)</span>). In reality, the habitat of many species are heterogeneous in space, and can experience both seasonal and directional changes, e.g.&nbsp;climate-change mediated range shifts.</p>
-<p>This reality creates a basic challenge to MPA design, in that given the need to protect an area less than the total range of a species, the more complex and dynamics the habitat of the species the more challenging it will be to identify an area that provides effective protection today and tomorrow. However, <em>technical interactions</em> interact with this spatial complexity to create another and potentially more difficult challenge. One of the key questions around spatial management strategies such as MPAs is to what extent do they <em>remove</em> vs <em>displace</em> threats.</p>
-<p>The potential benefits of MPAs as a bycatch management are complicated by two key issues: effort displacement and technical interactions. One of the primary questions around MPAs is to what extent do MPAs remove versus displace fishing effort. If MPAs remove fishing effort, then their direct effects on target and bycatch species can only be positive. If however MPAs displace fishing effort, evaluating their potential impacts becomes more complicated. The net conservation impact of MPAs becomes a balancing act between the effects of reduced fishing inside protected borders and increased fishing intensity outside MPAs. The outcomes of this displacement can be further complicated by technical interactions, i.e.&nbsp;the degree to which fishing effort for one species affects another, particularly when species have markedly different habitat distributions. For example, <span class="citation" data-cites="abbott2012">Abbott and Haynie (<a href="#ref-abbott2012" role="doc-biblioref">2012</a>)</span> demonstrated that an MPA designed to protect red king crab (<em>Paralithodes camtschaticus</em>) caused an unintended increase in bycatch of Pacific halibut (<em>Hippoglossus stenolepis</em>) by the displaced bottom-trawl fishery.</p>
-<p>Given the complexity of the operating model used here, a complete sensitivity analysis across all parameters is not practical. Instead, we focus on the role of life history, fishing pressure, and MPA design.</p>
-<p>Each iteration uses one of three species: A stylized tuna modeled after skipjack tuna (), a stylized marlin modeled after (), and a stylized shark modeled after (). Each species has all life history parameters pulled from FishLife (<span class="citation" data-cites="thorson2020">Thorson (<a href="#ref-thorson2020" role="doc-biblioref">2020</a>)</span>), with the exception of steepness, set to XX, and fecundity. For the tuna and marlin species, fecundity is assumed to scale with weight modified by the hyperallometric exponent. For the shark species, we assume a constant value of six pups per year at all ages greater than the age at maturity. We assume that tunas have an unfished biomass of XX, marlins XX, and sharks XX, to reflect a large, medium, and small population.</p>
-<p>For the generalized experiments we only include one fishing fleet. We assign a price per KG of $XX for tuna, intended to reflect a low value high volume fishery, $XX for marlin for a higher value low volume fishery, and $0 for sharks to reflect at true bycatch species. We assign a selectivity of 60% of length at maturity for skipjack to allow for some overfishing when F/M is high enough, 70% for marlin, and 90% for shark.</p>
-<p>We ran 300 state experiments, varying the state of nature experienced by a simulation. The candidate states include</p>
+<section id="key-drivers" class="level4">
+<h4 class="anchored" data-anchor-id="key-drivers">Key Drivers</h4>
+<p>The MPA literature points to the ability of a wide range of drivers to affect the performance of MPAs with regards to conservation and economic outcomes such as adult and larval dispersal <span class="citation" data-cites="gerber2005">(<a href="#ref-gerber2005" role="doc-biblioref">Gerber et al. 2005</a>)</span>, the timing of density dependence <span class="citation" data-cites="babcock2011">(<a href="#ref-babcock2011" role="doc-biblioref">Babcock and MacCall 2011</a>)</span>, correlations in space and time across species <span class="citation" data-cites="pons2022 abbott2012">(<a href="#ref-pons2022" role="doc-biblioref">Pons et al. 2022</a>; <a href="#ref-abbott2012" role="doc-biblioref">Abbott and Haynie 2012</a>)</span> , fleet dynamics and economic incentives <span class="citation" data-cites="smith2003a cabral2019">(<a href="#ref-smith2003a" role="doc-biblioref">Smith and Wilen 2003</a>; <a href="#ref-cabral2019" role="doc-biblioref">Cabral et al. 2019</a>)</span>, relationships between size and fecundity (e.g.&nbsp;hyperallometry) <span class="citation" data-cites="marshall2021">(<a href="#ref-marshall2021" role="doc-biblioref">Marshall et al. 2021</a>)</span>, heterogeneity in stock status <span class="citation" data-cites="hastings2017 abbott2012">(<a href="#ref-hastings2017" role="doc-biblioref">Hastings, Gaines, and Costello 2017</a>; <a href="#ref-abbott2012" role="doc-biblioref">Abbott and Haynie 2012</a>)</span>, and many other traits <span class="citation" data-cites="gaines2010 hilborn2004a">(<a href="#ref-gaines2010" role="doc-biblioref">Gaines et al. 2010</a>; <a href="#ref-hilborn2004a" role="doc-biblioref">Hilborn et al. 2004</a>)</span>.</p>
+<p>These studies have all helped guide the science of marine protected areas, but often focus on modeling the impact of subset of variables of interest at a time. We demonstrate here how <code>marlin</code> can be used to conduct Monte Carlo simulations across a wide range of drivers to assess the relative contributions each to the outcomes of protected areas under a particular set of circumstances.</p>
+<p>For this example we model the dynamics of a skipjack tuna <em>Katsuwonus pelamis</em>, a striped marlin <em>Kajikia audax</em>, and a oceanic whitetip shark <em>Carcharhinus longimanus</em>. Life history parameters for each species were pulled from FishLife (<span class="citation" data-cites="thorson2020">Thorson (<a href="#ref-thorson2020" role="doc-biblioref">2020</a>)</span>), with the exception of steepness, set to XX, and fecundity. For the tuna and marlin species, fecundity is assumed to scale with weight modified by the hyperallometric exponent. For the shark species, we assume a constant value of six pups per year at all ages greater than the age at maturity. We assume that tunas have an unfished biomass of XX, marlins XX, and sharks XX, to reflect a large, medium, and small population.</p>
+<p>For the generalized experiments we only include one fishing fleet. We assign a price per KG of $XX for tuna, intended to reflect a low value high volume fishery, $XX for marlin for a higher value low volume fishery, and $0 for sharks to reflect a true bycatch species. We assign a selectivity of 60% of length at maturity for skipjack to allow for some overfishing when F/M is high enough, 70% for marlin, and 90% for shark xx.</p>
+<p>We ran 250 state experiments, varying the state of nature experienced by a simulation. The candidate states include</p>
 <table class="table">
 <colgroup>
 <col style="width: 25%">
 <col style="width: 25%">
-<col style="width: 50%">
+<col style="width: 49%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -410,18 +450,18 @@ n_{t,a = 1,p} = \left(\frac{0.8{\times}r0_{p}\times{h}\times{larv_{t,p}}}{0.2\ti
 <td>Fishing mortality relative to natural mortality</td>
 </tr>
 <tr class="even">
-<td>Adult movement rate</td>
+<td>Adult diffusion rate</td>
 <td></td>
 <td></td>
 </tr>
 <tr class="odd">
-<td>Recruit movement rate</td>
+<td>Recruit diffusion rate</td>
 <td></td>
 <td></td>
 </tr>
 <tr class="even">
 <td>Hyperallometry</td>
-<td></td>
+<td><span class="math inline">\(U(1,2)\)</span></td>
 <td>Presence of hyperallometric fec</td>
 </tr>
 <tr class="odd">
@@ -436,19 +476,41 @@ n_{t,a = 1,p} = \left(\frac{0.8{\times}r0_{p}\times{h}\times{larv_{t,p}}}{0.2\ti
 </tr>
 </tbody>
 </table>
-<p>For each of these 300 state experiments, we then apply 315 placement experiments defined by an MPA size, an MPA placement strategy, and …XX</p>
 <p>We simulate degrees of species overlap using two parameters, <span class="math inline">\(\sigma_c\)</span> and <span class="math inline">\(\sigma_h\)</span>. All species start with the assumption that the centroid of their preferred habitat occurs in the center-most patch of the two dimensional system simulated by marlin. For our simulations, we then generated a random deviation from that default centroid for each species using <span class="math inline">\(\sigma_c\)</span> in the manner</p>
-<p><span class="math display">\[centroid_s \sim normal(center,\sigma_c)\]</span> where <em>s</em> denotes species,</p>
-<p>and <em>center</em> is the coordinate of the central cell. In this way, the larger <span class="math inline">\(\sigma_c\)</span> grows, the more variation there is between the centroid of the preferred habitat for each species.</p>
+<p><span class="math display">\[centroid_s \sim N(center,\sigma_c)\]</span> where <em>s</em> denotes species, and</p>
+<p><em>center</em> is the coordinate of the central cell. In this way, the larger <span class="math inline">\(\sigma_c\)</span> grows, the more variation there is between the centroid of the preferred habitat for each species.</p>
 <p>We then control the spread of a creatures preferred habitat around that centroid per a Gaussian dispersal kernel in the manner</p>
 <p><span class="math display">\[habitat_{p,s} = \frac{1}{\sqrt{2\pi\sigma_h^2}}e^{-\frac{d_p^2}{2\sigma_h^2}}\]</span></p>
 <p>Where <span class="math inline">\(d\)</span> is the euclidean distance from the <span class="math inline">\(centroid_s\)</span> to patch <span class="math inline">\(p\)</span> and <span class="math inline">\(\sigma_h\)</span> controls the dispersal of the habitat around that range.</p>
+<p>For each of these 250 state experiments, we then apply 252 placement experiments defined by an MPA size, an MPA placement strategy, and the number of animals to be considered in the MPA planning, ranging from one to three, where one indicates that only one animal is considered in the MPA design process, while three means that all three species are considered.</p>
+</section>
+</section>
+</section>
+<section id="results" class="level2">
+<h2 class="anchored" data-anchor-id="results">Results</h2>
+</section>
+<section id="discussion" class="level2">
+<h2 class="anchored" data-anchor-id="discussion">Discussion</h2>
+<p>We have focused on MPAs, but…</p>
+<p>EBFM, spatial management (cite that punt paper on next generation)</p>
+</section>
+<section id="scraps" class="level2">
+<h2 class="anchored" data-anchor-id="scraps">scraps</h2>
+<p>Two features of marine ecosystems that are often omitted from theoretical and simulation-based considerations of marine spatial planning are <em>technical interactions</em> and <em>species on the move</em>. May canonical MPA models, informed by planning efforts centered around relatively static features such as coral reefs, have assumed that species inhabit a fixed and often uniform (e.g. <span class="citation" data-cites="hastings2017">Hastings, Gaines, and Costello (<a href="#ref-hastings2017" role="doc-biblioref">2017</a>)</span>). In reality, the habitat of many species are heterogeneous in space, and can experience both seasonal and directional changes, e.g.&nbsp;climate-change mediated range shifts.</p>
+<p>This reality creates a basic challenge to MPA design, in that given the need to protect an area less than the total range of a species, the more complex and dynamics the habitat of the species the more challenging it will be to identify an area that provides effective protection today and tomorrow. However, <em>technical interactions</em> interact with this spatial complexity to create another and potentially more difficult challenge. One of the key questions around spatial management strategies such as MPAs is to what extent do they <em>remove</em> vs <em>displace</em> threats.</p>
+<p>The potential benefits of MPAs as a bycatch management are complicated by two key issues: effort displacement and technical interactions. One of the primary questions around MPAs is to what extent do MPAs remove versus displace fishing effort. If MPAs remove fishing effort, then their direct effects on target and bycatch species can only be positive. If however MPAs displace fishing effort, evaluating their potential impacts becomes more complicated. The net conservation impact of MPAs becomes a balancing act between the effects of reduced fishing inside protected borders and increased fishing intensity outside MPAs. The outcomes of this displacement can be further complicated by technical interactions, i.e.&nbsp;the degree to which fishing effort for one species affects another, particularly when species have markedly different habitat distributions. For example, <span class="citation" data-cites="abbott2012">Abbott and Haynie (<a href="#ref-abbott2012" role="doc-biblioref">2012</a>)</span> demonstrated that an MPA designed to protect red king crab (<em>Paralithodes camtschaticus</em>) caused an unintended increase in bycatch of Pacific halibut (<em>Hippoglossus stenolepis</em>) by the displaced bottom-trawl fishery.</p>
 
 </section>
 
 <div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" role="doc-bibliography">
 <div id="ref-abbott2012" class="csl-entry" role="doc-biblioentry">
 Abbott, Joshua K., and Alan C. Haynie. 2012. <span>“What Are We Protecting? Fisher Behavior and the Unintended Consequences of Spatial Closures as a Fishery Management Tool.”</span> <em>Ecological Applications</em> 22 (3): 762–77. https://doi.org/<a href="https://doi.org/10.1890/11-1319.1">https://doi.org/10.1890/11-1319.1</a>.
+</div>
+<div id="ref-babcock2011" class="csl-entry" role="doc-biblioentry">
+Babcock, Elizabeth A., and Alec D. MacCall. 2011. <span>“How Useful Is the Ratio of Fish Density Outside Versus Inside No-Take Marine Reserves as a Metric for Fishery Management Control Rules?”</span> <em>Canadian Journal of Fisheries and Aquatic Sciences</em> 68 (2): 343–59. <a href="https://doi.org/10.1139/F10-146">https://doi.org/10.1139/F10-146</a>.
+</div>
+<div id="ref-cabral2019" class="csl-entry" role="doc-biblioentry">
+Cabral, Reniel B., Benjamin S. Halpern, Sarah E. Lester, Crow White, Steven D. Gaines, and Christopher Costello. 2019. <span>“Designing MPAs for Food Security in Open-Access Fisheries.”</span> <em>Scientific Reports</em> 9 (1): 8033. <a href="https://doi.org/10.1038/s41598-019-44406-w">https://doi.org/10.1038/s41598-019-44406-w</a>.
 </div>
 <div id="ref-costello2016a" class="csl-entry" role="doc-biblioentry">
 Costello, Christopher, Daniel Ovando, Tyler Clavelle, C. Kent Strauss, Ray Hilborn, Michael C. Melnychuk, Trevor A. Branch, et al. 2016. <span>“Global Fishery Prospects Under Contrasting Management Regimes.”</span> <em>Proceedings of the National Academy of Sciences</em> 113 (18): 5125–29. <a href="https://doi.org/10.1073/pnas.1520420113">https://doi.org/10.1073/pnas.1520420113</a>.
@@ -459,14 +521,26 @@ Field, John C., André E. Punt, Richard D. Methot, and Cynthia J. Thomson. 2006.
 <div id="ref-fulton2015" class="csl-entry" role="doc-biblioentry">
 Fulton, Elizabeth A., Nicholas J. Bax, Rodrigo H. Bustamante, Jeffrey M. Dambacher, Catherine Dichmont, Piers K. Dunstan, Keith R. Hayes, et al. 2015. <span>“Modelling Marine Protected Areas: Insights and Hurdles.”</span> <em>Phil. Trans. R. Soc. B</em> 370 (1681): 20140278. <a href="https://doi.org/10.1098/rstb.2014.0278">https://doi.org/10.1098/rstb.2014.0278</a>.
 </div>
+<div id="ref-gaines2010" class="csl-entry" role="doc-biblioentry">
+Gaines, Steven D., Crow White, Mark H. Carr, and Stephen R. Palumbi. 2010. <span>“Designing Marine Reserve Networks for Both Conservation and Fisheries Management.”</span> <em>Proceedings of the National Academy of Sciences</em> 107 (43): 18286–93. <a href="https://doi.org/10.1073/pnas.0906473107">https://doi.org/10.1073/pnas.0906473107</a>.
+</div>
+<div id="ref-gerber2005" class="csl-entry" role="doc-biblioentry">
+Gerber, Leah R, Selina S Heppell, Ford Ballantyne, and Enric Sala. 2005. <span>“The Role of Dispersal and Demography in Determining the Efficacy of Marine Reserves.”</span> <em>Canadian Journal of Fisheries and Aquatic Sciences</em> 62 (4): 863–71. <a href="https://doi.org/10.1139/f05-046">https://doi.org/10.1139/f05-046</a>.
+</div>
 <div id="ref-gillis2003" class="csl-entry" role="doc-biblioentry">
 Gillis, Darren M. 2003. <span>“Ideal Free Distributions in Fleet Dynamics: A Behavioral Perspective on Vessel Movement in Fisheries Analysis.”</span> <em>Canadian Journal of Zoology</em> 81 (2): 177–87. <a href="https://doi.org/10.1139/z02-240">https://doi.org/10.1139/z02-240</a>.
 </div>
 <div id="ref-hastings2017" class="csl-entry" role="doc-biblioentry">
 Hastings, Alan, Steven D. Gaines, and Christopher Costello. 2017. <span>“Marine Reserves Solve an Important Bycatch Problem in Fisheries.”</span> <em>Proceedings of the National Academy of Sciences</em>, August, 201705169. <a href="https://doi.org/10.1073/pnas.1705169114">https://doi.org/10.1073/pnas.1705169114</a>.
 </div>
+<div id="ref-hilborn2004a" class="csl-entry" role="doc-biblioentry">
+Hilborn, Ray, Kevin Stokes, Jean-Jacques Maguire, Tony Smith, Louis W Botsford, Marc Mangel, José Orensanz, et al. 2004. <span>“When Can Marine Reserves Improve Fisheries Management?”</span> <em>Ocean &amp; Coastal Management</em> 47 (3–4): 197–205. <a href="https://doi.org/10.1016/j.ocecoaman.2004.04.001">https://doi.org/10.1016/j.ocecoaman.2004.04.001</a>.
+</div>
 <div id="ref-hilborn1987" class="csl-entry" role="doc-biblioentry">
 Hilborn, Ray, and Carl J. Walters. 1987. <span>“A General Model for Simulation of Stock and Fleet Dynamics in Spatially Heterogeneous Fisheries.”</span> <em>Canadian Journal of Fisheries and Aquatic Sciences</em> 44 (7): 1366–69. <a href="https://doi.org/10.1139/f87-163">https://doi.org/10.1139/f87-163</a>.
+</div>
+<div id="ref-marshall2021" class="csl-entry" role="doc-biblioentry">
+Marshall, Dustin J., Michael Bode, Marc Mangel, Robert Arlinghaus, and E. J. Dick. 2021. <span>“Reproductive Hyperallometry and Managing the World<span>’</span>s Fisheries.”</span> <em>Proceedings of the National Academy of Sciences</em> 118 (34). <a href="https://doi.org/10.1073/pnas.2100695118">https://doi.org/10.1073/pnas.2100695118</a>.
 </div>
 <div id="ref-mcclanahan2021" class="csl-entry" role="doc-biblioentry">
 McClanahan, Tim R. 2021. <span>“Marine Reserve More Sustainable Than Gear Restriction in Maintaining Long-Term Coral Reef Fisheries Yields.”</span> <em>Marine Policy</em> 128 (June): 104478. <a href="https://doi.org/10.1016/j.marpol.2021.104478">https://doi.org/10.1016/j.marpol.2021.104478</a>.
@@ -479,6 +553,18 @@ Ovando, Daniel, Jennifer E. Caselle, Christopher Costello, Olivier Deschenes, St
 </div>
 <div id="ref-plagányi2014" class="csl-entry" role="doc-biblioentry">
 Plagányi, Éva E, André E Punt, Richard Hillary, Elisabetta B Morello, Olivier Thébaud, Trevor Hutton, Richard D Pillans, et al. 2014. <span>“Multispecies Fisheries Management and Conservation: Tactical Applications Using Models of Intermediate Complexity.”</span> <em>Fish and Fisheries</em> 15 (1): 122. <a href="https://doi.org/10.1111/j.1467-2979.2012.00488.x">https://doi.org/10.1111/j.1467-2979.2012.00488.x</a>.
+</div>
+<div id="ref-pons2022" class="csl-entry" role="doc-biblioentry">
+Pons, Maite, Jordan T. Watson, Daniel Ovando, Sandra Andraka, Stephanie Brodie, Andrés Domingo, Mark Fitchett, et al. 2022. <span>“Trade-Offs Between Bycatch and Target Catches in Static Versus Dynamic Fishery Closures.”</span> <em>Proceedings of the National Academy of Sciences</em> 119 (4). <a href="https://doi.org/10.1073/pnas.2114508119">https://doi.org/10.1073/pnas.2114508119</a>.
+</div>
+<div id="ref-rassweiler2014" class="csl-entry" role="doc-biblioentry">
+Rassweiler, Andrew, Christopher Costello, Ray Hilborn, and David A. Siegel. 2014. <span>“Integrating Scientific Guidance into Marine Spatial Planning.”</span> <em>Proceedings of the Royal Society B: Biological Sciences</em> 281 (1781): 20132252. <a href="https://doi.org/10.1098/rspb.2013.2252">https://doi.org/10.1098/rspb.2013.2252</a>.
+</div>
+<div id="ref-rassweiler2012" class="csl-entry" role="doc-biblioentry">
+Rassweiler, Andrew, Christopher Costello, and David A. Siegel. 2012. <span>“Marine Protected Areas and the Value of Spatially Optimized Fishery Management.”</span> <em>Proceedings of the National Academy of Sciences</em> 109 (29): 11884–89. <a href="https://doi.org/10.1073/pnas.1116193109">https://doi.org/10.1073/pnas.1116193109</a>.
+</div>
+<div id="ref-smith2003a" class="csl-entry" role="doc-biblioentry">
+Smith, Martin D., and James E. Wilen. 2003. <span>“Economic Impacts of Marine Reserves: The Importance of Spatial Behavior.”</span> <em>Journal of Environmental Economics and Management</em> 46 (2): 183–206. <a href="https://doi.org/10.1016/S0095-0696(03)00024-X">https://doi.org/10.1016/S0095-0696(03)00024-X</a>.
 </div>
 <div id="ref-thorson2020" class="csl-entry" role="doc-biblioentry">
 Thorson, James T. 2020. <span>“Predicting Recruitment Density Dependence and Intrinsic Growth Rate for All Fishes Worldwide Using a Data-Integrated Life-History Model.”</span> <em>Fish and Fisheries</em> 21 (2): 237–51. <a href="https://doi.org/10.1111/faf.12427">https://doi.org/10.1111/faf.12427</a>.
