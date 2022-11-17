@@ -42,9 +42,15 @@ foos <- list.files(here("R"))
 
 walk(foos, ~ source(here("R", .x)))
 
-results_name <- "v0.2"
+if (Sys.getenv("RUN_NAME") == ''){
+  run_name <- "v0.2"
 
-results_path <- here("results", results_name)
+} else {
+  run_name <- Sys.getenv("RUN_NAME")
+}
+
+
+results_path <- here("results", run_name)
 
 if (!dir.exists(results_path)){
   dir.create(results_path, recursive = TRUE)
