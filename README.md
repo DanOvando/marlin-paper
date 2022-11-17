@@ -5,6 +5,27 @@
 
 Paper Introducing the `marlin` package.
 
+## renv
+
+This repository is equipped with
+[`renv`](https://rstudio.github.io/renv/) for package management.
+
+To install all dependencies for this project
+
+1.  Open R
+
+2.  Make sure you have `renv` installed (if not,
+    `install.packages("renv")`)
+
+3.  Inside R, making sure the working directory is set to the root
+    directory of this repository, run `renv::restore()`
+
+4.  Follow all prompts. This will install local versions of all the
+    dependencies needed for this project
+
+5.  If you have trouble installing `marlin`, see instructions
+    [here](https://danovando.github.io/marlin/#installation-troubleshooting)
+
 ## Reproducing results on UNIX machines
 
 This repo is equipped with a `make` file. To reproduce results this way

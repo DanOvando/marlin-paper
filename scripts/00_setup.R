@@ -31,6 +31,10 @@ library(ggrepel)
 
 library(ggdist)
 
+library(gganimate)
+
+library(gifski)
+
 options(dplyr.summarise.inform = FALSE)
 
 
