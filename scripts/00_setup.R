@@ -98,20 +98,3 @@ if (!file.exists(here("data","marlin-inputs.xlsx"))){
 
 marlin_inputs <- readxl::read_xlsx(here("data","marlin-inputs.xlsx"), sheet = "inputs",na = c("NA",""))
 
-
-wcpfc_data <- read_csv(here("data","wcpfc_monthly.csv"))
-
-
-top_bycatch <- wcpfc_data %>%
-  filter(catch > 0) %>%
-  group_by(species_commonname) %>%
-  count() %>%
-  arrange(desc(n)) %>%
-  ungroup() %>%
-  slice(1:5)
-
-bycatch <- wcpfc_data %>%
-  filter(species_commonname %in% top_bycatch$species_commonname)
-
-marlin_inputs$bycatch <- marlin_inputs$scientific_name %in% unique(tolower(bycatch$species_sciname))
-
