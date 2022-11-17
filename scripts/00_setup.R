@@ -38,7 +38,7 @@ foos <- list.files(here("R"))
 
 walk(foos, ~ source(here("R", .x)))
 
-results_name <- "v0.1"
+results_name <- "v0.2"
 
 results_path <- here("results", results_name)
 

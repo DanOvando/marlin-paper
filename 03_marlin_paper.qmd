@@ -197,7 +197,8 @@ $$ {#eq-revenue}
 [@baranov1918], which appropriately accounts for the total instantaneous
 mortality (both fishing and natural) and divides the total amount of the
 population biomass (*b*) killed between natural (*m*) and fishing (*u*)
-sources, the amount of biomass killed through fishing being assigned to yield *Y*.
+sources, the amount of biomass killed through fishing being assigned to
+yield *Y*.
 
 $$
 Y_{t,p,s,a} = \frac{u_{t,p,s,a}}{z_{t,p,s,a}} \times b_{t,p,s,a} \times (1 - e^{-z_{t,p,s,a}})
@@ -209,44 +210,49 @@ $$
 u_{t,p,s,a} = \sum_{f=1}^F\alpha_{a,s,f}q_{s,f}E_{t,p,f}
 $$ {#eq-u}
 
-Selectivity $\alpha$ is modeled through either a logistic form or a dome-shaped form. The logistic form is based on the lengths *l* at which 50% of individuals are selected by the fishing gear, $l^{sel}$, and $\delta$ which is the difference between the length at 50% selectivity and
-the length at 95% selectivity.
+Selectivity $\alpha$ is modeled through either a logistic form or a
+dome-shaped form. The logistic form is based on the lengths *l* at which
+50% of individuals are selected by the fishing gear, $l^{sel}$, and
+$\delta$ which is the difference between the length at 50% selectivity
+and the length at 95% selectivity.
 
 $$
 \alpha_{a,s,f}=\frac{1}{(1 + e^{-log(19)\times\frac{l_{a,s} - l^{sel}_{s,f}}{\delta^{sel}_{s,f}}})}
 $$ {#eq-selectivity}
 
-We approximate the dome-shaped form as a simple normal distribution with mean $l^{sel}$ and standard deviation $\sigma$. The normal density function is re-scaled such that the selectivity is 1 at $l^{sel}$.
+We approximate the dome-shaped form as a simple normal distribution with
+mean $l^{sel}$ and standard deviation $\sigma$. The normal density
+function is re-scaled such that the selectivity is 1 at $l^{sel}$.
 
 $$
 \alpha_{a,s,f}= \frac{1}{\sigma_{s,f} \sqrt{2\pi}}e^{-0.5 \left( \frac{l_{a,s} - l^{sel}}{\sigma_{s,f}}  \right)^2}
-$$
-Lastly  *z* is total mortality, the sum of fishing mortality and natural mortality (*m*).
+$$ Lastly *z* is total mortality, the sum of fishing mortality and
+natural mortality (*m*).
 
 $$
  z_{t,p,s,a} = u_{t,p,s,a} + m_{s,a}
 $$ {#eq-z}
 
-
 This means that each species experiences a total mortality at age in a
 time step in a patch, individual fractions of which are portioned off as
 catches and subsequently revenues for each fleet. Given revenues *R*, we
-then calculate profits $\phi$ based on revenues and costs. 
+then calculate profits $\phi$ based on revenues and costs.
 
 $$
 \phi_{t,p,f} = R_{t,p,f} - C_{t,p,f}
 $$ {#eq-profits}
 
-Costs *C* are calculated as a function of $\gamma_f$, that the scales the cost per unit effort for fleet *f*,$\beta$ allows for the cost of effort to scale non-linearly, and $\eta$
-is an additional cost per unit effort of fishing in each patch *p*,
-allowing for the model to account for travel costs for different
-patches. Travel costs are calculated based on the euclidean distance of
-each patch to the nearest port of a given fleet, users can specify any
-number from zero to the number of patches of port locations. When no
-ports are specified, travel costs are zero.
+Costs *C* are calculated as a function of $\gamma_f$, that the scales
+the cost per unit effort for fleet *f*,$\beta$ allows for the cost of
+effort to scale non-linearly, and $\eta$ is an additional cost per unit
+effort of fishing in each patch *p*, allowing for the model to account
+for travel costs for different patches. Travel costs are calculated
+based on the euclidean distance of each patch to the nearest port of a
+given fleet, users can specify any number from zero to the number of
+patches of port locations. When no ports are specified, travel costs are
+zero.
 
 $$C_{t,p,f} = \gamma_f  \left( E_{t,p,f}^{\beta_f} + \eta_{f,p} E_{t,p,f} \right)$$
-
 
 #### Calculating Total Effort
 
@@ -257,30 +263,33 @@ remains constant over time.
 The more complex option is "open access". Under open access, the total
 amount of effort in a given time step for fleet *f* is a function of the
 profitability of that fleet in the proceeding time steps in which
-fishing was open, where $\theta$ controls the responsiveness of fleet *f* to the log of
-the ratio of total revenues *R* to total costs *C*, and approximates the
-percentage amount effort changes in response to a one unit changes in
-the log revenue to cost ratio.
+fishing was open, where $\theta$ controls the responsiveness of fleet
+*f* to the log of the ratio of total revenues *R* to total costs *C*,
+and approximates the percentage amount effort changes in response to a
+one unit changes in the log revenue to cost ratio.
 
 $$
 E_{t+1,f} = E_{t,f} \times e^{\theta_f log(R_{t,f} / C_{t,f})} 
 $$ {#eq-oa}
 
- 
-When MPAs are implemented, effort that used to operate inside the MPAs can either
-leave the fishery, or be redistributed outside the the MPA (the default
-behavior). The model can also accept total catch quotas for each species
-in each time step. When quotas are activated, if the total catch across
-all fleets for a given species under the model's effort dynamics would
-exceed the allowable quota for that species, the total effort for each
-fleet is decrease proportional to its contribution to the total catch
-until the quota is satisfied. As an alternative to catch quotas, users can input an effort cap per fleet, which prevents effort from exceeding a given amount under open-access dynamics, though effort may be reduced below this cap if required by the profit equation. `marlin` also allows users to specify
-closed fishing seasons for one or more species in the system. During
-closed seasons, no effort is allocated to patches that would result in
-capture of the covered species, potentially resulting in zero effort if
-the species cannot be avoided. Under these conditions, the amount of
-effort in the next open season is a function of the effort and profits
-in the last open fishing season.
+When MPAs are implemented, effort that used to operate inside the MPAs
+can either leave the fishery, or be redistributed outside the the MPA
+(the default behavior). The model can also accept total catch quotas for
+each species in each time step. When quotas are activated, if the total
+catch across all fleets for a given species under the model's effort
+dynamics would exceed the allowable quota for that species, the total
+effort for each fleet is decrease proportional to its contribution to
+the total catch until the quota is satisfied. As an alternative to catch
+quotas, users can input an effort cap per fleet, which prevents effort
+from exceeding a given amount under open-access dynamics, though effort
+may be reduced below this cap if required by the profit equation.
+`marlin` also allows users to specify closed fishing seasons for one or
+more species in the system. During closed seasons, no effort is
+allocated to patches that would result in capture of the covered
+species, potentially resulting in zero effort if the species cannot be
+avoided. Under these conditions, the amount of effort in the next open
+season is a function of the effort and profits in the last open fishing
+season.
 
 #### Tuning Fishing Fleets
 
@@ -356,9 +365,13 @@ model in the manner of @ovando2021a. The population model requires a
 large number of parameters. However, if the user supplies either a
 scientific or common name for the species in question (scientific
 preferred), the model will supply default values for that species based
-on the values reported in FishLife [@thorson2020]. All of these values can be replaced with user-supplied values as needed though, the defaults simply ensure that reasonable and internally consistent values for the species in question are supplied as a starting point. 
+on the values reported in FishLife [@thorson2020]. All of these values
+can be replaced with user-supplied values as needed though, the defaults
+simply ensure that reasonable and internally consistent values for the
+species in question are supplied as a starting point.
 
-For the population model, numbers *n* at time *t* for age *a* are a function of growth, death, and recruitment
+For the population model, numbers *n* at time *t* for age *a* are a
+function of growth, death, and recruitment
 
 $$
 n_{t,p,s,a} = \begin{cases}
@@ -369,14 +382,17 @@ n_{t,p,s,a} = \begin{cases}
 $$ {#eq-pop}
 
 where *BH* is the Beverton-Holt recruitment function, *ssb* is
-spawning-stock-biomass. $l_a$ is the mean length at at age, $l_sel$ is the length at which
-on average 50% of individuals are selected by the fishery, and
-$\delta_{sel}$ are the additional units of length at which on average
-95% of fish are selected by the fishery.
+spawning-stock-biomass. $l_a$ is the mean length at at age, $l_sel$ is
+the length at which on average 50% of individuals are selected by the
+fishery, and $\delta_{sel}$ are the additional units of length at which
+on average 95% of fish are selected by the fishery.
 
-Spawning stock biomass *ssb* is calculated by converting age to mean length, calculating weight
-at age, maturity at age, and then calculating spawning stock biomass as
-the sum of spawning potential at age in a given time step, taking into account the potential for hyperallometry. Age is converted to length through the von Bertalanffy  growth equation, assuming log-normally distributed variation in the length at age. 
+Spawning stock biomass *ssb* is calculated by converting age to mean
+length, calculating weight at age, maturity at age, and then calculating
+spawning stock biomass as the sum of spawning potential at age in a
+given time step, taking into account the potential for hyperallometry.
+Age is converted to length through the von Bertalanffy growth equation,
+assuming log-normally distributed variation in the length at age.
 
 $$
   l_{a,s} = l_{\infty,s}\left(1 - e^{-k_s(a - a0_{s})}\right)e^{u_s}
@@ -389,21 +405,28 @@ $$
 u_s \sim normal(0,\sigma_s)
 $$ {#eq-sigma}
 
-Biomass *b* at age is then given by the weight at length equation governed by a scaling coefficient $wa_s$ and an exponent $wb_s$ that controls the rate at which volume scales with length
+Biomass *b* at age is then given by the weight at length equation
+governed by a scaling coefficient $wa_s$ and an exponent $wb_s$ that
+controls the rate at which volume scales with length
 
 $$
   b_{a,s} = wa_s \times l_{a,s}^{wb_s}
 $$ {#eq-weight}
 
-Maturity is then calculated as a logistic function where $l_{mat}$ is the length at which on average 50% of individuals are sexual maturity, and $\delta_{mat}$ is the units of length beyond
-$l_{mat}$ at which on average 95% of fish are sexually mature.
+Maturity is then calculated as a logistic function where $l_{mat}$ is
+the length at which on average 50% of individuals are sexual maturity,
+and $\delta_{mat}$ is the units of length beyond $l_{mat}$ at which on
+average 95% of fish are sexually mature.
 
 $$
   mat_{a,s} = \frac{1}{\left(1 + e^{-log(19)\times\frac{l_{a,s} - lmat_s}{{\delta}mat_s}}\right)}
 $$ {#eq-mat)}
 
-
-Spawning stock biomass at time *t* is then calculated as a function of the numbers at age, the maturity at age, and the weight at age scaled by a parameter $\gamma$. When $\gamma$ is greater than 1, the species is said to experience hyperallometric fecundity, i.e. fecundity increases faster than weight. 
+Spawning stock biomass at time *t* is then calculated as a function of
+the numbers at age, the maturity at age, and the weight at age scaled by
+a parameter $\gamma$. When $\gamma$ is greater than 1, the species is
+said to experience hyperallometric fecundity, i.e. fecundity increases
+faster than weight.
 
 $$
   ssb_{t,p,s} = \sum_{a=1}^Aw_{a,s,t}^{\gamma_s} mat_{t,a} n_{t,p,s,a}
@@ -456,9 +479,10 @@ $$
 n_{t,a = 1,p} = \left(\frac{0.8{\times}r0_{p}\times{h}\times{larv_{t,p}}}{0.2\times{ssb0_p}\times(1 - h)+(h - 0.2)\times{larv_{t,p}}}\right) \times \epsilon_t
 $$ {#eq-dd4}
 
-5.  Global density dependence allocated by spawning biomass: Density dependence is a function of the
-    sum of spawning biomass across all patches, and recruits are then
-    distributed according to the distribution of spawning biomass
+5.  Global density dependence allocated by spawning biomass: Density
+    dependence is a function of the sum of spawning biomass across all
+    patches, and recruits are then distributed according to the
+    distribution of spawning biomass
 
 $$
 n_{t,p,s,a = 1} = \left(\frac{0.8{\times}\sum_{p=1}^P{r0_{p}}\times{h}\times\sum_{p=1}^P{ssb_{t-1,p}}}{0.2\times{\sum_{p=1}^Pssb0_p}\times(1 - h)+(h - 0.2)\times{\sum_{p=1}^Pssb_{t-1,p}}}\right)\times \frac{ssb_{t-1,p}}{\sum_{p=1}^Pssb_{t-1,p}}
@@ -546,45 +570,86 @@ movement.
 
 #### Reference Points
 
-Fisheries management is often concerned with measuring stock status relative to maximum sustainable yield (MSY) based reference points, though the exact level of stock status desired by societal objectives may vary widely. MS based reference points present a problem for a multi-fleet and spatial-temporal model such as `marlin`. MSY and the fishing mortality rate that would produce MSY, $F_{MSY}$ are a function of fishery selectivity. Fishery selectivity in this model can vary by fleet, and species can be distributed unevenly in both space and time. This means that the net fishing selectivity on a species can vary depending on the dynamics at a given moment, making the definition of an equilibrium concept such as MSY challenging. 
+Fisheries management is often concerned with measuring stock status
+relative to maximum sustainable yield (MSY) based reference points,
+though the exact level of stock status desired by societal objectives
+may vary widely. MS based reference points present a problem for a
+multi-fleet and spatial-temporal model such as `marlin`. MSY and the
+fishing mortality rate that would produce MSY, $F_{MSY}$ are a function
+of fishery selectivity. Fishery selectivity in this model can vary by
+fleet, and species can be distributed unevenly in both space and time.
+This means that the net fishing selectivity on a species can vary
+depending on the dynamics at a given moment, making the definition of an
+equilibrium concept such as MSY challenging.
 
-As such, we do not report MSY based reference points in the model by default, with the exception of the spawning stock biomass at MSY ($SSB_{MSY}$) which is more conserved across selectivity patterns as it is primarily a function of the mortality and flow of recruits relative to the maturity ogive. There are many different strategies for estimating reference points
-conditional on selectivity and regimes, see citations xx. We leave it to
-users to find relevant reference point as required by their methods on
-their own, using the sort of MSE examples available in the package.
+As such, we do not report MSY based reference points in the model by
+default, with the exception of the spawning stock biomass at MSY
+($SSB_{MSY}$) which is more conserved across selectivity patterns as it
+is primarily a function of the mortality and flow of recruits relative
+to the maturity ogive. There are many different strategies for
+estimating reference points conditional on selectivity and regimes, see
+citations xx. We leave it to users to find relevant reference point as
+required by their methods on their own, using the sort of MSE examples
+available in the package.
 
 <!-- ### MPA Optimization -->
 
 <!-- Our MPA optimization algorithm seems to create an MPA network that -->
+
 <!-- maximizes an objective function, given by -->
 
 <!-- $$ -->
+
 <!-- obj_p = \Phi \times scale(\sum_f^F \boldsymbol{\phi_{f,p}}) + (1 - \Phi)  scale(\boldsymbol{\sum_s^S\frac{ssb_s}{ssb0_{s,p}}}) -->
+
 <!-- $$ {#eq-obj} -->
 
 <!-- Where *scale* rescales the values to be between 0 and 1 such that the -->
+
 <!-- weight parameter is comparable between vectors. The algorithm works by -->
+
 <!-- first assigning every patch in the system to an MPA. For the first -->
+
 <!-- round, the algorithm then calculates the equilibrium objective function -->
+
 <!-- value resulting from sequentially removing each individual patch from -->
+
 <!-- the MPA network. The cell whose removal from the MPA produces the -->
+
 <!-- highest objective function value is then removed from the MPA network, -->
+
 <!-- and the marginal value of the objective function each of the remaining -->
+
 <!-- cells from the last steps are then stored. For the next steps, we -->
+
 <!-- sampled 25% of the remaining MPA cells with probability proportional to -->
+
 <!-- their marginal contribution to the objective function in the prior -->
+
 <!-- iteration, selecting the cell whose removal produces the highest total -->
+
 <!-- objective function as the cell to remove from the network, and updating -->
+
 <!-- the marginal value of the sampled-but-not-selected cells. This in -->
+
 <!-- essence is a sampling-importance-resampling algorithm. The algorithm -->
+
 <!-- continues until no more cells are left in the MPA. This then provides -->
+
 <!-- for a given objective weighting value $\Phi$ the near-optimal MPA -->
+
 <!-- network at every MPA size from 0 to 100%. We say "near" as they is some -->
+
 <!-- path dependency here, in that for example the network that maximizes the -->
+
 <!-- objective function with 40% of the MPAs does not necessarily contain the -->
+
 <!-- optimal network at 30%. However, the reversed nature of the algorithm, -->
+
 <!-- starting at 100% MPA coverage and working better, produces a more stable -->
+
 <!-- network with regards to this problem than starting at 0% and growing to -->
+
 <!-- 100%. -->
 
 ### Use Cases
@@ -598,8 +663,15 @@ climate resilience of alternative MPA design strategies. In the third,
 we show how `marlin` can be used to run large-scale simulation testing
 of management strategies.
 
-Each of the use cases contains too many parameters and options to be succinctly presented in the text here, and we are concerned that attempting to duplicate all of the parameters of the model here would simply introduce error. As such, readers should consult the accompanying code (provide clear instructions for which files) to view the precise details of each simulation. xx something like this to clarify why we don't have pages of tables with all the parameters and options). Targeted tactical applications though should be sure to consider and document all decisions made around model parameters. 
-
+Each of the use cases contains too many parameters and options to be
+succinctly presented in the text here, and we are concerned that
+attempting to duplicate all of the parameters of the model here would
+simply introduce error. As such, readers should consult the accompanying
+code (provide clear instructions for which files) to view the precise
+details of each simulation. xx something like this to clarify why we
+don't have pages of tables with all the parameters and options).
+Targeted tactical applications though should be sure to consider and
+document all decisions made around model parameters.
 
 #### Rule-of-thumb MPA Design Strategies
 
@@ -638,7 +710,8 @@ broadly usable design strategies xx.
 #### Coral Reefs
 
 In our coral reef example, we model the dynamics of four species: a
-grouper (*Epinephelus fuscoguttatus*), a shallow-reef snapper (*Lutjanus malabaricus*), a deep-water snapper (*Pristipomoides filamentosus*), and
+grouper (*Epinephelus fuscoguttatus*), a shallow-reef snapper (*Lutjanus
+malabaricus*), a deep-water snapper (*Pristipomoides filamentosus*), and
 a reef shark (*Carcharhinus amblyrhynchos*). The simulated groupers
 undergo a mass migration to a spawning aggregation once per year,
 followed by the sharks. Shallow-reef snappers stay in reefs closer to
@@ -897,16 +970,16 @@ may have very different outcomes from the same MPA network.
 
 ```{r}
 #| label: fig-coral-results
-#| fig-cap: "Frontier in conservation and yield outcomes under different MPA design strategies (A) for coral reef case study. Change in yield for each fleet (B) and depltion per species (C) as a function of MPA size and MPA design strategy () for coral reef case study."
+#| fig-cap: "Frontier in conservation and yield outcomes under different MPA design strategies (A) for coral reef case study. Change in yield for each fleet (B) and depltion per species (C) as a function of MPA size and MPA design strategy for the coral reef case study."
 #| fig-height: 4
 #| fig-width: 6
 
-coral_mpa_experiements$mpas <- map(coral_mpa_experiements$results, "mpa")
+coral_mpa_experiments$mpas <- map(coral_mpa_experiments$results, "mpa")
 
-coral_mpa_experiements$obj <- map(coral_mpa_experiements$results, "obj")
+coral_mpa_experiments$obj <- map(coral_mpa_experiments$results, "obj")
 
 
-coral_results <- coral_mpa_experiements %>%
+coral_results <- coral_mpa_experiments %>%
   unnest(cols = obj)
 
 coral_fleet_frontier <- coral_results %>%
@@ -1228,9 +1301,13 @@ choices and states of nature shown in our results demonstrates the value
 in our method. Beyond the current examples, we envision `marlin` being
 applicable to research on dynamic ocean management, range shifts,
 management strategy evaluation, policy interactions, and spatial stock
-assessment. Future iterations of the model may include life history
-modules for a broader range of species types such as marine mammals, sea
-birds, and sea turtles.
+assessment. In addition, the process-based movement model used in
+`marlin` can directly use empirical estimates of movement dynamics
+derived in the manner of @thorson2021a, providing a link between
+empirical and simulation based approaches to marine resource management.
+Future iterations of the model may include life history modules for a
+broader range of species types such as marine mammals, sea birds, and
+sea turtles.
 
 Even the most complex marine model is a stylized cartoon of the true
 dynamics at play in these systems. However, for all their limitations

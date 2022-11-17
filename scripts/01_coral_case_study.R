@@ -479,7 +479,7 @@ if (run_coral_example == TRUE){
   names(effort_cap) <- names(fleets)
 
   a <- Sys.time()
-  coral_mpa_experiements <- case_study_experiments %>%
+  coral_mpa_experiments <- case_study_experiments %>%
     ungroup() %>%
     mutate(
       results = future_pmap(
@@ -509,7 +509,7 @@ if (run_coral_example == TRUE){
 
   future::plan(future::sequential)
 
-  write_rds(coral_mpa_experiements, file = file.path(results_path, "coral_mpa_experiements.rds"))
+  write_rds(coral_mpa_experiments, file = file.path(results_path, "coral_mpa_experiments.rds"))
 # stop()
 # #
 #   optimized_networks <- tibble(alpha = seq(0, 1, by = .1)) %>%
@@ -531,17 +531,17 @@ if (run_coral_example == TRUE){
 
 } else {
 
-  coral_mpa_experiements <- read_rds(file = file.path(results_path, "coral_mpa_experiements.rds"))
+  coral_mpa_experiments <- read_rds(file = file.path(results_path, "coral_mpa_experiments.rds"))
 
 
 }
 
-coral_mpa_experiements$mpas <- map(coral_mpa_experiements$results, "mpa")
+coral_mpa_experiments$mpas <- map(coral_mpa_experiments$results, "mpa")
 
-coral_mpa_experiements$obj <- map(coral_mpa_experiements$results, "obj")
+coral_mpa_experiments$obj <- map(coral_mpa_experiments$results, "obj")
 
 
-examine_mpas <- coral_mpa_experiements %>%
+examine_mpas <- coral_mpa_experiments %>%
   unnest(cols = mpas)
 
 mpas <- examine_mpas %>%
@@ -555,7 +555,7 @@ mpas <- examine_mpas %>%
   facet_wrap(~placement_strategy)
 
 
-examine_results <- coral_mpa_experiements %>%
+examine_results <- coral_mpa_experiments %>%
   unnest(cols = obj)
 
 examine_results %>%

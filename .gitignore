@@ -6,7 +6,9 @@ results/
 # History files
 .Rhistory
 .Rapp.history
-
+*_files/
+*.rmarkdown
+*_marlin_paper.html
 # Session Data files
 .RData
 
