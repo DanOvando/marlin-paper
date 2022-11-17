@@ -48,17 +48,13 @@ if (!dir.exists(results_path)){
   dir.create(file.path(results_path,"sims"))
 }
 
-run_experiments <- FALSE
-
-run_blue_water_example <- FALSE
-
 run_coral_example <- TRUE
+
+run_blue_water_example <- TRUE
 
 experiment_workers <- 8
 
-run_casestudy <- TRUE
-
-optimize_casestudy <- TRUE
+experiment_years <- 20
 
 safety_stop <- FALSE
 

@@ -13,7 +13,8 @@ run_mpa_experiment <-
            max_delta = 1,
            resolution,
            years = 50,
-           future_habitat = list()) {
+           future_habitat = list(),
+           effort_cap) {
 
     options(dplyr.summarise.inform = FALSE)
 
@@ -178,12 +179,45 @@ run_mpa_experiment <-
       fleets = fleets,
       years = years,
       manager = list(mpas = list(locations = mpas,
-                  mpa_year = ceiling(starting_step))),
+                  mpa_year = ceiling(starting_step)),
+                  effort_cap = effort_cap),
       habitat = future_habitat,
       starting_step = starting_step,
       keep_starting_step = FALSE,
       initial_conditions = starting_conditions[[length(starting_conditions)]]
     )
+
+
+    # grid <- expand_grid(x = 1:resolution, y= 1:resolution) %>%
+    #   mutate(patch = 1:nrow(.))
+    #
+    # patch_biomass <-
+    #   map_df(mpa_sim, ~ map_df(.x, ~tibble(biomass = rowSums(.x$ssb_p_a), patch = 1:nrow(.x$ssb_p_a)), .id = "critter"), .id = "step") %>%
+    #   mutate(step = as.numeric(step)) %>%
+    #   left_join(grid, by = "patch")
+
+    # patch_biomass %>%
+    #   group_by(critter, step) %>%
+    #   mutate(sbiomass = biomass / sum(biomass)) %>%
+    #   ungroup() %>%
+    #   filter(step == max(step)) %>%
+    #   ggplot(aes(x,y, fill = sbiomass))+
+    #   geom_tile() +
+    #   facet_grid(critter~step) +
+    #   scale_fill_viridis_c()
+    #
+    #
+    # browser()
+    #
+    #
+    # effort <-
+    #   map_df(mpa_sim, ~ data.frame(effort = sum(.x$`katsuwonus pelamis`$e_p_fl$longline)), .id = "step") %>%
+    #   mutate(step = as.numeric(step))
+    #
+    # effort %>%
+    #   ungroup() %>%
+    #   ggplot(aes(step, effort)) +
+    #   geom_line()
 
 
     # process results

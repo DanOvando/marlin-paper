@@ -5,7 +5,9 @@ create_critters <-
            marlin_inputs,
            seasonal_movement = FALSE,
            ontogenetic_shift = FALSE,
-           random_rec = FALSE) {
+           random_rec = FALSE,
+           adult_diffusion = 10,
+           taxis_to_diff_ratio = 2) {
     # sciname <- marlin_inputs$scientific_name[[1]]
     #
     #
@@ -33,13 +35,11 @@ create_critters <-
     }
 
     if (random_rec){
-    rec_form <-  sample(c(0, 1,2,3), 1, replace = TRUE)
+      density_dependence <-  sample(c("global_habitat", "local_habitat","pre_dispersal","post_dispersal","global_ssb"), 1, replace = TRUE)
 
     } else {
-      rec_form <- 2 # local density dependence then disperse recruits per recruit movement
+      density_dependence <- "global_ssb" # local density dependence then disperse recruits per recruit movement
     }
-    # rec_form <- 1 # sample(c(0, 1, 2, 3), 1, replace = TRUE)
-
 
     if (ontogenetic_shift) {
       recruit_habitat <-
@@ -47,7 +47,7 @@ create_critters <-
 
       # set recruitment form to allow for recruit habitat
       #
-      rec_form <- 0
+      density_dependence <- "global_ssb"
     } else {
       recruit_habitat <- hab[[1]]
     }
@@ -56,9 +56,10 @@ create_critters <-
       scientific_name = sciname,
       base_habitat = hab,
       recruit_habitat = recruit_habitat,
-      adult_diffusion = 4,
-      recruit_diffusion = 2,
-      rec_form = rec_form,
+      adult_diffusion = adult_diffusion,
+      taxis_to_diff_ratio = taxis_to_diff_ratio,
+      recruit_diffusion = 0,
+      density_dependence = density_dependence,
       fec_form = ifelse(str_detect(sciname,"carcharhinus"),"pups","weight"),
       pups = 6,
       seasons = seasons,

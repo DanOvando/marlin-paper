@@ -1,6 +1,7 @@
 source(file.path("scripts", "00_setup.R"))
 
 library(gganimate)
+set.seed(42)
 
 resolution <- 20
 
@@ -8,7 +9,7 @@ seasons <- 4
 
 tune_type <- "explt"
 
-experiment_workers <- 8
+experiment_workers <- 6
 
 years <- 50
 
@@ -473,6 +474,10 @@ if (run_coral_example == TRUE){
       iter = 1
     )
 
+  effort_cap <- map(names(fleets), ~Inf, .id = "")
+
+  names(effort_cap) <- names(fleets)
+
   a <- Sys.time()
   coral_mpa_experiements <- case_study_experiments %>%
     ungroup() %>%
@@ -492,6 +497,7 @@ if (run_coral_example == TRUE){
         fleet_model = NA,
         fauna = fauna,
         fleets = fleets,
+        effort_cap = effort_cap,
         years = 20,
         .options = furrr_options(seed = 42),
         .progress = TRUE
@@ -504,22 +510,23 @@ if (run_coral_example == TRUE){
   future::plan(future::sequential)
 
   write_rds(coral_mpa_experiements, file = file.path(results_path, "coral_mpa_experiements.rds"))
-
-
-  optimized_networks <- tibble(alpha = seq(0, 1, by = .1)) %>%
-    ungroup() %>%
-    mutate(
-      opt_mpa = pmap(
-        list(alpha = alpha),
-        marlin::optimize_mpa,
-        fauna = fauna,
-        fleets = fleets,
-        resolution = resolution,
-        starting_conditions = reef_sim[[length(reef_sim)]],
-        max_prop_mpa = 0.3,
-        prop_sampled = 0.1
-      )
-    )
+# stop()
+# #
+#   optimized_networks <- tibble(alpha = seq(0, 1, by = .1)) %>%
+#     ungroup() %>%
+#     mutate(
+#       opt_mpa = pmap(
+#         list(alpha = alpha),
+#         marlin::optimize_mpa,
+#         fauna = fauna,
+#         fleets = fleets,
+#         resolution = resolution,
+#         starting_conditions = reef_sim[[length(reef_sim)]],
+#         max_prop_mpa = 0.3,
+#         prop_sampled = 0.05,
+#         patches_at_a_time = 10
+#       )
+#     )
 
 
 } else {
