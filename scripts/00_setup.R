@@ -42,6 +42,7 @@ foos <- list.files(here("R"))
 
 walk(foos, ~ source(here("R", .x)))
 
+print(Sys.getenv("RUN_NAME"))
 if (Sys.getenv("RUN_NAME") == ''){
   run_name <- "v0.2"
 

@@ -36,11 +36,11 @@ This repo is equipped with a `make` file. To reproduce results this way
     is set to the location of this repo
 
 3.  Make sure you have all dependencies installed by opening R and
-    running `renv::restor()`
+    running `renv::restore()`
 
 4.  In the terminal, run `RUN_NAME:MyRunName FORMAT:MyFormat make` where
     MyRunName is the name of the folder you want to create to store
     results (e.g. v0.1) and FORMAT is one of pdf, html, docx
 
 5.  Wait for a bit! This command will run all the required scripts and
-    knit the paper.
+    knit the paper. Should take no more than a few hours.

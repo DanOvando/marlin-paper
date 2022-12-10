@@ -17,18 +17,15 @@ execute:
   echo: false
   message: false
   warning: false
+  cache: false
 bibliography: references.bib
 params:
-  run_name: ["v0.1"]
-abstract: "Very rough cut. Communities around the world are increasingly looking to spatial strategies for managing marine ecosystems. However, the design of spatial management strategies faces numerous challenges. Marine ecosystems are highly dynamic and opaque, and extractive entities such as fishing fleets respond to changes in marine ecosystems in highly complex ways. We present a framework for efficient simulation of the bio-economic dynamics of marine systems, designed to support both management and research. We demonstrate the model's capabilities by focusing on two case studies on the conservation and food security impacts of marine protected areas (MPAs). We highlight how coupled bio-economic dynamics can result in complex trade-offs between conservation, fisheries yields, distributional outcomes in simulated coral reef and plegaic ecosystems. "
+  run_name: ["v0.3"]
+abstract: "Communities around the world are increasingly looking to spatial strategies for managing marine ecosystems. However, the design of spatial management strategies faces numerous challenges. Marine ecosystems are highly dynamic and opaque, and extractive entities such as fishing fleets respond endogenously to changes in marine ecosystems in ways that depend upon ecological and policy context. We present a framework for efficient simulation of the bio-economic dynamics of marine systems, designed to support both management and research. We demonstrate the model's capabilities by focusing on two case studies on the conservation and food security impacts of marine protected areas (MPAs). We highlight how coupled bio-economic dynamics can result in complex trade-offs between conservation, fisheries yields, and distributional outcomes. "
 header-includes:
   - \usepackage{setspace}\doublespacing
   - \usepackage{lineno}\linenumbers
 ---
-
-XX explain hyperallometry option
-
-xx add in weird option 5 density dependence
 
 ```{r setup}
 #| echo: false
@@ -37,7 +34,7 @@ xx add in weird option 5 density dependence
 
 source(here::here("scripts", "00_setup.R"))
 
-theme_set(theme_classic(base_size = 12, base_family = "Helvetica") + theme(strip.background = element_blank()))
+theme_set(theme_classic(base_size = 10, base_family = "Helvetica") + theme(strip.background = element_blank()))
 
 sci_to_com <- taxize::sci2comm(unique(marlin_inputs$scientific_name)) %>% 
   bind_rows(.id = "critter") %>% 
@@ -75,34 +72,34 @@ walk(rdses,~assign(str_remove(.x,".rds"), read_rds(file.path(results_path,.x)), 
 Communities around the world are increasingly looking to spatial
 strategies for managing marine ecosystems. For example, the "30x30"
 movement calls for implementation of marine protected areas, a form of
-spatial management, across 30% of the world's oceans by 2030. While the
-objectives of individual spatial management strategies vary widely,
-spatial management strategies are often supported based on their ability
-to provide protection to broad swaths of marine ecosystems with one
-management action, with potentially fewer costs and complications than
-for example assessing, setting, and enforcing catch quotas for
-individual species.
+spatial management, across 30% of the world's oceans by the year 2030.
+While the objectives of individual spatial management strategies vary
+widely, these types of policies are often supported based on their
+ability to provide protection, along with potential broader benefits, to
+swaths of marine ecosystems with one management action, with potentially
+fewer costs and complications than for example assessing, setting, and
+enforcing catch quotas for individual species.
 
 However, the design of spatial management strategies faces numerous
 challenges. Marine ecosystems are highly dynamic and opaque, and
 extractive entities such as fishing fleets respond to changes in marine
-ecosystems in highly complex ways. These dynamics post challenges even
+ecosystems in highly complex ways. These dynamics pose challenges even
 for single-species assessment and management strategies [@field2006a],
 which are only amplified when we consider management policies
 specifically designed around spatial features in the oceans. For
 example, policies such as MPAs designed for both conservation and food
 security must consider factors such as the optimal size and placement of
-a protected area network given a wide array of life history,
-exploitation levels, fleet dynamics, and preferred habitats, all of
-which may change over time, particularly given the impacts of climate
-change.
+a protected area network given a wide array of life history, species
+distributions, exploitation levels, fleet dynamics, and policy-dependent
+behavior [@reimer2017], all of which may change over time, particularly
+given the impacts of climate change.
 
 These challenges are amplified by the fact that our knowledge regarding
-the design and implementation of spatial management strategies such as
-MPAs is largely based on theoretical studies; the size of protected
-areas [@ovando2021a] and time required[@nickols2019] to see substantial
+the succesful design and implementation of spatial management strategies
+such as MPAs is largely based on theoretical studies; the size
+[@ovando2021a] and time required [@nickols2019] to see substantial
 effects from many MPAs means that we have relatively little empirical
-evidence as to their large-scale effects under a range of
+evidence as to their large-scale effects across a range of
 social-ecological settings [@mcclanahan2021].
 
 Many models have been developed to support the theory and design of
@@ -110,54 +107,71 @@ spatial management strategies (see @fulton2015 for a review of existing
 methods). However, they have tended to fall into one of either highly
 complex and tactical models designed for use in a specific location, or
 to be highly stylized representations intended to provide theoretical
-insights with less relevance for highly specific design questions. This
-complex landscape presents a challenge to stakeholders charged with
-marine spatial planning exercises lacking accessible models suited for
-more tactical applications, and a barrier to the scientific community,
+insights with less relevance for specific applications. This lack of
+accessible models suited for more tactical application presents a
+challenge to stakeholders charged with marine spatial planning
+exercises. It also presents a barrier to the scientific community,
 wherein comparisons across spatial management simulation studies are
 clouded by discrepancies in underlying model structures beyond
 differences in the core phenomenon in question.
 
-In part to help address this challenge, we present here a novel
-bio-economic modeling framework called `marlin` that allows for
-efficient simulation of spatio-temporal biological and economic
-dynamics. `marlin` allows users to simulation the impacts spatial
-policies such as MPAs across a range of species targeted by various
-fleets across heterogeneous and dynamic seascapes. Here we present the
-core methods and functionality of this framework, and demonstrate its
-use in three xx case-study applications. In the first, we show how
-`marlin` can be used to assess critical drivers for positive outcomes
-and unintended consequences of MPAs as a bycatch-mitigation strategy. In
-the second, we present a more tactical application, demonstrating how
-`marlin` can be used to compare and design MPA networks to achieve
-societal objectives.
+To help address this challenge, we present a novel bio-economic modeling
+framework called [`marlin`](https://danovando.github.io/marlin/) that
+allows for efficient simulation of spatio-temporal biological and
+economic dynamics. `marlin` allows users to simulate the impacts
+fisheries management policies across a range of species targeted by
+various fleets across heterogeneous and dynamic seascapes. This model
+can help users seek Parteo-optimal solutions that produce win-wins or
+minimize tradeoffs across multiple objectives, such as food security and
+conservation [@lester2013].
+
+Here we present the core methods and functionality of `marlin`, and
+demonstrate its use in two case-study applications; a coral reef system
+and a pelagic system. Our results show how interacting ecological,
+economic, and design attributes can affect the degree of benefits,
+costs, and tradeoffs between conservation and food security outcomes of
+MPAs. More broadly, this paper both demonstrates the functionality of
+our model and the critical need for considering sufficiently realistic
+coupled ecological and economic dynamics in policy evaluations.
 
 ## Methods
 
 `marlin` follows a "models of intermediate complexity" (MICE) philosophy
 [@plagányi2014] targeted specifically towards capturing heterogeneous
-habitats, movement dynamics, and technical interactions across species.
-In its general form, `marlin` simulates the behavior of populations of
-spatially explicit biologically independent age-structured animal
-populations affected by one or more fishing fleets in time steps
-specified by the user (generally annual or seasonal). While `marlin`
-does not simulate species interactions, fishing fleets in `marlin` are
-capable of targeting and affecting multiple species simultaneously. This
-allows the model to simulate processes such as fisheries bycatch or
-effort displacement in a way that accounts for the ways that changes in
+habitats, movement dynamics, and the simultaneous impacts of fishing
+fleets across multiple species (frequently called "technical
+interactions"). In its general form, `marlin` simulates the behavior of
+populations of spatially explicit biologically independent
+age-structured animal populations affected by one or more fishing fleets
+in time steps specified by the user (generally annual or seasonal).
+While `marlin` does not simulate species interactions, fishing fleets in
+`marlin` are capable of targeting and affecting multiple species
+simultaneously. This allows the model to simulate processes such as
+fisheries bycatch or effort displacement in a way that accounts for how
 fleet behavior might affect multiple species in the system. The ability
 to track the impacts of fishing fleets across multiple species
 simultaneously is particularly important as very few fishing fleets are
 truly single species.
 
+As a demonstration of the use of this modeling framework, we explore two
+general situations
+
+1.  Trade-offs and distributional outcomes for food security and
+    ecosystem biomass in a coral-reef fishery
+2.  Implications of climate-driven range shifts for MPA design in a
+    pelagic fishery
+
+We chose these two examples to illustrate the use of the model in
+contrasting systems in which MPAs are increasingly considered.
+
 Below we provide a summary of the `marlin` model, as well as details of
 the generalized simulation exercises and case study analyses. We note
-that `marlin` is a complex package with many options to control detailed
-behaviors. Given that these specific features will evolve over time, we
-do not describe in detail every option of the model here. Rather, we
-focus on the equations and methods describing the core foundations of
-our framework for efficiently simulating bio-economic dynamics in
-aquatic systems.
+that `marlin` is a complex software package with many options to control
+detailed behaviors. Given that these specific features will evolve over
+time, we do not describe in detail every option of the model here.
+Rather, we focus on the equations and methods describing the core
+foundations of our framework for efficiently simulating bio-economic
+dynamics in aquatic systems.
 
 While users can adapt the general equations and ideas presented here as
 they see fit, the software package accompanying this paper,
@@ -165,35 +179,91 @@ they see fit, the software package accompanying this paper,
 [@rcoreteam2021] and C++, integrated through the `Rcpp` package
 @eddelbuettel2018 .
 
+### Model Summary
+
+`marlin` simulates the dynamics of one or more species, currently best
+representing fish-like species, using age-structured population
+dynamics. Each time step, species move throughout the simulated seascape
+using both diffusion and "taxis" (active movement towards preferred
+habitat), experiences natural and potentially fishing mortality, and if
+in a spawning season spawn using one of the possible forms of density
+dependence implemented in the model, with potentially auto-correlated
+deviations from deterministic reproductive dynamics.
+
+These species are caught by fishing fleets. A fishing fleet is defined
+in `marlin` by a set of fishers that can have different fishing skill,
+prices, and selectivity for individual species (each of which we denote
+as a *metier*). For example, both a longline and purse seine fleet may
+capture bigeye (*Thunnus obesus*) and skipjack (*Katswamus pelamus*)
+tunas, but the longline fleet can be made much more likely to catch
+bigeye than skipjack, and *vice versa*. Each fishing fleet distributes
+its fishing effort in space according to a specified spatial allocation
+rule, for example in proportion to profit-per-unit-effort, conditional
+on the presence of any spatial restrictions such as MPAs.
+
+Unconstrained by management, the total amount of effort exerted by each
+fleet can follow one of two dynamics: open-access or constant-effort.
+Under constant effort, the total amount of effort of each fleet is fixed
+over time, with the possible exception of attrition due to MPA
+placement. Under open-access, the total amount of effort in a given time
+step is a function of the profitability of the fleet in the previous
+time step, evolving until a bionomic equilibrium of zero total profits
+is reached. Profitability is a function of the volume and price of each
+species caught, as well as the cost of the total amount of fishing
+effort per fleet and the distance from port that the fleet operates at.
+
+The dynamics of each fleet can be modified by management in a variety of
+ways. Managers can impose size limits for individual species within each
+fleet. They can also impose total catch quotas for each species in each
+time step. When quotas are activated, if the total catch across all
+fleets for a given species under the model's effort dynamics would
+exceed the allowable quota for that species, the total effort for each
+fleet is decrease proportional to its contribution to the total catch
+until the quota is satisfied. As an alternative to catch quotas,
+managers can set an effort cap per fleet, which prevents effort from
+exceeding a given amount under open-access dynamics, though effort may
+be reduced below this cap if required by the profit equation (i.e. the
+fleet can choose to fish less than the quota or effort cap). `marlin`
+also allows users to specify closed fishing seasons for one or more
+species in the system. During closed seasons, no effort is allocated to
+patches that would result in capture of the covered species, potentially
+resulting in zero effort if the species cannot be avoided. Under these
+conditions, the amount of effort in the next open season is a function
+of the effort and profits in the last open fishing season. Lastly,
+managers can specify locations of no-take MPAs, which could in theory
+change in size and location. When MPAs are implemented, fishing effort
+that used to operate inside the MPAs can either leave the fishery, or be
+redistributed outside the the MPA (the default behavior).
+
+Users can use the model to explore general properties of spatially
+explicit social-ecological systems, or can parameterize it to explore
+key uncertainties of more tactical applications. As an example of the
+later case, we provide two case studies here designed to reflect the
+kinds of questions stakeholders might face if designing an MPA network
+for a coral reef or pelagic system.
+
 ### Fleet Dynamics
 
-A fishing fleet is defined in `marlin` by a set of fishers that can have
-different catchability, prices, and selectivity for individual species
-within a simulation (each of which we denote as a *metier*). For
-example, both a longline and purse seine fleet may capture bigeye
-(*Thunnus obesus*) and skipjack (*Katswamus pelamus*) tunas, but the
-longline fleet is much more likely to catch bigeye than skipjack, and
-*vice versa*. Each fishing fleet (*f*) generates catches or yield (*Y*),
-revenues (*R*), costs (*C*) from individual species (*s*) that it
-targets in a given time step (*t*) and patch (*p*). The fleet then makes
-decisions around how much and where to fish, subject to regulatory
-constraints, based on th total profitability across all species in space
-and time.
+Each fishing fleet (*f*) generates catches or yield (*Y*), revenues
+(*R*), costs (*C*) from individual species (*s*) that it targets in a
+given time step (*t*) and patch (*p*). The fleet then makes decisions
+around how much and where to fish, subject to regulatory constraints,
+based on th total profitability across all species in space and time.
 
 Revenues *R* for fleet *f* in time step *t* are a function of the total
-amount caught of each species and its price ($\Pi$). The amount caught
-is a function of the selectivity at age of each species for each fleet
-($\alpha$), the fishing efficiency of the fleet for that that species
-(*q*), the amount of fishing effort of the fleet in question in that
-patch in a given time step (*E*), and the total fishing mortality at age
-(including all other fleets) for that particular species in that patch
-and time (*u*).
+amount caught of each species (*Y*) and its price ($\Pi$). The amount
+caught is a function of the selectivity at age of each species for each
+fleet ($\alpha$), the fishing efficiency of the fleet for that that
+species (also called "catchability", *q*), the amount of fishing effort
+of the fleet in question in that patch in a given time step (*E*), and
+the total fishing mortality at age (including all other fleets) for that
+particular species in that patch and time (*u*).
 
 $$
- R_{t,p,f} = \sum_s^S \sum_a^A \Pi_{s,f}\frac{\alpha_{a,s,f}q_{s,f}E_{t,p,f}}{u_{t,p,s,a}} \times Y_{t,p,s,a}
+ R_{t,p,f} = \sum_s^{N_s} \sum_a^{N_a} \Pi_{s,f}\frac{\alpha_{a,s,f}q_{s,f}E_{t,p,f}}{u_{t,p,s,a}} \times Y_{t,p,s,a}
 $$ {#eq-revenue}
 
-*Y* is total catches, which is calculated through the Baranov equation
+Total catches or yield *Y* are calculated through the Baranov equation
 [@baranov1918], which appropriately accounts for the total instantaneous
 mortality (both fishing and natural) and divides the total amount of the
 population biomass (*b*) killed between natural (*m*) and fishing (*u*)
@@ -204,17 +274,15 @@ $$
 Y_{t,p,s,a} = \frac{u_{t,p,s,a}}{z_{t,p,s,a}} \times b_{t,p,s,a} \times (1 - e^{-z_{t,p,s,a}})
 $$ {#eq-yield}
 
-where *b* is biomass and *u* is total fishing mortality, given by
-
 $$
-u_{t,p,s,a} = \sum_{f=1}^F\alpha_{a,s,f}q_{s,f}E_{t,p,f}
+u_{t,p,s,a} = \sum_{f=1}^{N_f}\alpha_{a,s,f}q_{s,f}E_{t,p,f}
 $$ {#eq-u}
 
-Selectivity $\alpha$ is modeled through either a logistic form or a
-dome-shaped form. The logistic form is based on the lengths *l* at which
-50% of individuals are selected by the fishing gear, $l^{sel}$, and
-$\delta$ which is the difference between the length at 50% selectivity
-and the length at 95% selectivity.
+Selectivity at age $\alpha$ is modeled through either a logistic form or
+a dome-shaped form. The logistic form is based on the lengths *l* at
+which 50% of individuals are selected by the fishing gear, $l^{sel}$,
+and $\delta$ which is the difference between the length at 50%
+selectivity and the length at 95% selectivity.
 
 $$
 \alpha_{a,s,f}=\frac{1}{(1 + e^{-log(19)\times\frac{l_{a,s} - l^{sel}_{s,f}}{\delta^{sel}_{s,f}}})}
@@ -226,8 +294,10 @@ function is re-scaled such that the selectivity is 1 at $l^{sel}$.
 
 $$
 \alpha_{a,s,f}= \frac{1}{\sigma_{s,f} \sqrt{2\pi}}e^{-0.5 \left( \frac{l_{a,s} - l^{sel}}{\sigma_{s,f}}  \right)^2}
-$$ Lastly *z* is total mortality, the sum of fishing mortality and
-natural mortality (*m*).
+$$ {#eq-dome}
+
+Lastly *z* is total mortality, the sum of fishing mortality and natural
+mortality (*m*).
 
 $$
  z_{t,p,s,a} = u_{t,p,s,a} + m_{s,a}
@@ -247,12 +317,14 @@ the cost per unit effort for fleet *f*,$\beta$ allows for the cost of
 effort to scale non-linearly, and $\eta$ is an additional cost per unit
 effort of fishing in each patch *p*, allowing for the model to account
 for travel costs for different patches. Travel costs are calculated
-based on the euclidean distance of each patch to the nearest port of a
+based on the Euclidean distance of each patch to the nearest port of a
 given fleet, users can specify any number from zero to the number of
 patches of port locations. When no ports are specified, travel costs are
 zero.
 
-$$C_{t,p,f} = \gamma_f  \left( E_{t,p,f}^{\beta_f} + \eta_{f,p} E_{t,p,f} \right)$$
+$$
+C_{t,p,f} = \gamma_f  \left( E_{t,p,f}^{\beta_f} + \eta_{f,p} E_{t,p,f} \right)
+$$ {#eq-travel-costs}
 
 #### Calculating Total Effort
 
@@ -272,24 +344,9 @@ $$
 E_{t+1,f} = E_{t,f} \times e^{\theta_f log(R_{t,f} / C_{t,f})} 
 $$ {#eq-oa}
 
-When MPAs are implemented, effort that used to operate inside the MPAs
-can either leave the fishery, or be redistributed outside the the MPA
-(the default behavior). The model can also accept total catch quotas for
-each species in each time step. When quotas are activated, if the total
-catch across all fleets for a given species under the model's effort
-dynamics would exceed the allowable quota for that species, the total
-effort for each fleet is decrease proportional to its contribution to
-the total catch until the quota is satisfied. As an alternative to catch
-quotas, users can input an effort cap per fleet, which prevents effort
-from exceeding a given amount under open-access dynamics, though effort
-may be reduced below this cap if required by the profit equation.
-`marlin` also allows users to specify closed fishing seasons for one or
-more species in the system. During closed seasons, no effort is
-allocated to patches that would result in capture of the covered
-species, potentially resulting in zero effort if the species cannot be
-avoided. Under these conditions, the amount of effort in the next open
-season is a function of the effort and profits in the last open fishing
-season.
+This is essentially a Gompertz model for fishing effort, that has been
+used for other theoretical studies of fishing effort dynamics
+[@thorson2013].
 
 #### Tuning Fishing Fleets
 
@@ -304,12 +361,12 @@ biological outcomes from their fleets.
 Users can tune their fleets in one of two ways. First, they can specify
 a target exploitation rate *u* for each species in their model run.
 Taking all the other parameters of the model as given, `marlin` then
-adjusts the catchability coefficients *q\_{f,s}* for each fleet *f* and
+adjusts the catchability coefficients $q_{f,s}$ for each fleet *f* and
 species *s* such that the equilibrium exploitation rate for each species
 matches the desired level. Second, they can specify a target depletion,
 defined as total spawning stock biomass under fishing divided by total
 unfished spawning stock biomass, and the model will adjust the
-catchability coefficients *q\_{f,s}* for each fleet *f* and species *s*
+catchability coefficients $q_{f,s}$ for each fleet *f* and species *s*
 such that the equilibrium depletion for each species matches the desired
 level.
 
@@ -318,17 +375,15 @@ level.
 Each fishing fleet decides how to allocate its effort in space based on
 one of four possible spatial allocation strategies. The ideal free
 distribution (IFD) is the standard method for distributing fishing
-fleets in spaces (see @gillis2003 and references therein). However, the
-IFD presents a number of complications for our model. First, under the
-constant effort model, the total amount of effort required to satisfy
-the IFD may not equal the total amount of effort required by the model.
-Second, even if we were to implement the IFD for a single fleet, the
-model is capable of tracking multiple fleets at once. This means that
-the IFD for a single fleet would be a game-theoretic outcome of the
-actions of each of the individual fleet conditional on the actions of
-all other fleets. While possible to implement this would slow down our
-model runs to the point of practically preventing large-scale evaluation
-of the effects of MPAs on bycatch.
+fleets in spaces (see @gillis2003 and references therein). However,
+analytical solutions to the IFD present a number of complications for
+our model. Primarily, our model is capable of tracking multiple fleets
+at once. This means that the IFD for a single fleet would be a
+game-theoretic outcome of the actions of each of the individual fleet
+conditional on the actions of all other fleets. While possible to
+implement this would slow down our model runs to the point of
+practically preventing large-scale evaluation of the effects of MPAs on
+bycatch.
 
 As such we explored a series of "next best" fleet distribution
 algorithms. While not the IFD in any individual time step, over time
@@ -339,36 +394,124 @@ fleets are somewhat internalized. The four possible fleet distribution
 algorithms are
 
 1.  Revenue per unit effort (RPUE): The fleet distributes itself in
-    space based on revenue per unit effort
-2.  Revenue: The fleet distributes itself in space based on revenue
+    space based on the realized revenue per unit effort in each patch in
+    the preceding time step
+2.  Revenue: The fleet distributes itself in space based on the realized
+    total revenue in each patch in the preceding time step
 3.  Profit per unit effort (PPUE): The fleet distributes itself in space
-    based on profit per unit effort
-4.  Profit: The fleet distributes itself in space based on profit
+    based on the realized profit per unit effort in each patch in the
+    preceding time step
+4.  Profit: The fleet distributes itself in space based on profit in
+    each patch in the preceding time step
 
-Revenue based spatial distribution is not likely to be very realistic .
-However, due to the complexity of parameterizing cost functions fleet
-dynamics are often evaluated based on yield or revenue alone, and so we
-include those scenarios here to evaluate the potential implications of
-this choice. The decision on whether to allocate the fleet based on
-absolute or relative (per unit effort) is more complex. When effort
-represents the actions of separate and individual fishing actors (e.g.
-independent fishing vessels), a per-unit-effort strategy may be more
-realistic, in which fishers distribute themselves based on the expected
-catch of their individual efforts [@hilborn1987]. Conversely, a system
-defined by a sole owner seeking to maximize total profits might be
-better represented by a fleet model based on total profits
+Revenue based spatial distribution is not likely to be very realistic;
+in general we would expect fishing fleets to respond to profits on some
+core level. However, due to the complexity of parameterizing cost
+functions fleet dynamics are often evaluated based on yield or revenue
+alone, and so we include those scenarios here to allow users to evalaute
+the potential implications of this choice. The decision on whether to
+allocate the fleet based on absolute or relative (per unit effort)
+metrics is more complex. When effort represents the actions of separate
+and individual fishing actors (e.g. independent fishing vessels), a
+per-unit-effort strategy may be more realistic, in which fishers
+distribute themselves based on the expected catch of their individual
+efforts [@hilborn1987]. Conversely, a system defined by a sole owner
+seeking to maximize total profits might be better represented by a fleet
+model based on total profits
 
 ### Population Model
 
 The underlying population model used is an age structured single-species
-model in the manner of @ovando2021a. The population model requires a
-large number of parameters. However, if the user supplies either a
-scientific or common name for the species in question (scientific
-preferred), the model will supply default values for that species based
-on the values reported in FishLife [@thorson2020]. All of these values
-can be replaced with user-supplied values as needed though, the defaults
-simply ensure that reasonable and internally consistent values for the
-species in question are supplied as a starting point.
+model in the manner of @ovando2021a. The population model requires many
+parameters. However, if the user supplies either a scientific or common
+name for the species in question (scientific preferred), the model will
+supply default values for that species based on the values reported in
+FishLife [@thorson2020]. All of the life history values can be replaced
+with user-supplied values as needed though, the defaults simply ensure
+that reasonable and internally consistent values for the species in
+question are supplied as a starting point.
+
+#### Movement
+
+`marlin`'s movement dynamics are based on a continuous-time Markov chain
+(CTMC), as described in @thorson2021a. Within this framework, the model
+allows for movement to be broken down into three components of
+*diffusion*, *advection* (follow currents), and *taxis* (active movement
+towards say a preferred habitat). For now, our model focuses just on the
+diffusion and taxis components of this model, though future extensions
+could easily incorporate advection vectors from oceanographic models. In
+this way then, `marlin` allows users to run anything from a simple
+Gaussian dispersal kernel up to a system governed by species that
+passively diffuse around a dynamic thermal range.
+
+We briefly the general CTMC method here, but see @thorson2021a for a
+detailed description of the method. Under this framework, movement from
+each patch to each other patch in the system in a given timestep *t* for
+life stage *a* of species *s* is defined by a movement matrix
+$\boldsymbol{M}_{t,s,a}$. $\boldsymbol{M}_{t,s,a}$ is calculated as the
+matrix exponent of the sum of the diffusion and taxis matrices scaled by
+the width of the time step that the model is running under.
+
+$$
+\boldsymbol{M}_{t,s,a} = e^{\Delta t(\boldsymbol{D}_{t,s,a} + \boldsymbol{X}_{t,s,a})} 
+$$ {#eq-movement}
+
+Where $\boldsymbol{D}$ is the diffusion matrix and $\boldsymbol{X}$ is
+the taxis matrix.The diffusion matrix is a function of a user specified
+diffusion rate, see @thorson2021a.
+
+We slightly modify the taxis matrix, denoted as $\tau$ in the following
+manner
+
+$$
+\tau_{p1,p2,t,s,a} = \begin{cases}
+      = (1 + \lambda d_{s,f})e^{h(p2,t,s,a) - h(p1,t,s,a)} & \text{if p2 and p1 are adjacent}\\
+     = -\sum_{p' \neq p1} (1 + \lambda d_{s,f})e^{h(p2,t,s,a) - h(p1,t,s,a)} & \text{if p1 = p2}\\
+     = 0 & \text{otherwise.}
+  \end{cases}
+$$ {#eq-taxis}
+
+The $\lambda$ term is a scalar in which the magnitude of the habitat
+gradient between patches can be scaled relative to the diffusion
+parameter $d$. When the diffusion and taxis matrices are estimated
+jointly from actual data in the manner of @thorson2021a, $\lambda$
+should be set to zero. However, when users are manually creating both
+the diffusion and taxis matrices, the relative strength of diffusion to
+taxis must be defined by the user. Setting higher values of $\lambda$
+allows users to simulate a scenario where taxis is much more significant
+than diffusion.
+
+For both the diffusion and taxis matrix, we allow for the inclusion of
+physical barriers to movement (i.e. land). Pairs of patches that are
+adjacent but in which one or both patches are a barrier to movement are
+set as non-adjacent. The CTMC model then produces movement dynamics that
+move around barriers rather than over them. This is different than
+setting habitat in a patch to zero; an animal will preferentially move
+towards a patch with zero habitat all else being equal, but can move
+over a zero habitat patch towards another better patch.
+
+While this CTMC approach to movement simulation is to date not commonly
+seen in the marine modeling literature, it has numerous advantages that
+warrant its seeming complexity. First, when only diffusion is present,
+the model will generalize to the familiar dynamics of a Gaussian
+dispersal kernel. However, the time component *t* in @eq-movement allows
+the movement model to be run on arbitrarily fine time steps. Second, the
+*taxis* model allow for more active habitat choices by species, allowing
+us to simulate both preferences of species in space and time
+efficiently. Lastly, this form has the advantage that the parameters are
+directly estimable from real data. So, if provided with say spatial
+abundance data and a tagging study, users can estimate the movement
+parameters in the same manner as @thorson2021a, and then pass their
+estimated parameters to `marlin` for simulation.
+
+One challenge is that the coefficients of the model matrices inside
+@eq-movement can be hard to interpret. To facilitate this, `marlin`
+allows users to specify a maximum number of cells that adults or
+recruits diffuse in a year. The model will then tune the diffusion
+parameter and habitat gradients to achieve this desired level of
+movement.
+
+#### Population Growth
 
 For the population model, numbers *n* at time *t* for age *a* are a
 function of growth, death, and recruitment
@@ -382,7 +525,7 @@ n_{t,p,s,a} = \begin{cases}
 $$ {#eq-pop}
 
 where *BH* is the Beverton-Holt recruitment function, *ssb* is
-spawning-stock-biomass. $l_a$ is the mean length at at age, $l_sel$ is
+spawning-stock-biomass. $l_a$ is the mean length at at age, $l_{sel}$ is
 the length at which on average 50% of individuals are selected by the
 fishery, and $\delta_{sel}$ are the additional units of length at which
 on average 95% of fish are selected by the fishery.
@@ -398,11 +541,11 @@ $$
   l_{a,s} = l_{\infty,s}\left(1 - e^{-k_s(a - a0_{s})}\right)e^{u_s}
 $$ {#eq-len}
 
-Where *u* is a log-normally distributed term allowing for variation in
-the length at age relationship
+Where *u* is a log-normally distributed term allowing for a constant
+coefficient of variation in the length at age relationship
 
 $$
-u_s \sim normal(0,\sigma_s)
+u_s \sim N(0,\sigma_s)
 $$ {#eq-sigma}
 
 Biomass *b* at age is then given by the weight at length equation
@@ -429,13 +572,13 @@ said to experience hyperallometric fecundity, i.e. fecundity increases
 faster than weight.
 
 $$
-  ssb_{t,p,s} = \sum_{a=1}^Aw_{a,s,t}^{\gamma_s} mat_{t,a} n_{t,p,s,a}
+  ssb_{t,p,s} = \sum_{a=1}^{N_a}w_{a,s,t}^{\gamma_s} mat_{t,a} n_{t,p,s,a}
 $$ {#eq-ssb}
 
 #### Recruitment
 
-Recruitment follows Beverton-Holt dynamics. We do however allow for
-three variants in the timing of density dependence:
+Recruitment follows Beverton-Holt dynamics. We do however allow for five
+variants in the timing of density dependence:
 
 1.  Global density dependence: Density dependence is a function of the
     sum of spawning biomass across all patches, and recruits are then
@@ -445,10 +588,12 @@ $$
 n_{t,p,s,a = 1} = \left(\frac{0.8{\times}\sum_{p=1}^P{r0_{p}}\times{h}\times\sum_{p=1}^P{ssb_{t-1,p}}}{0.2\times{\sum_{p=1}^Pssb0_p}\times(1 - h)+(h - 0.2)\times{\sum_{p=1}^Pssb_{t-1,p}}}\right)\times {hab_p}
 $$ {#eq-dd2}
 
-where *hab* is a vector of recruitment habitat quality by patch degined
-by
+where *hab* is a vector of relative recruitment habitat quality in each
+patch.
 
-$$hab_p = r0_p / \sum_p^P{r0_p}$$
+$$
+hab_p = r0_p / \sum_p^P{r0_p}
+$$ {#eq-hab}
 
 2.  Local density dependence: Density dependence occurs independently in
     each patch and recruits are retained in their home patch.
@@ -464,8 +609,7 @@ $$
   n_{t,p,s,a = 1,p} = \left(\frac{0.8{\times}r0_{s,p}\times{h_s}\times{ssb_{t-1,p,s}}}{0.2\times{ssb0_{p,s}}\times(1 - h_s)+(h_s - 0.2)\times{ssb_{t-1,p}}}\right)\times \boldsymbol{d^l} \times \epsilon_t
 $$ {#eq-dd3}
 
-where **d^l^** is the recruitment movement matrix (xx make this notation
-consistent with the movement block)
+where **d^l^** is the recruitment movement matrix
 
 4.  Post-dispersal density dependence: Larvae are distributed throughout
     the system, and then density dependence occurs based on the density
@@ -488,99 +632,19 @@ $$
 n_{t,p,s,a = 1} = \left(\frac{0.8{\times}\sum_{p=1}^P{r0_{p}}\times{h}\times\sum_{p=1}^P{ssb_{t-1,p}}}{0.2\times{\sum_{p=1}^Pssb0_p}\times(1 - h)+(h - 0.2)\times{\sum_{p=1}^Pssb_{t-1,p}}}\right)\times \frac{ssb_{t-1,p}}{\sum_{p=1}^Pssb_{t-1,p}}
 $$ {#eq-dd5}
 
-#### Movement
-
-`marlin`'s movement dynamics are based on a continuous-time Markov chain
-(CTMC), as described in @thorson2021a. Within this framework, the model
-allows for movement to be broken down into three components of
-*diffusion*, *advection* (follow currents), and *taxis* (active movement
-towards say a preferred habitat). For now, our model focuses just on the
-diffusion and taxis components of this model, though future extensions
-could easily incorporate advection vectors from say ROMs models
-(citations). In this way then, `marlin` allows users to run anything
-from a simple Gaussian dispersal kernel up to a system governed by
-species that passively diffuse around a dynamic thermal range.
-
-@thorson2021a described the exact steps of the CTMC approach in detail.
-We briefly the general CTMC method here, but see @thorson2021a for a
-detailed description of the method. Under this framework, movement from
-each patch to each other patch in the system in a given timestep *t* for
-life stage *g* of species *s* is defined by a movement matrix
-$\boldsymbol{M}_{t,s,g}$. $\boldsymbol{M}_{t,s,g}$ is calculated as the
-matrix exponent of the sum of the diffusion and taxis matrices scaled by
-the width of the time step that the model is running under.
-
-$$
-\boldsymbol{M}_{t,s,g} = e^{\Delta t(\boldsymbol{D}_{t,s,g} + \boldsymbol{X}_{t,s,g})} 
-$$ {#eq-movement}
-
-Where $\boldsymbol{D}$ is the diffusion matrix and $\boldsymbol{X}$ is
-the taxis matrix.
-
-The diffusion matrix is a function of a user specified diffusion rate,
-see @thorson2021a. We slightly modify the taxis matrix in the following
-manner
-
-xx need to fix notation somewhere here, see this line of code for much
-clearer depiction of what's happening, since sometimes code is cleaner.
-https://github.com/DanOvando/marlin/blob/3563e7319ad0267f89789267a4c6ee58a9ad0d60/R/fish_class.R#L525
-xx
-
-$$
-n_{t,p,s,a} = \begin{cases}
-      = (1 + \lambda d_{s,f})max(0, h(p2_{t,s,g}) - h(p1_{t,s,g})) & \text{if p2 and p1 are adjacent}\\
-     = -\sum_{g' \neq g1}\{ (1 + \lambda d_{s,f})max(0, h(p2_{t,s,g}) - h(p1_{t,s,g}))\} & \text{if p1 = p2}\\
-     = 0 & \text{otherwise.}
-  \end{cases}
-$$ {#eq-taxis}
-
-The $lambda d_{s,f}$ term is a scalar in which the magnitude of the
-habitat gradient between patches can be scaled relative to the diffusion
-parameter $d$.
-
-For both the diffusion and taxis matrix, we allow for the inclusion of
-physical barriers to movement (i.e. land). Pairs of patches that are
-adjacent but in which one or both patches are a barrier to movement are
-set as non-adjacent. The CTMC model then produces movement dynamics that
-move around barriers rather than over them. This is different than
-setting habitat in a patch to zero, which implies a patch that a given
-animal will not move towards for its own sake, but can move over towards
-another better patch.
-
-While this CTMC approach to movement simulation is to date not commonly
-seen in the marine modeling literature, it has numerous advantages that
-warrant its seeming complexity. First, when only diffusion is present,
-the model will generalize to the familiar dynamics of a Gaussian
-dispersal kernel. However, the time component *t* in @eq-movement allows
-the movement model to be run on arbitrarily fine time steps. Second, the
-*taxis* model allow for more active habitat choices by species, allowing
-us to simulate both preferences of species in space and time
-efficiently.Lastly, this form has the advantage that the parameters are
-directly estimable from real data. So, if provided with say CPUE data
-and a tagging study, users can estimates the movement parameters in the
-same manner as @thorson2021a, and then pass their estimated parameters
-to `marlin` for simulation.
-
-One challenge is that the coefficients of the model matrices inside
-@eq-movement can be hard to interpret. To facilitate this, `marlin`
-allows users to specify a maximum number of cells that adults or
-recruits diffuse in an year. The model will then tune the diffusion
-parameter and habitat gradients to achieve this desired level of
-movement.
-
 #### Reference Points
 
 Fisheries management is often concerned with measuring stock status
 relative to maximum sustainable yield (MSY) based reference points,
 though the exact level of stock status desired by societal objectives
-may vary widely. MS based reference points present a problem for a
+may vary widely. MSY based reference points present a problem for a
 multi-fleet and spatial-temporal model such as `marlin`. MSY and the
 fishing mortality rate that would produce MSY, $F_{MSY}$ are a function
 of fishery selectivity. Fishery selectivity in this model can vary by
 fleet, and species can be distributed unevenly in both space and time.
-This means that the net fishing selectivity on a species can vary
-depending on the dynamics at a given moment, making the definition of an
-equilibrium concept such as MSY challenging.
+This means that the net effective fishing selectivity on a species can
+vary depending on the dynamics at a given moment, making the definition
+of an equilibrium concept such as MSY challenging.
 
 As such, we do not report MSY based reference points in the model by
 default, with the exception of the spawning stock biomass at MSY
@@ -588,9 +652,8 @@ default, with the exception of the spawning stock biomass at MSY
 is primarily a function of the mortality and flow of recruits relative
 to the maturity ogive. There are many different strategies for
 estimating reference points conditional on selectivity and regimes, see
-citations xx. We leave it to users to find relevant reference point as
-required by their methods on their own, using the sort of MSE examples
-available in the package.
+citations xx. We leave it to users to define and find relevant reference
+point as required by their specific needs.
 
 <!-- ### MPA Optimization -->
 
@@ -652,26 +715,23 @@ available in the package.
 
 <!-- 100%. -->
 
-### Use Cases
+### Case Studies
 
-We include three examples demonstrating how `marlin` can be used to
+We include two examples demonstrating how `marlin` can be used to
 support marine spatial planning. In the first, we show how `marlin` can
 be used to compare the total and distributional impacts of marine
 protected areas design in a heavily fished coral reef ecosystem. In the
 second, we demonstrate how `marlin` can be used to assess components of
-climate resilience of alternative MPA design strategies. In the third,
-we show how `marlin` can be used to run large-scale simulation testing
-of management strategies.
+climate resilience of alternative MPA design strategies.
 
-Each of the use cases contains too many parameters and options to be
+Each of the case studies contains too many parameters and options to be
 succinctly presented in the text here, and we are concerned that
 attempting to duplicate all of the parameters of the model here would
 simply introduce error. As such, readers should consult the accompanying
-code (provide clear instructions for which files) to view the precise
-details of each simulation. xx something like this to clarify why we
-don't have pages of tables with all the parameters and options).
-Targeted tactical applications though should be sure to consider and
-document all decisions made around model parameters.
+code (xx provide clear instructions for which files xx) to view the
+precise details of each simulation. Targeted tactical applications
+though should be sure to consider and document all decisions made around
+model parameters.
 
 #### Rule-of-thumb MPA Design Strategies
 
@@ -705,7 +765,10 @@ optimization of MPA networks can be constrained by the number of
 objectives and dimensionality of the operating model, or by simple
 capacity of local stakeholders. As such, we show here how `marlin` can
 be used to examine the performance of potentially sub-optimal but more
-broadly usable design strategies xx.
+broadly usable design strategies. We allow all MPAs to be designed in a
+"mosaic" fashion, but users can easily extend the analysis to for
+example compare outcomes between "contiguous" and "mosaic" MPA designs
+[@pons2022].
 
 #### Coral Reefs
 
@@ -730,21 +793,21 @@ and as such we model it as a "constant effort" fishery.
 The second fleet primarily targets the deep-water snapper population.
 While plate-sized snapper are still prized from this population, we
 model fleet two's selectivity as logistic due to high levels of discard
-mortality for deep-water snapper resulting from barotrauma (xx). This
-fleet catches some grouper, though less than fleet one, and receives no
-price for sharks due to the requirements of a certification program
-through which they sell their deep-water snapper, though they do
-accidentally catch and kill them on occasion. This fleet operates under
-open-access dynamics, as fishing is not the primary means of subsistence
-and so short-term effort expands and contracts in respond to
-profitability of the primarily grouper-driven fishery.
+mortality for deep-water snapper resulting from barotrauma. Fleet two
+catches some grouper, though less than fleet one, and receives no price
+for sharks due to the requirements of a certification program through
+which they sell their deep-water snapper, though they do accidentally
+catch and kill them on occasion. This fleet operates under open-access
+dynamics, as fishing is not the primary means of subsistence and so
+short-term effort expands and contracts in respond to profitability of
+the primarily grouper-driven fishery.
 
 Each fleet has a different home-port location, and incurs an additional
 cost for fishing each patch in the system in proportion to the euclidean
 distance from each patch to each fleet's home port.
 
-We then simulated the outcomes for both food security and conservation
-for each of the species and both of the fleets as a function of both MPA
+We simulated the outcomes for both food security and conservation for
+each of the species and both of the fleets as a function of both MPA
 size and MPA design strategy. For this exercise, MPAs are placed with
 perfect information and have no design constraints for continuity (i.e.
 the selected MPA design can be as patchwork as dictated by the data).
@@ -827,31 +890,31 @@ targets large adult tunas such as bigeye and yellowfin for high-grade
 consumption, and a purse-seine fishery that primarily targets skipjack
 tunas for bulk canning. Selectivities were modeled as logistic for the
 longline fleet, and dome-shaped for the purse-seine fleet, with
-selectivity values pulled from the literature where available (see SI
-xx). Both fleets operate under open-access dynamics with an effort cap.
-The effort cap was set at the level of effort that resulted in the
-desired levels of depletion for each species under open-access dynamics
-(@fig-blue), intended to simulate a scenario where managers step in to
-prevent further expansion of fishing effort in a fully developed
-fishery. For forward-simulation, open-access dynamics can result in
-effort decreasing in response to profitability, but cannot result in
-effort beyond the effort cap set for each fleet.
+selectivity values pulled from the literature where available. Both
+fleets operate under open-access dynamics with an effort cap. The effort
+cap was set at the level of effort that resulted in the desired levels
+of depletion for each species under open-access dynamics (@fig-blue),
+intended to simulate a scenario where managers step in to prevent
+further expansion of fishing effort in a fully developed fishery. For
+forward-simulation, open-access dynamics can result in effort decreasing
+in response to profitability, but cannot result in effort beyond the
+effort cap set for each fleet.
 
 For this exercise, we focused on using `marlin` to assess resilience of
 the selected "rule of thumb" MPA design strategies to a climate-driven
 range shift. Specifically, we simulate an extreme example where the
 centroid of each population shifts northward at a rate of 0.2 patches
-per year, over a `r experiment_years` time horizon. We designed MPA
-networks given the conditions in the starting year, and held that
-network constant over the years of the experiment, running one
-simulation with and another without the climate-drive range shift. We
-then compared effect of this range shift on food security and
+per year, over a `r experiment_years` year time horizon (@fig-blue-ssb).
+We designed MPA networks given the conditions in the starting year, and
+then held that network constant over the years of the experiment,
+running one simulation with and another without the climate-drive range
+shift. We then compared effect of this range shift on food security and
 conservation outcomes from MPA networks designed based on the pre-range
 shift world.
 
 ```{r}
 #| label: fig-blue-ssb
-#| fig-cap: "Trajectory of depletion (spawning biomass divided by unfished spawning biomass) over time prior to implementation of MPAs."
+#| fig-cap: "Trajectory of depletion (spawning biomass divided by unfished spawning biomass) over time prior to implementation of MPAs for the pelagic case study."
 
 grid <- expand_grid(x = 1:blue_resolution, y= 1:blue_resolution) %>%
   mutate(patch = 1:nrow(.))
@@ -875,17 +938,22 @@ critter_biomass <-
   group_by(critter) %>% 
   mutate(depletion = ssb / ssb[step == 0])
 
-critter_biomass %>% 
-  ggplot(aes(step, depletion)) +
-  geom_line() + 
-  facet_wrap(~critter) +
-  scale_y_continuous(limits = c(0, 1))
+critter_biomass %>%
+  ungroup() %>% 
+  left_join(sci_to_com, by = "critter") %>%
+  select(-critter) %>%
+  rename(critter = common_name) %>%
+  ggplot(aes(step, depletion, color = critter)) +
+  geom_line(linewidth = 1) +
+  scale_y_continuous(limits = c(0, 1), name = "Depletion", expand = expansion(mult = c(0.0,0.05))) +
+  scale_x_continuous(name = "Time Step") +
+  scale_color_discrete(name = "")
 
 ```
 
 ```{r}
 #| label: fig-blue
-#| fig-cap: "Distribution of fish spawning biomass under status quo (blue) and range-shifted (red) conditions for blue-water simulation. The x-axis represents longitude, the y-axis latitude. "
+#| fig-cap: "Contour plot of fish spawning biomass in space under status quo (blue) and range-shifted (red) conditions for blue-water simulation. Packed together lines indicate higher biomass densities, farther spaced lines lower densities. The x-axis represents longitude, the y-axis latitude. "
 
 blue_climate_sim <- simmar(
   fauna = blue_fauna,
@@ -928,19 +996,19 @@ patch_biomass %>%
 
 ```
 
-## Results
+# Results
 
 ### Coral Reefs
 
 For the coral reef example, both the area and target_fishing MPA design
-strategies were capable of producing a Pareto-improving outcome where
-the total spawning biomass divided by unfished spawning biomass across
-all species could be increased by up to 200% while maintaining at least
-the same levels of fisheries yields as would be caught in the absence of
-any MPAs. Conversely, achieving increases in total fish biomass through
-the rate or avoid fishing strategies resulted in immediate losses in
-total yields, and in losses to both yields and biomass in some cases
-(@fig-coral-results).
+strategies were capable of producing a Pareto-improving, i.e.
+potentially win-win, outcome where the total spawning biomass divided by
+unfished spawning biomass across all species could be increased by up to
+200% while maintaining at least the same levels of fisheries yields as
+would be caught in the absence of any MPAs. Conversely, achieving
+increases in total fish biomass through the rate or avoid_fishing
+strategies resulted in immediate losses in total yields, and in losses
+to both yields and biomass in some cases (@fig-coral-results).
 
 However, these macro-level changes in total yield and conservation
 outcomes mask some internal tradeoffs. Nearly all of the food security
@@ -951,14 +1019,14 @@ and subsequently to the system as a whole. For example, the MPA sizes
 and designs that result in the largest increase in yields for fleet one
 would produce in near total loss of yields for fleet two.
 
-Both the *rate* and *avoid fishing* MPA placement strategies produced
-lower total fishery gains but minimized the negatiev impacts on fleet
-two. However, these strategies produced much lower conservation gains
-than the *area* and *target_fishing* strategies, which produced minimal
-gains for any species besides deep snapper, and in fact resulting in
-slight losses to the nearshore snapper population for MPA sizes less
-than roughly 75%. Both the area and target_fishing strategies resulted
-in rapid conservation gains across all of the simulated species.
+Both the rate and avoid_fishing MPA placement strategies produced lower
+total fishery gains but minimized the negative impacts on fleet two.
+However, these strategies produced much lower conservation gains than
+the area and target_fishing strategies, only benefiting deep_snapper
+meaningfully, and in fact resulting in slight losses to the nearshore
+snapper population for MPA sizes less than roughly 75%. Both the area
+and target_fishing strategies resulted in rapid conservation gains
+across all of the simulated species.
 
 MPAs were capable of producing positive outcomes in terms of total
 biomass and yields in this coral reef example, but none of the
@@ -970,7 +1038,7 @@ may have very different outcomes from the same MPA network.
 
 ```{r}
 #| label: fig-coral-results
-#| fig-cap: "Frontier in conservation and yield outcomes under different MPA design strategies (A) for coral reef case study. Change in yield for each fleet (B) and depltion per species (C) as a function of MPA size and MPA design strategy for the coral reef case study."
+#| fig-cap: "Frontier in conservation and yield outcomes under different MPA design strategies (A) for coral reef case study. Change in yield for each fleet (B) and depletion per species (C) as a function of MPA size and MPA design strategy for the coral reef case study."
 #| fig-height: 4
 #| fig-width: 6
 
@@ -1075,8 +1143,8 @@ species distributions remain constant, and when the species undergo a
 range shift.
 
 The yield impacts of the proposed MPA strategies were much more
-sensitive to climate impacts for the purse seine fishery; under the
-*status quo* species distribution, the target fishing MPA design
+sensitive to climate impacts for the purse seine fishery. Under the
+*status quo* species distribution, the target_fishing MPA design
 strategy produced increases in fisheries yields at sizes between 25-50%
 of the area; that same MPA network resulted in the near complete loss of
 yields from the purse seine fleet when applied to the climate change
@@ -1255,22 +1323,30 @@ blue_critter_bio <- blue_water_results %>%
 blue_critter_bio) + plot_layout(heights = c(1.5,2), guides = "collect" )
 ```
 
-## Discussion
+# Discussion
 
 Marine ecosystems are driven by complex social-ecological dynamics.
 Communities must often make decisions on how to manage these systems
-based on ... Modeling tools such as `marlin` can help users answer
-important scientific questions and design marine management policies
-informed by better understanding of sensitivities to key uncertainties.
-blah blah blah. `marlin` is to our knowledge the first bio-economic
-modeling tool that allows scientists and decision makers to efficiently
-simulate the outcomes of management strategies such as MPAs across
-multiple fleets and species while accounting for layered regulations,
-economic incentives, age structure, and realistic movement dynamics
-across a range of potential social-ecological conditions. xx this
-sentence annoys me but feels like we need to make something like it
-explicit to convince reviewers maybe less familiar with the modeling
-literature xx.
+based on limited empirical evidence. Modeling tools such as `marlin` can
+help users answer important scientific questions and design marine
+management policies informed by better understanding of sensitivities to
+key uncertainties.
+
+<!-- `marlin` is to our knowledge the first bio-economic modeling tool that -->
+
+<!-- allows scientists and decision makers to efficiently simulate the -->
+
+<!-- outcomes of management strategies such as MPAs across multiple fleets -->
+
+<!-- and species while accounting for layered regulations, economic -->
+
+<!-- incentives, age structure, and realistic movement dynamics across a -->
+
+<!-- range of potential social-ecological conditions. xx this sentence annoys -->
+
+<!-- me but feels like we need to make something like it explicit to convince -->
+
+<!-- reviewers maybe less familiar with the modeling literature xx. -->
 
 There are a range of other useful modeling applications that can support
 spatio-temporal decision making in marine ecosystems. However, the
@@ -1280,7 +1356,7 @@ such as ATLANTIS [@audzijonyte2019] , OSMOSE [@shin2001], Ecopath with
 Ecosim [@christensen2004], POSEIDON [@bailey2019], or SEAPODYM
 [@lehodey2008] are capable of representing tremendous amounts of
 complexity, but can be extremely time consuming to design and run. Tools
-such as virtualspecies [@leroy2016] or STEPS [@visintin2020] are help
+such as virtualspecies [@leroy2016] or STEPS [@visintin2020] can help
 model the distribution of species in space and time as a function of
 environmental covariates, but lack explicit process models for the xx
 Jim, can you expand on this section, I'm no too familiar with these
@@ -1297,29 +1373,31 @@ In this paper we have documented the core system of equations underlying
 `marlin`, and demonstrated how this framework can be used to support
 efforts such as MPA planning. The variation in both the magnitude and
 distribution of costs and benefits stemming from alternative design
-choices and states of nature shown in our results demonstrates the value
-in our method. Beyond the current examples, we envision `marlin` being
-applicable to research on dynamic ocean management, range shifts,
-management strategy evaluation, policy interactions, and spatial stock
-assessment. In addition, the process-based movement model used in
-`marlin` can directly use empirical estimates of movement dynamics
-derived in the manner of @thorson2021a, providing a link between
-empirical and simulation based approaches to marine resource management.
-Future iterations of the model may include life history modules for a
-broader range of species types such as marine mammals, sea birds, and
-sea turtles.
+choices and states of nature shown in our case study results
+demonstrates the value in our method. Beyond the current examples, we
+envision `marlin` being applicable to research on dynamic ocean
+management, range shifts, management strategy evaluation, policy
+interactions, and spatial stock assessment. In addition, the
+process-based movement model used in `marlin` can directly use empirical
+estimates of movement dynamics derived in the manner of @thorson2021a,
+providing a link between empirical and simulation based approaches to
+marine resource management. Future iterations of the model may include
+life history modules for a broader range of species types such as marine
+mammals, sea birds, and sea turtles.
 
 Even the most complex marine model is a stylized cartoon of the true
 dynamics at play in these systems. However, for all their limitations
 models such as `marlin` can help users understand factors that drive the
-performance of potential marine management strategies. The goal of this
-tool is to empower people to design policies based on evaluation of key
+performance of marine management strategies. The goal of this tool is to
+empower people to design policies based on evaluation of key
 uncertainties and trade-offs, and in doing so support more effective and
 equitable marine resource management.
 
-## References
+# References
 
 ::: {#refs}
 :::
 
-## scraps
+# Supporting Information
+
+# Scraps
