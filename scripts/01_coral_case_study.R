@@ -462,11 +462,11 @@ mpa_sim <- simmar(
 
 if (run_coral_example == TRUE){
 
-  plan(multisession, workers = experiment_workers)
+  future::plan(future::multisession, workers = experiment_workers)
 
   case_study_experiments <-
     expand_grid(
-      placement_strategy = c("rate", "avoid_fishing", "target_fishing", "area"),
+      placement_strategy = c("rate", "target_fishing"),
       prop_mpa = seq(0, 1, by = 0.05),
       critters_considered = length(fauna),
       placement_error = c(0),
