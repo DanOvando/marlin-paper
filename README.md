@@ -26,6 +26,19 @@ To install all dependencies for this project
 5.  If you have trouble installing `marlin`, see instructions
     [here](https://danovando.github.io/marlin/#installation-troubleshooting)
 
+## Navigating Repo
+
+THe main scripts needed to reproduce results are
+
+1.  00_setup.R
+2.  01_coral_case_study.R
+3.  02_blue_water_cast_study.R
+4.  03_marlin_paper.qmd
+
+The best way to reproduce the results is through the `make` commands
+described below. To reproduce results manually, first open 00_setup.R
+and set parameters as desired. Then, run 01\_.. 02\_… and 03\_.
+
 ## Reproducing results on UNIX machines
 
 This repo is equipped with a `make` file. To reproduce results this way
@@ -40,7 +53,7 @@ This repo is equipped with a `make` file. To reproduce results this way
 
 4.  In the terminal, run `RUN_NAME:MyRunName FORMAT:MyFormat make` where
     MyRunName is the name of the folder you want to create to store
-    results (e.g. v0.1) and FORMAT is one of pdf, html, docx
+    results (e.g. v0.1) and FORMAT is one of pdf, html, or docx
 
 5.  Wait for a bit! This command will run all the required scripts and
     knit the paper. Should take no more than a few hours.

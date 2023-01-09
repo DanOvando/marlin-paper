@@ -20,7 +20,7 @@ execute:
   cache: false
 bibliography: references.bib
 params:
-  run_name: ["v0.3"]
+  run_name: ["v0.5"]
 abstract: "Abstract: Designing effective spatial management strategies is challenging because marine ecosystems are highly dynamic and opaque, and extractive entities such as fishing fleets respond endogenously to ecosystem changes in ways that depend upon ecological and policy context. We present a tool, `marlin`, that can be used to efficiently simulate the bio-economic dynamics of marine systems in support of both management and research. We demonstrate `marlin’s` capabilities by focusing on two case studies on the conservation and food production impacts of marine protected areas (MPAs): a coastal coral reef and a pelagic tuna fishery. In the coastal coral reef example, we explore how heterogeneity in species distributions and fleet preferences can affect distributional outcomes of MPAs. In the pelagic case study, we show how our model can be used to assess the climate resilience of different MPA design strategies, as well as the climate sensitivity of different fishing fleets. This paper demonstrates how intermediate complexity simulation of coupled bio-economic dynamics can help communities predict and potentially manage trade-offs between conservation, fisheries yields, and distributional outcomes of management policies affected by spatial bio-economic dynamics."
 header-includes:
   - \usepackage{setspace}\doublespacing
@@ -32,7 +32,7 @@ header-includes:
 #| message: false
 #| include: false
 
-source(here::here("scripts", "00_setup.R"))
+source(here::here("00_setup.R"))
 
 theme_set(theme_classic(base_size = 10, base_family = "Helvetica") + theme(strip.background = element_blank()))
 
@@ -55,6 +55,13 @@ results_files <- list.files(file.path(results_path))
 rdses <- results_files[str_detect(results_files,'.rds')]
 
 walk(rdses,~assign(str_remove(.x,".rds"), read_rds(file.path(results_path,.x)), envir = .GlobalEnv)) #load and assign all .rds objects in the appropriate results folder
+
+# simple function to make prettier labels
+titler <- function(x){
+  
+  stringr::str_to_title(stringr::str_replace_all(x,"_"," "))
+  
+}
 
 # rdatas <- results_files[str_detect(results_files,'.Rdata')]
 # 
@@ -160,6 +167,8 @@ fleet behavior might affect multiple species in the system. The ability
 to track the impacts of fishing fleets across multiple species
 simultaneously is particularly important as very few fishing fleets are
 truly single species.
+
+We define a few commonly used terms here. *Yields* refers to the volume of catch from fishing activity. *Spawning stock biomass* refers to the total biomass of reproductively mature fish in the water, a function of numbers, weight, and sexual maturity at age. *Depletion* is a common term in the fisheries literature, and reflects here the *spawning stock biomass* in a given time step relative to *unfished spawning stock biomass*. So, a depletion value of 1 means that the population is unfished, a depletion value of 0 means the population is extinct.  
 
 As a demonstration of the use of this modeling tool, we explore two
 general situations
@@ -725,22 +734,22 @@ Each of the case studies contains too many parameters and options to be
 succinctly presented in the text here, and we are concerned that
 attempting to duplicate all of the parameters of the model here would
 simply introduce error. As such, readers should consult the accompanying
-code (xx provide clear instructions for which files xx) to view the
+code to view the
 precise details of each simulation. Targeted tactical applications must
 carefully consider and document all decisions made around model
 parameters.
 
-#### Rule-of-thumb MPA Design Strategies
+#### MPA Design Strategies
 
 Across all of our case studies we make use of two potential "rule of
 thumb" MPA design strategies:
 
-1.  Depletion Rate (*rate*): MPAs are placed based on the pre-MPA
+1.  *Rate*: MPAs are placed based on the pre-MPA
     depletion-weighted catch relative to the total catch in a patch. So,
     patches with high rates of catch of depleted species relative to
     total catch are prioritized.
 
-2.  Target Fishing (*target_fishing*): MPAs locations are prioritized
+2.  *Target Fishing*: MPAs locations are prioritized
     proportional to fishery catches. Patches with high total
     catches are prioritized over patches with low catches.
 
@@ -807,7 +816,7 @@ dictated by the data). We ran the simulation on a quarterly level ($\Delta_t = 1
 
 ```{r}
 #| label: fig-coral
-#| fig-cap: "Distribution of fish spawning biomass (color) each season (row) under unfished conditions. The x-axis represents longitude, y-axis latitude. Numbers show the approximate location of each fleet's port. Rows indicate quarterly seasons that repeat each year."
+#| fig-cap: "Distribution of fish spawning biomass (cell color, yellow = higher, blue = lower) each season (columns) under unfished conditions. The x-axis represents longitude, y-axis latitude. Numbers show the approximate location of each fleet's (one or two) port. Columns indicate quarterly seasons that repeat each year."
 
 coral_fauna <- coral_fauna_and_fleets$fauna
 
@@ -838,16 +847,17 @@ patch_biomass <-
   mutate(step = as.numeric(step)) %>%
   left_join(grid, by = "patch")
 
-patch_biomass %>%
+ patch_biomass %>%
   group_by(critter, step) %>%
   mutate(sbiomass = biomass / max(biomass)) %>%
   ungroup() %>%
-  filter(between(step,1,2)) %>% 
+  filter(between(step,1,2)) %>%
+  mutate(step = fct_recode(as.factor(step), "2" = "1.25", "3" = "1.5", "4" = "1.75")) %>% 
   mutate(Season = step) %>% 
   ggplot()+
   geom_tile(aes(x,y, fill = sbiomass),show.legend = FALSE) +
   geom_text_repel(data = coral_ports, aes(x, y, label = fleet), color = "red") +
-  facet_grid(Season~critter) +
+  facet_grid(critter~Season, labeller = labeller(critter = titler, Season = label_both)) +
   scale_x_continuous(expand = c(0,0)) +
   scale_y_continuous(expand = c(0,0)) +
   scale_fill_viridis_c() + 
@@ -908,6 +918,7 @@ shift. We then compared the effects of this range shift on food
 production and conservation outcomes from MPA networks designed based on
 the pre-range shift world. We ran the simulation on a quarterly level ($\Delta_t = 1/4$) and set the area of each cell to an arbitrary value of 1 ($\Delta_p = 1$).
 
+
 ```{r}
 #| label: fig-blue-ssb
 #| fig-cap: "Trajectory of depletion (spawning biomass divided by unfished spawning biomass) over time prior to implementation of MPAs for the pelagic case study."
@@ -934,16 +945,29 @@ critter_biomass <-
   group_by(critter) %>% 
   mutate(depletion = ssb / ssb[step == 0])
 
+# critter_biomass %>%
+#   ungroup() %>% 
+#   left_join(sci_to_com, by = "critter") %>%
+#   select(-critter) %>%
+#   rename(critter = common_name) %>%
+#   ggplot(aes(step, depletion, color = critter)) +
+#   geom_line(linewidth = 1) +
+#   scale_y_continuous(limits = c(0, 1), name = "Depletion", expand = expansion(mult = c(0.0,0.05))) +
+#   scale_x_continuous(name = "Time Step") +
+#   scale_color_discrete(name = "")
+
+
 critter_biomass %>%
   ungroup() %>% 
   left_join(sci_to_com, by = "critter") %>%
   select(-critter) %>%
   rename(critter = common_name) %>%
-  ggplot(aes(step, depletion, color = critter)) +
-  geom_line(linewidth = 1) +
+  filter(step == max(step)) %>% 
+  ggplot(aes(reorder(critter, depletion), depletion)) +
+  geom_col() +
   scale_y_continuous(limits = c(0, 1), name = "Depletion", expand = expansion(mult = c(0.0,0.05))) +
-  scale_x_continuous(name = "Time Step") +
-  scale_color_discrete(name = "")
+  labs(x = "") + 
+  coord_flip()
 
 ```
 
@@ -996,11 +1020,11 @@ patch_biomass %>%
 
 ### Coral Reefs
 
-For the coastal coral reef example the *target_fishing* MPA design strategies was capable of producing a Pareto-improving, i.e. potentially win-win, outcome where the total
+For the coastal coral reef example the *Target fishing* MPA design strategies was capable of producing a Pareto-improving, i.e. potentially win-win, outcome where the total
 spawning biomass divided by unfished spawning biomass across all species
 increase by up to 200% while maintaining at least the same levels of
 fisheries yields as would be caught in the absence of any MPAs.
-Conversely, achieving increases in total fish biomass through the *rate* strategy resulted in immediate losses in total yields, and in losses to both yields and total biomass in some cases
+Conversely, achieving increases in total fish biomass through the *Rate* strategy resulted in immediate losses in total yields, and in losses to both yields and total biomass in some cases
 (@fig-coral-results).
 
 These macro-level changes in total yield and conservation outcomes mask
@@ -1008,13 +1032,13 @@ some internal tradeoffs. Nearly all of the food production benefits from the sim
 negatively impacted under both scenarios. For example, the MPA sizes and designs that result in the largest increase in yields for fleet one would produce a near total
 loss of fish catch for fleet two.
 
-The *rate* MPA placement strategy produced
+The *Rate* MPA placement strategy produced
 lower total fishery gains but minimized the negative impacts on fleet
 two. However, this strategy produced much lower conservation gains
-than the *target_fishing* strategy, only benefiting
+than the *Target Fishing* strategy, only benefiting
 deep snapper meaningfully, and in fact resulting in slight losses to the
 nearshore snapper and grouper populations for MPA sizes less than roughly 75% of the
-simulated space. The *target_fishing* strategy
+simulated space. The *Target Fishing* strategy
 resulted in rapid conservation gains across all of the simulated
 species.
 
@@ -1028,7 +1052,7 @@ same MPA network.
 
 ```{r}
 #| label: fig-coral-results
-#| fig-cap: "Frontier in conservation and yield outcomes under different MPA design strategies (A) for coastal coral reef case study. Change in yield for each fleet (B) and depletion per species (C) as a function of MPA size and MPA design strategy for the coral reef case study."
+#| fig-cap: "Percent change in yield per fleet (A) and depletion per species (B) as a function of MPA size and MPA design strategy for the coastal coral reef case study. Percent change in total yield across both fleets (y-axis) and total depletion across all species (x-axis) by MPA size (point size) and placement strategy (point color) (C)." 
 #| fig-height: 4
 #| fig-width: 6
 
@@ -1056,21 +1080,24 @@ coral_frontier <- coral_results %>%
   group_by(placement_strategy) %>% 
   mutate(delta_yield = yield / yield[prop_mpa == 0] - 1,
          delta_biodiv = biodiv / biodiv[prop_mpa == 0] - 1) %>% 
-  ggplot(aes(delta_biodiv, delta_yield, color = placement_strategy)) + 
-  geom_vline(aes(xintercept = 0), linetype = 2) +
+  ungroup() %>% 
+    mutate(placement_strategy= fct_relabel(placement_strategy, titler)) %>% 
+  ggplot(aes(delta_biodiv, delta_yield, fill = placement_strategy, size = prop_mpa)) + 
   geom_hline(aes(yintercept = 0), linetype = 2) +
-  geom_line() + 
+  geom_point(alpha = 0.8, shape = 21) + 
   scale_x_continuous(name = "Change in Total Depletion", labels = scales::label_percent(accuracy = 1), guide = guide_axis(n.dodge = 2)) +
   scale_y_continuous(name = "Change in Yield", labels = scales::label_percent(accuracy = 1)) + 
-  scale_color_ordinal(name = '')+
-  guides(color = guide_legend(nrow = 4)) + 
-  labs(tag = "A") + 
+  scale_fill_viridis_d(name = '')+
+  scale_size(name = "MPA Size", labels = scales::label_percent(accuracy = 1), breaks = seq(0.25,1, by = 0.25)) +
+  guides(fill = guide_legend(order = 1, override.aes = list(size = 4)),
+         size = guide_legend(order = 2, ncol = 2, byrow = TRUE)) + 
+  labs(tag = "C")  + 
   theme(
-    legend.position = c(0.7, 1),
-    legend.background = element_rect(fill = "transparent"),
+    legend.position = c(0.725, .85),
+    legend.background = element_rect(fill = "transparent", color = "black"),
     legend.text = element_text(size = 8)
   )
-  
+
 coral_fleet_yield <- coral_results %>%
   pivot_longer(starts_with("fleet_"),
                names_to = "fleet",
@@ -1079,10 +1106,12 @@ coral_fleet_yield <- coral_results %>%
   summarise(yield = sum(fleet_yield), biodiv = sum(unique(biodiv))) %>%
   group_by(fleet, placement_strategy) %>%
   mutate(delta_yield = yield / yield[prop_mpa == 0] - 1) %>%
+  ungroup() %>% 
+  mutate(fleet= fct_relabel(fleet, titler)) %>% 
   ggplot(aes(prop_mpa, delta_yield, color = fleet)) +
     geom_hline(aes(yintercept = 0), linetype = 2) +
   geom_line() +
-  facet_wrap( ~ placement_strategy) +
+  facet_wrap( ~ placement_strategy, labeller = labeller(placement_strategy = titler)) +
   scale_x_continuous(name = "MPA Size",
                      labels = scales::label_percent(accuracy = 1)) +
   scale_y_continuous(name = "Yield",
@@ -1091,7 +1120,7 @@ coral_fleet_yield <- coral_results %>%
         axis.title.x = element_blank(),
         axis.text.y = element_text(size = 8))  + 
     scale_color_discrete(name = '') + 
-    labs(tag = "B") 
+    labs(tag = "A") 
 
 
 
@@ -1101,24 +1130,25 @@ coral_critter_bio <- coral_results %>%
   summarise(biodiv = sum(unique(biodiv))) %>%
   group_by(critter, placement_strategy) %>%
   mutate(delta_bio = biodiv) %>%
+  mutate(critter = fct_relabel(critter, titler)) %>% 
   # filter(prop_mpa < 0.4) %>% 
   ggplot(aes(prop_mpa, pmin(Inf,delta_bio), color = critter)) +
   geom_line() +
-  facet_wrap( ~ placement_strategy) +
+  facet_wrap( ~ placement_strategy, labeller = labeller(placement_strategy = titler)) +
   scale_x_continuous(name = "MPA Size",
                      labels = scales::label_percent(accuracy = 1),
                      guide = guide_axis(n.dodge = 2)) +
   scale_y_continuous(name = "Depletion") + 
-  scale_color_viridis_d(name = '', option = "C") + 
-    labs(tag = "C") + 
-  theme(axis.text = element_text(size = 8))
+  scale_color_brewer(name = '', type = "qual", palette = "Dark2") + 
+    labs(tag = "B") + 
+  theme(axis.text = element_text(size = 8), axis.text.x = element_text(size = 8))
 
 
 
 
 
 
-((coral_frontier + plot_layout(guides = "keep")) | (coral_fleet_yield / coral_critter_bio) + plot_layout(guides = "collect")) & theme(strip.text = element_text(size  = 8), plot.margin = margin(.1, .1, .1, .1, "cm"), legend.text = element_text(size = 7))
+((coral_fleet_yield / coral_critter_bio) | (coral_frontier + plot_layout(guides = "keep")) ) & theme(strip.text = element_text(size  = 8), plot.margin = margin(.1, .1, .1, .1, "cm"), panel.spacing = unit(1, "lines"), legend.text = element_text(size = 7))
 
 ```
 
@@ -1126,7 +1156,7 @@ coral_critter_bio <- coral_results %>%
 
 The yield impacts of the proposed MPA strategies were much more
 sensitive to climate impacts for the purse seine fishery. Under the
-*status quo* species distribution, the *target_fishing* MPA design
+*status quo* species distribution, the *Target Fishing* MPA design
 strategy produced increases in fisheries yields at sizes between 25-50%
 of the simulated area; that same MPA network resulted in the near
 complete loss of yields from the purse seine fleet when applied to the
@@ -1138,7 +1168,7 @@ From a conservation perspective, species such as albacore and swordfish
 were relatively insensitive to the simulated range shifts, whereas
 species such as bigeye tuna and silky shark showed extreme variation in
 outcomes depending on the climate scenario. For bigeye tuna, under the
-*status quo* conditions the *target_fishing* MPA design strategy
+*status quo* conditions the *Target Fishing* MPA design strategy
 resulted in rapid increases in the population, but that same MPA network produced much smaller and slower gains under climate change.
 However, for blue sharks this trend is inverted, with more rapid
 conservation gains under the range shift scenario than the *status quo*
@@ -1265,7 +1295,7 @@ blue_fleet_yield <- blue_water_results %>%
   ggplot(aes(prop_mpa, delta_yield, color = climate)) +
   geom_hline(aes(yintercept = 0), linetype = 2) +
   geom_line(size = linesize, show.legend = FALSE) +
-  facet_grid(fleet ~ placement_strategy, scales = "free_y") +
+  facet_grid(fleet ~ placement_strategy, scales = "free_y", labeller = labeller(fleet = titler, placement_strategy = titler)) +
   scale_x_continuous(name = "MPA Size",
                      labels = scales::label_percent(accuracy = 1)) +
   scale_y_continuous(name = "Change in Yield",
@@ -1286,13 +1316,15 @@ blue_critter_bio <- blue_water_results %>%
   summarise(biodiv = sum(unique(biodiv))) %>%
   group_by(critter, placement_strategy) %>%
   mutate(delta_bio = biodiv) %>%
+  ungroup() %>% 
+  mutate(placement_strategy = fct_relabel(as.factor(placement_strategy), titler)) %>% 
   ggplot(aes(prop_mpa, pmin(1,delta_bio), color = climate, linetype = placement_strategy)) +
   geom_line(size = linesize) + 
   facet_wrap(~critter) +
   scale_color_manual(values = c("#63B8FF","#FF4500"), labels = c("Status Quo","Range Shift"), name = '') +
   scale_x_continuous(name = "MPA Size",
                      labels = scales::label_percent(accuracy = 1), guide = guide_axis(n.dodge = 2)) +
-  scale_y_continuous(name = "Change in Spawning Biomass",limits = c(0, NA)) +
+  scale_y_continuous(name = "Depletion",limits = c(0, NA)) +
   scale_linetype(name = "MPA Strategy") + 
     labs(tag = "B")+
   theme(strip.text = element_text(size = 7),
@@ -1301,7 +1333,7 @@ blue_critter_bio <- blue_water_results %>%
 
 # blue_frontier / blue_critter_bio + plot_layout(heights = c(1,2))
 (blue_fleet_yield / 
-blue_critter_bio) + plot_layout(heights = c(1.5,2), guides = "collect" )
+blue_critter_bio) + plot_layout(heights = c(1.5,2))
 ```
 
 # Discussion
@@ -1383,11 +1415,15 @@ empower people to design policies based on evaluation of key
 uncertainties and trade-offs, and in doing so support more effective and
 equitable marine resource management.
 
+# Data Availability Statement
+
+All code and materials needed to reproduce this paper is available at (https://github.com/DanOvando/marlin-paper)[https://github.com/DanOvando/marlin-paper]. 
+
+
+
 # References
 
 ::: {#refs}
 :::
 
 # Supporting Information
-
-# Scraps
