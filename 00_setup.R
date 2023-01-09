@@ -82,7 +82,7 @@ time_step <- 1 / seasons
 max_delta <- 1
 
 workers <- round(parallel::detectCores() - 8)
-
+?unzip
 steps <- years * seasons
 
 time_steps <- seq(0,years - 1, by = time_step)
@@ -94,12 +94,12 @@ theme_set(marlin::theme_marlin())
 
 if (!file.exists(here("data","marlin-inputs.xlsx"))){
 
-  dir.create("data")
+  download.file("https://figshare.com/ndownloader/files/38766174", destfile = "data.zip", overwrite = TRUE,
+                mode = "wb")
 
-  marlin_inputs_path <- googledrive::drive_get("https://docs.google.com/spreadsheets/d/1eiJIxiDYZLQlBuSLy-yIofhbc-KfWBR9v4FpThgXrQ0/edit#gid=0&fvid=1954704204")
+  unzip("data.zip")
 
-
-  googledrive::drive_download(marlin_inputs_path, path = here("data","marlin-inputs.xlsx"), overwrite = TRUE)
+  file.remove("data.zip")
 
 }
 
