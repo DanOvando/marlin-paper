@@ -44,7 +44,7 @@ walk(foos, ~ source(here("functions", .x)))
 
 print(Sys.getenv("RUN_NAME"))
 if (Sys.getenv("RUN_NAME") == ''){
-  run_name <- "v0.5"
+  run_name <- "v1.0"
 
 } else {
   run_name <- Sys.getenv("RUN_NAME")

@@ -20,7 +20,7 @@ execute:
   cache: false
 bibliography: references.bib
 params:
-  run_name: ["v0.5"]
+  run_name: ["v1.0"]
 abstract: "Abstract: Designing effective spatial management strategies is challenging because marine ecosystems are highly dynamic and opaque, and extractive entities such as fishing fleets respond endogenously to ecosystem changes in ways that depend upon ecological and policy context. We present a tool, `marlin`, that can be used to efficiently simulate the bio-economic dynamics of marine systems in support of both management and research. We demonstrate `marlin’s` capabilities by focusing on two case studies on the conservation and food production impacts of marine protected areas (MPAs): a coastal coral reef and a pelagic tuna fishery. In the coastal coral reef example, we explore how heterogeneity in species distributions and fleet preferences can affect distributional outcomes of MPAs. In the pelagic case study, we show how our model can be used to assess the climate resilience of different MPA design strategies, as well as the climate sensitivity of different fishing fleets. This paper demonstrates how intermediate complexity simulation of coupled bio-economic dynamics can help communities predict and potentially manage trade-offs between conservation, fisheries yields, and distributional outcomes of management policies affected by spatial bio-economic dynamics."
 header-includes:
   - \usepackage{setspace}\doublespacing
@@ -157,7 +157,13 @@ fleets across multiple species (frequently called "technical
 interactions"). In its general form, `marlin` simulates the behavior of
 populations of spatially explicit biologically independent
 age-structured animal populations affected by one or more fishing fleets
-in time steps and a spatial resolution specified by the user.
+in time steps and a spatial resolution specified by the user. 
+
+The front end of the software package accompanying this paper,
+[`marlin`](https://danovando.github.io/marlin/), is written in R
+[@rcoreteam2021] to facilitate use, while the underlying population model is written in C++, integrated through the `Rcpp` package
+[@eddelbuettel2018], for speed. Users on standard computers should be able to simulate one age-structured population distributed across a 100 patch system for 20 years in fractions of a second. 
+
 
 While `marlin` does not simulate species interactions, fishing fleets in
 `marlin` are capable of targeting and affecting multiple species
@@ -190,11 +196,7 @@ Rather, we focus on the equations and methods describing the core
 foundations of our tool for efficiently simulating bio-economic dynamics
 in aquatic systems.
 
-While users can adapt the general equations and ideas presented here as
-they see fit, the software package accompanying this paper,
-[`marlin`](https://danovando.github.io/marlin/), is written in R
-[@rcoreteam2021] and C++, integrated through the `Rcpp` package
-[@eddelbuettel2018].
+
 
 ### Model Summary
 
@@ -1052,7 +1054,7 @@ same MPA network.
 
 ```{r}
 #| label: fig-coral-results
-#| fig-cap: "Percent change in yield per fleet (A) and depletion per species (B) as a function of MPA size and MPA design strategy for the coastal coral reef case study. Percent change in total yield across both fleets (y-axis) and total depletion across all species (x-axis) by MPA size (point size) and placement strategy (point color) (C)." 
+#| fig-cap: "Percent change in yield per fleet (A) and depletion (spawning biomass divided by unfished spawning biomass) per species (B) as a function of MPA size and MPA design strategy for the coastal coral reef case study. Percent change in total yield across both fleets (y-axis) and total depletion across all species (x-axis) and placement strategies (line color) (C). Text labels in panel C indicate the percent of area in an MPA at selected points along curves."
 #| fig-height: 4
 #| fig-width: 6
 
@@ -1074,27 +1076,37 @@ coral_fleet_frontier <- coral_results %>%
     scale_y_continuous(name = "Total Yield",limits = c(0, NA)) +
   facet_wrap(~ fleet, scales = "free_y")
 
-coral_frontier <- coral_results %>% 
+tmp <- coral_results %>% 
   group_by(prop_mpa, placement_strategy) %>% 
   summarise(biodiv = sum(biodiv), yield = sum(yield)) %>% 
   group_by(placement_strategy) %>% 
   mutate(delta_yield = yield / yield[prop_mpa == 0] - 1,
          delta_biodiv = biodiv / biodiv[prop_mpa == 0] - 1) %>% 
   ungroup() %>% 
-    mutate(placement_strategy= fct_relabel(placement_strategy, titler)) %>% 
-  ggplot(aes(delta_biodiv, delta_yield, fill = placement_strategy, size = prop_mpa)) + 
+    mutate(placement_strategy= fct_relabel(placement_strategy, titler))
+
+frontier_labels <- tmp %>% 
+  mutate(delta_50 = (delta_yield - -0.5)^2,
+         delta_0 = delta_yield^2) %>% 
+  group_by(placement_strategy) %>% 
+  filter(prop_mpa > 0) %>% 
+  filter(yield == max(yield) | delta_0 == min(delta_0) | delta_50 == min(delta_50)) %>% 
+  ungroup() %>% 
+  mutate(pmpa = scales::percent(prop_mpa))
+
+coral_frontier <- tmp %>% 
+  ggplot(aes(delta_biodiv, delta_yield)) + 
   geom_hline(aes(yintercept = 0), linetype = 2) +
-  geom_point(alpha = 0.8, shape = 21) + 
+  geom_line(alpha = 0.8, aes(color = placement_strategy),size = 1.1) + 
+  geom_text_repel(data = frontier_labels, aes(label = pmpa), min.segment.length = 0, box.padding = 0.5) +
   scale_x_continuous(name = "Change in Total Depletion", labels = scales::label_percent(accuracy = 1), guide = guide_axis(n.dodge = 2)) +
   scale_y_continuous(name = "Change in Yield", labels = scales::label_percent(accuracy = 1)) + 
-  scale_fill_viridis_d(name = '')+
-  scale_size(name = "MPA Size", labels = scales::label_percent(accuracy = 1), breaks = seq(0.25,1, by = 0.25)) +
-  guides(fill = guide_legend(order = 1, override.aes = list(size = 4)),
-         size = guide_legend(order = 2, ncol = 2, byrow = TRUE)) + 
+  scale_color_manual(values = c("tomato", "steelblue"),name = '') +
+  guides(fill = guide_legend(order = 1, override.aes = list(size = 4))) + 
   labs(tag = "C")  + 
   theme(
-    legend.position = c(0.725, .85),
-    legend.background = element_rect(fill = "transparent", color = "black"),
+    legend.position = c(0.725, .95),
+    legend.background = element_rect(fill = "transparent"),
     legend.text = element_text(size = 8)
   )
 
@@ -1248,7 +1260,7 @@ fleet_climate_impacts / critter_climate_impacts
 
 ```{r}
 #| label: fig-blue-results
-#| fig-cap: "Change in yield (A) and spawning biomass (B) as a function of MPA size and design strategy by fishing fleet and species. Blue lines indicate impacts of MPAs under status qup habitat, red impacts under climate-driven range shift."
+#| fig-cap: "Change in yield (A) and depletion (spawning biomass divided by unfished spawning biomass) (B) as a function of MPA size and design strategy by fishing fleet and species. Blue lines indicate impacts of MPAs under status qup habitat, red impacts under climate-driven range shift."
 #| fig-height: 6
 #| fig-width: 6
 

@@ -1,6 +1,7 @@
 # custom things
 __MACOSX/*
 results/
+data/
 *.pdf
 *.docx
 # History files
