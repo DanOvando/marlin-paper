@@ -56,4 +56,5 @@ This repo is equipped with a `make` file. To reproduce results this way
     results (e.g. v0.1) and FORMAT is one of pdf, html, or docx
 
 5.  Wait for a bit! This command will run all the required scripts and
-    knit the paper. Should take no more than a few hours.
+    knit the paper. Shouldn’t take more than an hour on a reasonable
+    computer with parallel computation capabilities.

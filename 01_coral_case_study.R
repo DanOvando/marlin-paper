@@ -1,6 +1,5 @@
 source(file.path("00_setup.R"))
 
-library(gganimate)
 set.seed(42)
 
 resolution <- 20
@@ -544,15 +543,15 @@ coral_mpa_experiments$obj <- map(coral_mpa_experiments$results, "obj")
 examine_mpas <- coral_mpa_experiments %>%
   unnest(cols = mpas)
 
-mpas <- examine_mpas %>%
-  filter(mpa_response == "stay") %>%
-  ggplot(aes(x,y,fill = mpa)) +
-  geom_tile() +
-  transition_time(prop_mpa) +
-  scale_x_continuous(name = "longitude") +
-  scale_y_continuous(name = "latitude") +
-  labs(title = 'Step: {frame_time}') +
-  facet_wrap(~placement_strategy)
+# mpas <- examine_mpas %>%
+#   filter(mpa_response == "stay") %>%
+#   ggplot(aes(x,y,fill = mpa)) +
+#   geom_tile() +
+#   transition_time(prop_mpa) +
+#   scale_x_continuous(name = "longitude") +
+#   scale_y_continuous(name = "latitude") +
+#   labs(title = 'Step: {frame_time}') +
+#   facet_wrap(~placement_strategy)
 
 
 examine_results <- coral_mpa_experiments %>%

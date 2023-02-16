@@ -824,6 +824,8 @@ coral_fauna <- coral_fauna_and_fleets$fauna
 
 coral_fleets <- coral_fauna_and_fleets$fleets
 
+resolution <- sqrt((coral_fauna[[1]]$patches))
+
 grid <- expand_grid(x = 1:resolution, y= 1:resolution) %>%
   mutate(patch = 1:nrow(.))
 
@@ -912,7 +914,7 @@ For this exercise, we focused on using `marlin` to assess resilience of
 the selected "rule of thumb" MPA design strategies to a climate-driven
 range shift. Specifically, we simulate an extreme example where the
 centroid of each population shifts northward at a rate of 0.2 patches
-per year, over a `r experiment_years` year time horizon (@fig-blue-ssb).
+per year, over a 20 year time horizon (@fig-blue-ssb).
 We designed MPA networks given the conditions in the starting year, and
 then held that network constant over the years of the experiment,
 running one simulation with and another without the climate-drive range

@@ -1,7 +1,5 @@
 source(file.path("00_setup.R"))
 
-library(gganimate)
-
 resolution <- 12
 
 seasons <- 4
@@ -9,8 +7,6 @@ seasons <- 4
 tune_type <- "explt"
 
 experiment_workers <- 8
-
-years <- 25
 
 experiment_years <- 20
 
@@ -463,15 +459,15 @@ blue_water_climate_experiments$obj <- map(blue_water_climate_experiments$results
 examine_mpas <- blue_water_experiments %>%
   unnest(cols = mpas)
 
-mpas <- examine_mpas %>%
-  filter(mpa_response == "stay") %>%
-  ggplot(aes(x,y,fill = mpa)) +
-  geom_tile() +
-  transition_time(prop_mpa) +
-  scale_x_continuous(name = "longitude") +
-  scale_y_continuous(name = "latitude") +
-  labs(title = 'Step: {frame_time}') +
-  facet_wrap(~placement_strategy)
+# mpas <- examine_mpas %>%
+#   filter(mpa_response == "stay") %>%
+#   ggplot(aes(x,y,fill = mpa)) +
+#   geom_tile() +
+#   transition_time(prop_mpa) +
+#   scale_x_continuous(name = "longitude") +
+#   scale_y_continuous(name = "latitude") +
+#   labs(title = 'Step: {frame_time}') +
+#   facet_wrap(~placement_strategy)
 
 
 static_results <- blue_water_experiments %>%
