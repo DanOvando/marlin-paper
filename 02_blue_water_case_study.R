@@ -10,6 +10,7 @@ experiment_workers <- 8
 
 experiment_years <- 20
 
+adult_diffusion <- 10
 
 # load bycatch risk layers ------------------------------------------------
 
@@ -114,7 +115,7 @@ get_layer <- function(file) {
 
   hab$interp_cpue <- as.numeric(predict(mod$gam))
 
-  hab$habitat <- pmax(0, hab$interp_cpue / max(hab$interp_cpue))
+  hab$habitat <- pmax(0, hab$interp_cpue / max(hab$interp_cpue) * adult_diffusion)
 
 
   if (sqrt(nrow(hab)) != resolution) {
@@ -166,8 +167,7 @@ casestudy <- casestudy %>%
     create_critters,
     marlin_inputs = marlin_inputs,
     seasons = seasons,
-    taxis_to_diff_ratio = 2,
-    adult_diffusion = 10
+    adult_diffusion = adult_diffusion
   )) %>%
   mutate(xid = 1)
 
@@ -183,7 +183,6 @@ check_pop_sizes <- map_dbl(casestudy$fauna[[1]], "ssb0")
 #   geom_col() +
 #   coord_flip()
 
-image(casestudy$fauna[[1]]$`prionace glauca`$base_movement[[1]])
 
 
 # tune fleet --------------------------------------------------------------

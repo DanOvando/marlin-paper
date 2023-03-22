@@ -12,21 +12,21 @@ experiment_workers <- 6
 
 years <- 50
 
-# https://sustainablefish.org/roundtable/indonesian-snapper-and-grouper/
-
-# https://www.tandfonline.com/doi/full/10.1080/23308249.2018.1542420?casa_token=oyFyrvo42J4AAAAA%3A3OklvuxmJxB8TpTVomWzRawFsNRUX4WgwnMa_mcTECTLZn-OatxfLBgU2OES-KYynzhXMyfTC9smdQ
-#
-
-
-#hermaphrodism in grouper...
-
 
 # setup spatial things ----------------------------------------------------
 
-reef_width <- 1
+reef_width <- 4
 
 reefs <- data.frame(x = c(2,2,2,2,10,10,10,19), y = c(2,4,6,12,14,15,7,9))
 
+
+snapper_diffusion <- 2
+
+deep_snapper_diffusion <- 1
+
+grouper_diffusion <- 10
+
+shark_diffusion <- 20
 
 long_reef_habitat <- expand.grid(x = 1:resolution, y = 1:resolution) %>%
   mutate(habitat = 0)
@@ -35,10 +35,13 @@ long_spawning_ground <- expand.grid(x = 1:resolution, y = 1:resolution) %>%
   mutate(habitat = dnorm(x, reefs$x[1], reef_width / 2) * dnorm(y, reefs$y[1], reef_width / 2))
 
 
+long_spawning_ground$habitat <- long_spawning_ground$habitat / max(long_spawning_ground$habitat) * grouper_diffusion
 
 for (i in 1:nrow(reefs)){
 
   long_reef_habitat$habitat <- long_reef_habitat$habitat + dnorm(long_reef_habitat$x, reefs$x[i], reef_width) * dnorm(long_reef_habitat$y, reefs$y[i], reef_width)
+
+  long_reef_habitat$habitat  <-  long_reef_habitat$habitat  / max(long_reef_habitat$habitat ) * grouper_diffusion
 
 }
 
@@ -57,14 +60,16 @@ reef_habitat <- long_reef_habitat %>%
 
 
 deep_reef_habitat <- long_reef_habitat %>%
-  mutate(habitat = habitat * 1 / (1 + exp(-(x - resolution / 2)))) %>%
+  mutate(habitat = habitat * 1 / (1 + exp(-(x - resolution / 2))),
+         habitat = habitat / max(habitat) * grouper_diffusion) %>%
   pivot_wider(names_from = y, values_from = habitat) %>%
   select(-x) %>%
   as.matrix()
 
 
 shallow_reef_habitat <- long_reef_habitat %>%
-  mutate(habitat = habitat * (1 - 1 / (1 + exp(-(x - resolution / 2))))) %>%
+  mutate(habitat = habitat * (1 - 1 / (1 + exp(-(x - resolution / 2)))),
+         habitat = habitat / max(habitat) * grouper_diffusion) %>%
   pivot_wider(names_from = y, values_from = habitat) %>%
   select(-x) %>%
   as.matrix()
@@ -74,6 +79,8 @@ spawning_ground <- long_spawning_ground %>%
   pivot_wider(names_from = y, values_from = habitat) %>%
   select(-x) %>%
   as.matrix()
+
+check <- outer(long_reef_habitat$habitat, long_reef_habitat$habitat, '-')
 
 
 ports <-  data.frame(x =  c(1,1), y = c(2,15), fleet =c( 1, 2))
@@ -86,9 +93,9 @@ write_rds(list(shallow_reef_habitat = shallow_reef_habitat, deep_reef_habitat = 
 
 snapper <- create_critter(
   scientific_name = "lutjanus malabaricus",
-  base_habitat = lapply(1:seasons,function(x) shallow_reef_habitat),
+  habitat = lapply(1:seasons,function(x) shallow_reef_habitat),
   recruit_habitat = shallow_reef_habitat,
-  adult_diffusion = 2, # standard deviation of the number of patches moved by adults
+  adult_diffusion = snapper_diffusion, # standard deviation of the number of patches moved by adults
   recruit_diffusion = 10,
   density_dependence = "post_dispersal", # recruitment form, where 1 implies local recruitment
   seasons = seasons,
@@ -101,9 +108,9 @@ snapper <- create_critter(
 
 deep_snapper <- create_critter(
   scientific_name = "Pristipomoides filamentosus",
-  base_habitat = lapply(1:seasons,function(x) deep_reef_habitat),
+  habitat = lapply(1:seasons,function(x) deep_reef_habitat),
   recruit_habitat = deep_reef_habitat,
-  adult_diffusion = 1, # standard deviation of the number of patches moved by adults
+  adult_diffusion = deep_snapper_diffusion, # standard deviation of the number of patches moved by adults
   recruit_diffusion = 10,
   density_dependence = "post_dispersal", # recruitment form, where 1 implies local recruitment
   seasons = seasons,
@@ -119,10 +126,10 @@ deep_snapper <- create_critter(
 
 grouper <- create_critter(
   scientific_name = "Epinephelus fuscoguttatus",
-  base_habitat = list(reef_habitat, reef_habitat, reef_habitat, spawning_ground),
+  habitat = list(reef_habitat, reef_habitat, reef_habitat, spawning_ground),
   recruit_habitat = spawning_ground,
   fec_expo = 1.5,
-  adult_diffusion = 10,
+  adult_diffusion = grouper_diffusion,
   recruit_diffusion = 40,
   fished_depletion = .25,
   density_dependence = "pre_dispersal",
@@ -131,17 +138,16 @@ grouper <- create_critter(
   init_explt = 0.35,
   steepness = 0.6,
   spawning_seasons = c(4),
-  ssb0 = 50000,
-  taxis_to_diff_ratio = 4)
+  ssb0 = 50000)
 
 
 # shark
 
 reef_shark <- create_critter(
   scientific_name = "Carcharhinus amblyrhynchos",
-  base_habitat = list(reef_habitat, reef_habitat, reef_habitat, spawning_ground),
+  habitat = list(reef_habitat, reef_habitat, reef_habitat, spawning_ground),
   recruit_habitat = reef_habitat,
-  adult_diffusion = 20,
+  adult_diffusion = shark_diffusion,
   recruit_diffusion = 1,
   fished_depletion = 0.1,
   density_dependence = "local_habitat", # recruitment form, where 1 implies local recruitment
@@ -150,8 +156,7 @@ reef_shark <- create_critter(
   resolution = resolution,
   init_explt = 0.6,
   pups = 6,
-  ssb0 = 1000,
-  taxis_to_diff_ratio = 4)
+  ssb0 = 1000)
 
 # critters
 
