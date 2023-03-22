@@ -6,8 +6,7 @@ create_critters <-
            seasonal_movement = FALSE,
            ontogenetic_shift = FALSE,
            random_rec = FALSE,
-           adult_diffusion = 10,
-           taxis_to_diff_ratio = 2) {
+           adult_diffusion = 10) {
     # sciname <- marlin_inputs$scientific_name[[1]]
     #
     #
@@ -54,10 +53,9 @@ create_critters <-
 
     critter <- marlin::create_critter(
       scientific_name = sciname,
-      base_habitat = hab,
+      habitat = hab,
       recruit_habitat = recruit_habitat,
       adult_diffusion = adult_diffusion,
-      taxis_to_diff_ratio = taxis_to_diff_ratio,
       recruit_diffusion = 0,
       density_dependence = density_dependence,
       fec_form = ifelse(str_detect(sciname,"carcharhinus"),"pups","weight"),
