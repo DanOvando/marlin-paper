@@ -115,7 +115,9 @@ get_layer <- function(file) {
 
   hab$interp_cpue <- as.numeric(predict(mod$gam))
 
-  hab$habitat <- pmax(0, hab$interp_cpue / max(hab$interp_cpue) * adult_diffusion)
+  hab$habitat <- scales::rescale(hab$habitat, c(0,log(3)))
+  
+  # hab$habitat <- pmax(0, hab$interp_cpue / max(hab$interp_cpue) * adult_diffusion)
 
 
   if (sqrt(nrow(hab)) != resolution) {

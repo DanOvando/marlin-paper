@@ -74,8 +74,14 @@ run_mpa_experiment <-
       # place in proportion to depletion weighted catch relative to total catch. So, cells in which most of the catch comes from really depleted species, higher priority
 
       depletion <-
-        map_df(starting_conditions[1], ~ (1 - (map_df(.x, ~ sum(.x$ssb_p_a) / .x$ssb0))) %>%  # depletion of each species
-                 pivot_longer(everything(), names_to = "critter", values_to = "weight"), .id = "step") %>%
+        map_df(
+          starting_conditions[1],
+          ~ (1 - (map_df(
+            .x, ~ sum(.x$ssb_p_a) / .x$ssb0
+          ))) %>%  # depletion of each species
+            pivot_longer(everything(), names_to = "critter", values_to = "weight"),
+          .id = "step"
+        ) %>%
         select(-step)
 
       priorities <- proc_starting_conditions$fauna %>%
@@ -170,7 +176,11 @@ run_mpa_experiment <-
       mutate(patch = 1:nrow(.)) %>%
       mutate(mpa = patch %in% mpa_locs) %>%
       bind_cols(ssb0s)
-
+    
+    mpas |> 
+      ggplot(aes(x,y,fill = mpa)) +
+      geom_tile()
+    
     # run MPA simulation
 
     starting_step = as.numeric(last(names(starting_conditions)))
@@ -186,7 +196,8 @@ run_mpa_experiment <-
       keep_starting_step = FALSE,
       initial_conditions = starting_conditions[[length(starting_conditions)]]
     )
-
+    browser()
+    
 
     # grid <- expand_grid(x = 1:resolution, y= 1:resolution) %>%
     #   mutate(patch = 1:nrow(.))
@@ -210,14 +221,14 @@ run_mpa_experiment <-
     # browser()
     #
     #
-    # effort <-
-    #   map_df(mpa_sim, ~ data.frame(effort = sum(.x$`katsuwonus pelamis`$e_p_fl$longline)), .id = "step") %>%
-    #   mutate(step = as.numeric(step))
-    #
-    # effort %>%
-    #   ungroup() %>%
-    #   ggplot(aes(step, effort)) +
-    #   geom_line()
+    effort <-
+      map_df(mpa_sim, ~ data.frame(effort = sum(.x$snapper$e_p_fl$fleet_two)), .id = "step") %>%
+      mutate(step = as.numeric(step))
+
+    effort %>%
+      ungroup() %>%
+      ggplot(aes(step, effort)) +
+      geom_line()
 
 
     # process results
