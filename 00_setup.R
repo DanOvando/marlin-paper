@@ -33,6 +33,8 @@ library(rmarkdown)
 
 library(quarto)
 
+library(extrafont)
+
 options(dplyr.summarise.inform = FALSE)
 
 
@@ -42,7 +44,7 @@ walk(foos, ~ source(here("functions", .x)))
 
 print(Sys.getenv("RUN_NAME"))
 if (Sys.getenv("RUN_NAME") == ''){
-  run_name <- "test"
+  run_name <- "v1.0"
 
 } else {
   run_name <- Sys.getenv("RUN_NAME")
