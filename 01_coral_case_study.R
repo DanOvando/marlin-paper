@@ -1,5 +1,8 @@
 source(file.path("00_setup.R"))
 
+library(tictoc)
+
+tic()
 set.seed(42)
 
 resolution <- 20
@@ -26,11 +29,11 @@ snapper_diffusion <- 4 # km^2/year
 
 deep_snapper_diffusion <- 2 # km^2/year
 
-grouper_diffusion <-  2 * patch_area # km^2/year
+grouper_diffusion <-  50 * patch_area # km^2/year
 
 shark_diffusion <-  50 * patch_area # km^2/year
 
-max_hab_mult = 1.001
+max_hab_mult = 20
 
 # setup spatial things ----------------------------------------------------
 
@@ -44,16 +47,16 @@ reefs <-
 
 
 long_reef_habitat <-
-  expand.grid(x = 1:resolution, y = 1:resolution) %>%
+  expand_grid(x = 1:resolution, y = 1:resolution) %>%
   mutate(habitat = 0)
 
 long_spawning_ground <-
-  expand.grid(x = 1:resolution, y = 1:resolution) %>%
-  mutate(habitat = dnorm(x, reefs$x[1], reef_width) * dnorm(y, reefs$y[1], reef_width))
+  expand_grid(x = 1:resolution, y = 1:resolution) %>%
+  mutate(habitat = dnorm(x, reefs$x[1], reef_width) * dnorm(y, reefs$y[1], 1))
 
 
 long_spawning_ground$habitat <-
-  scales::rescale(long_spawning_ground$habitat, c(0, log(10)))
+  scales::rescale(long_spawning_ground$habitat, c(0, log(100)))
 
 for (i in 1:nrow(reefs)) {
   long_reef_habitat$habitat <-
@@ -62,7 +65,7 @@ for (i in 1:nrow(reefs)) {
 }
 
 long_reef_habitat$habitat <-
-  scales::rescale(long_reef_habitat$habitat, c(0, log(3)))
+  scales::rescale(long_reef_habitat$habitat, c(0, log(20)))
 
 
 long_spawning_ground %>%
@@ -138,13 +141,12 @@ snapper <- create_critter(
     shallow_reef_habitat),
   recruit_habitat = shallow_reef_habitat,
   adult_diffusion = snapper_diffusion,
-  # standard deviation of the number of patches moved by adults
   recruit_diffusion = simulation_area ,
   density_dependence = "pre_dispersal",
   # recruitment form, where 1 implies local recruitment
   seasons = seasons,
   resolution = resolution,
-  init_explt = 0.175,
+  init_explt = 0.125,
   ssb0 = 4000,
   max_hab_mult = max_hab_mult,
   patch_area = patch_area
@@ -164,7 +166,7 @@ deep_snapper <- create_critter(
   # recruitment form, where 1 implies local recruitment
   seasons = seasons,
   resolution = resolution,
-  init_explt = 0.08,
+  init_explt = 0.075,
   ssb0 = 5000,
   steepness = 0.6,
   max_hab_mult = max_hab_mult,
@@ -181,22 +183,21 @@ grouper <- create_critter(
   recruit_habitat = spawning_ground,
   fec_expo = 1.5,
   adult_diffusion = c(
-    grouper_diffusion * 4,
     grouper_diffusion,
-    grouper_diffusion,
+    grouper_diffusion / 100,
+    grouper_diffusion / 100,
     grouper_diffusion
   ),
   recruit_diffusion = simulation_area,
-  fished_depletion = .25,
   density_dependence = "pre_dispersal",
   seasons = seasons,
   resolution = resolution,
-  init_explt = 0.2,
+  init_explt = 0.1,
   steepness = 0.6,
   spawning_seasons = c(4),
-  max_hab_mult = 10,
+  max_hab_mult = 20,
   patch_area = patch_area,
-  ssb0 = 100000 # this number comes down to about 1/4 since there is only one spawning season
+  ssb0 = 10000 # this number comes down to about 1/4 since there is only one spawning season
 )
 
 
@@ -208,13 +209,12 @@ reef_shark <- create_critter(
   recruit_habitat = reef_habitat,
   adult_diffusion = shark_diffusion,
   recruit_diffusion = patch_area,
-  fished_depletion = 0.1,
   density_dependence = "local_habitat",
   # recruitment form, where 1 implies local recruitment
   seasons = seasons,
   fec_form = "pups",
   resolution = resolution,
-  init_explt = 0.3,
+  init_explt = 0.2,
   pups = 6,
   max_hab_mult = max_hab_mult,
   patch_area = patch_area,
@@ -303,11 +303,11 @@ fleet_two <- create_fleet(
       sel_form = "dome",
       sel_start = 0.5,
       sel_delta = 1,
-      p_explt = 1
+      p_explt = 2
     ),
     deep_snapper = Metier$new(
       critter = fauna$deep_snapper,
-      price = 100,
+      price = 75,
       sel_form = "logistic",
       sel_start = 0.5,
       sel_delta = .1,
@@ -319,7 +319,7 @@ fleet_two <- create_fleet(
       sel_form = "dome",
       sel_start = 0.5,
       sel_delta = 1,
-      p_explt = 0.5
+      p_explt = 1.5
     ),
     reef_shark = Metier$new(
       critter = fauna$reef_shark,
@@ -332,7 +332,7 @@ fleet_two <- create_fleet(
   ),
   ports = ports[2, ],
   cost_per_unit_effort = 1,
-  cost_per_distance = 100,
+  cost_per_distance = 50,
   responsiveness = 0.05,
   cr_ratio = 1,
   resolution = resolution,
@@ -633,7 +633,7 @@ if (run_coral_example == TRUE){
 
   case_study_experiments <-
     expand_grid(
-      placement_strategy = c("rate", "target_fishing"),
+      placement_strategy = c("spawning_ground", "target_fishing"),
       prop_mpa = seq(0, 1, by = 0.05),
       critters_considered = length(fauna),
       placement_error = c(0),
@@ -665,6 +665,7 @@ if (run_coral_example == TRUE){
         fauna = fauna,
         fleets = fleets,
         effort_cap = effort_cap,
+        spawning_ground = long_spawning_ground,
         years = 20,
         .options = furrr_options(seed = 42),
         .progress = TRUE
@@ -695,13 +696,13 @@ examine_mpas <- coral_mpa_experiments %>%
   unnest(cols = mpas)
 
 examine_mpas |>
-  filter(placement_strategy == "target_fishing") |>
+  filter(placement_strategy == "spawning_ground") |>
   ggplot(aes(x,y,fill = mpa)) +
   geom_tile() +
   facet_wrap(~prop_mpa)
 
 big_mpa <- examine_mpas |>
-  filter(between(prop_mpa, 0.94, .96),
+  filter(between(prop_mpa, 0.1, .11),
          placement_strategy == "target_fishing")
 
 mpa_locations <- big_mpa |>
@@ -720,7 +721,7 @@ mpa_test <- simmar(
 
 
 patch_effort <- tidyr::expand_grid(x = 1:resolution, y = 1:resolution) %>%
-  dplyr::mutate(effort = mpa_test[[length(mpa_test)]]$grouper$e_p_fl$fleet_one)
+  dplyr::mutate(effort = mpa_test[[length(mpa_test)]]$grouper$e_p_fl$fleet_two)
 
 patch_effort %>%
   ggplot() +
@@ -877,3 +878,4 @@ coral_fleet_yield <- coral_results %>%
   scale_color_discrete(name = '') +
   labs(tag = "A")
 coral_fleet_yield
+toc()

@@ -6,32 +6,26 @@ create_critters <-
            seasonal_movement = FALSE,
            ontogenetic_shift = FALSE,
            random_rec = FALSE,
-           adult_diffusion = 10) {
-    # sciname <- marlin_inputs$scientific_name[[1]]
-    #
-    #
+           adult_diffusion = 10,
+           resolution = resolution,
+           max_hab_mult = 5,
+           patch_area = 1) {
 
-    # habitat <- experiments$habitat[[1]]
     tmp_inputs <- marlin_inputs %>%
-      filter(scientific_name == sciname)
+      filter(scientific_name == sciname & !is.na(scientific_name))
 
     hab <- habitat %>%
       pivot_wider(names_from = y, values_from = habitat) %>%
       select(-x) %>%
       as.matrix()
 
-    # seasonal_movement <- sample(c(1, 0), 1, replace = TRUE)
 
-    # uniform_rec_hab <- sample(c(1, 0), 1, replace = TRUE)
-
-
-    # seasonal_movement <- 0
-    if (seasonal_movement) {
-      hab <- list(hab,-hab - (min(-hab)))
-
-    } else {
-      hab <- list(hab, hab)
-    }
+    # if (seasonal_movement) {
+    #   hab <- list(hab,-hab - (min(-hab)))
+    #
+    # } else {
+    #   hab <- list(hab, hab)
+    # }
 
     if (random_rec){
       density_dependence <-  sample(c("global_habitat", "local_habitat","pre_dispersal","post_dispersal","global_ssb"), 1, replace = TRUE)
@@ -40,23 +34,12 @@ create_critters <-
       density_dependence <- "global_ssb" # local density dependence then disperse recruits per recruit movement
     }
 
-    if (ontogenetic_shift) {
-      recruit_habitat <-
-        -hab[[1]] - min(-hab[[1]]) # place recruits in different places than adults
-
-      # set recruitment form to allow for recruit habitat
-      #
-      density_dependence <- "global_ssb"
-    } else {
-      recruit_habitat <- hab[[1]]
-    }
-
     critter <- marlin::create_critter(
       scientific_name = sciname,
       habitat = hab,
-      recruit_habitat = recruit_habitat,
+      recruit_habitat = hab,
       adult_diffusion = adult_diffusion,
-      recruit_diffusion = 0,
+      recruit_diffusion = adult_diffusion / 2,
       density_dependence = density_dependence,
       fec_form = ifelse(str_detect(sciname,"carcharhinus"),"pups","weight"),
       pups = 6,
@@ -69,7 +52,9 @@ create_critters <-
       ), 0.8, mean(tmp_inputs$steepness, na.rm = TRUE)),
       ssb0 = ifelse(is.nan(
         mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE)
-      ), 1e4, mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE))
+      ), 1e4, mean(tmp_inputs$ssb0 * 1000, na.rm = TRUE)),
+      max_hab_mult = max_hab_mult,
+      resolution = resolution
     )
 
 

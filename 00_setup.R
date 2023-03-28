@@ -61,7 +61,7 @@ run_coral_example <- TRUE
 
 run_blue_water_example <- TRUE
 
-theme_set(marlin::theme_marlin())
+theme_set(marlin::theme_marlin(base_size = 12))
 
 
 # load data ---------------------------------------------------------------
@@ -79,3 +79,15 @@ if (!file.exists(here("data","marlin-inputs.xlsx"))){
 
 marlin_inputs <- readxl::read_xlsx(here("data","marlin-inputs.xlsx"), sheet = "inputs",na = c("NA",""))
 
+if (!file.exists(here("data","sci_to_com.csv"))){
+  sci_to_com <- taxize::sci2comm(unique(marlin_inputs$scientific_name),simplify= TRUE,db='ncbi') %>%
+    bind_rows(.id = "critter") %>%
+    pivot_longer(everything(),names_to = "critter",values_to = "common_name") %>%
+    mutate(common_name = stringr::str_to_title(common_name))
+
+  write_csv(sci_to_com, file = here("data","sci_to_com.csv"))
+
+} else{
+  sci_to_com <-  read_csv(file = here("data","sci_to_com.csv"))
+
+}

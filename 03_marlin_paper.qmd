@@ -56,12 +56,6 @@ rdses <- results_files[str_detect(results_files,'.rds')]
 
 walk(rdses,~assign(str_remove(.x,".rds"), read_rds(file.path(results_path,.x)), envir = .GlobalEnv)) #load and assign all .rds objects in the appropriate results folder
 
-# simple function to make prettier labels
-titler <- function(x){
-  
-  stringr::str_to_title(stringr::str_replace_all(x,"_"," "))
-  
-}
 
 # rdatas <- results_files[str_detect(results_files,'.Rdata')]
 # 

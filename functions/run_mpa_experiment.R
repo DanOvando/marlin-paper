@@ -14,6 +14,7 @@ run_mpa_experiment <-
            resolution,
            years = 50,
            future_habitat = list(),
+           spawning_ground = spawning_ground,
            effort_cap) {
 
     options(dplyr.summarise.inform = FALSE)
@@ -51,7 +52,7 @@ run_mpa_experiment <-
         left_join(depletion, by = "critter") %>%
         filter(critter %in% critters_considered) %>%
         group_by(critter, step) %>%
-        mutate(patch_weight = ssb / sum(ssb) * weight) %>%
+        mutate(patch_weight = (ssb / sum(ssb)) * weight) %>%
         group_by(patch, step) %>%
         summarise(patch_weight = sum(patch_weight)) %>%
         ungroup() %>%
@@ -67,7 +68,6 @@ run_mpa_experiment <-
       priorities <-  priorities %>%
         filter(step == step_priority$step[1]) %>%
         arrange(desc(patch_weight))
-
 
     } else if (placement_strategy == "rate"){
 
@@ -153,6 +153,13 @@ run_mpa_experiment <-
         group_by(patch) %>%
         summarise(patch_weight = unique(patch)) %>%
         arrange((patch_weight))
+
+
+    } else if (placement_strategy == "spawning_ground"){
+
+      priorities <- spawning_ground |>
+        mutate(patch = 1:length(x)) %>%
+        arrange(desc(habitat))
 
 
     } else {
