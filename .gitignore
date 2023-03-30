@@ -12,7 +12,8 @@ data/
 *_marlin_paper.html
 # Session Data files
 .RData
-
+misc/
+presentations/ovando_tunacamp2023_abstract.qmd
 # User-specific files
 .Ruserdata
 
