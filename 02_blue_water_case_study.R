@@ -380,7 +380,7 @@ if (run_blue_water_example == TRUE){
   case_study_experiments <-
     expand_grid(
       # placement_strategy = c("target_fishing"),
-      placement_strategy = c("rate", "avoid_fishing", "target_fishing", "area"),
+      placement_strategy = c("rate", "target_fishing"),
       fleet_model = c("open access"),
       prop_mpa = seq(0, 1, by = 0.05),
       critters_considered = length(fauna),
