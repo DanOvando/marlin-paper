@@ -14,6 +14,7 @@ run_mpa_experiment <-
            resolution,
            years = 50,
            future_habitat = list(),
+           spawning_ground = spawning_ground,
            effort_cap) {
 
     options(dplyr.summarise.inform = FALSE)
@@ -51,7 +52,7 @@ run_mpa_experiment <-
         left_join(depletion, by = "critter") %>%
         filter(critter %in% critters_considered) %>%
         group_by(critter, step) %>%
-        mutate(patch_weight = ssb / sum(ssb) * weight) %>%
+        mutate(patch_weight = (ssb / sum(ssb)) * weight) %>%
         group_by(patch, step) %>%
         summarise(patch_weight = sum(patch_weight)) %>%
         ungroup() %>%
@@ -68,14 +69,18 @@ run_mpa_experiment <-
         filter(step == step_priority$step[1]) %>%
         arrange(desc(patch_weight))
 
-
     } else if (placement_strategy == "rate"){
 
       # place in proportion to depletion weighted catch relative to total catch. So, cells in which most of the catch comes from really depleted species, higher priority
-
       depletion <-
-        map_df(starting_conditions[1], ~ (1 - (map_df(.x, ~ sum(.x$ssb_p_a) / .x$ssb0))) %>%  # depletion of each species
-                 pivot_longer(everything(), names_to = "critter", values_to = "weight"), .id = "step") %>%
+        map_df(
+          starting_conditions[1],
+          ~ (1 - (map_df(
+            .x, ~ sum(.x$ssb_p_a) / .x$ssb0
+          ))) %>%  # depletion of each species
+            pivot_longer(everything(), names_to = "critter", values_to = "weight"),
+          .id = "step"
+        ) %>%
         select(-step)
 
       priorities <- proc_starting_conditions$fauna %>%
@@ -150,6 +155,13 @@ run_mpa_experiment <-
         arrange((patch_weight))
 
 
+    } else if (placement_strategy == "spawning_ground"){
+
+      priorities <- spawning_ground |>
+        mutate(patch = 1:length(x)) %>%
+        arrange(desc(habitat))
+
+
     } else {
       stop("invalid placement strategy")
     }
@@ -171,6 +183,10 @@ run_mpa_experiment <-
       mutate(mpa = patch %in% mpa_locs) %>%
       bind_cols(ssb0s)
 
+    # mpas |>
+    #   ggplot(aes(x,y,fill = mpa)) +
+    #   geom_tile()
+    #
     # run MPA simulation
 
     starting_step = as.numeric(last(names(starting_conditions)))
@@ -211,7 +227,7 @@ run_mpa_experiment <-
     #
     #
     # effort <-
-    #   map_df(mpa_sim, ~ data.frame(effort = sum(.x$`katsuwonus pelamis`$e_p_fl$longline)), .id = "step") %>%
+    #   map_df(mpa_sim, ~ data.frame(effort = sum(.x$snapper$e_p_fl$fleet_two)), .id = "step") %>%
     #   mutate(step = as.numeric(step))
     #
     # effort %>%

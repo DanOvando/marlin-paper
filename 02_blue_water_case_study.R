@@ -1,8 +1,22 @@
 source(file.path("00_setup.R"))
 
-resolution <- 12
+resolution <- 12 # number of patches per side of simulation grid
+
+patches <- resolution ^ 2
+
+# target simulation area: 14,000,000 km2 = 3741 side length
+
+patch_area <- 14e6 / patches # km2
+
+patch_side <- sqrt(patch_area) # km
+
+simulation_area <- patch_area * patches #km2
+
+message(glue::glue("Blue water simulation area is {scales::comma(patch_area)} km2, spread over {patches} patches each with an area of {scales::comma(patch_area)} km2 or {scales::comma(patch_side)} km per side"))
 
 seasons <- 4
+
+time_step <- 1 / seasons # in years
 
 tune_type <- "explt"
 
@@ -10,6 +24,9 @@ experiment_workers <- 8
 
 experiment_years <- 20
 
+adult_diffusion <- 0.8 * simulation_area  # km2, which means that each year a fish can roam an area 4km
+
+max_hab_mult = 20
 
 # load bycatch risk layers ------------------------------------------------
 
@@ -114,7 +131,9 @@ get_layer <- function(file) {
 
   hab$interp_cpue <- as.numeric(predict(mod$gam))
 
-  hab$habitat <- pmax(0, hab$interp_cpue / max(hab$interp_cpue))
+  hab$habitat <- scales::rescale(hab$interp_cpue, c(0,log(20)))
+
+  # hab$habitat <- pmax(0, hab$interp_cpue / max(hab$interp_cpue) * adult_diffusion)
 
 
   if (sqrt(nrow(hab)) != resolution) {
@@ -166,9 +185,10 @@ casestudy <- casestudy %>%
     create_critters,
     marlin_inputs = marlin_inputs,
     seasons = seasons,
-    taxis_to_diff_ratio = 2,
-    adult_diffusion = 10
-  )) %>%
+    adult_diffusion = adult_diffusion,
+    resolution = resolution,
+    max_hab_mult = max_hab_mult,
+    patch_area = patch_area)) %>%
   mutate(xid = 1)
 
 casestudy <- casestudy %>%
@@ -183,7 +203,6 @@ check_pop_sizes <- map_dbl(casestudy$fauna[[1]], "ssb0")
 #   geom_col() +
 #   coord_flip()
 
-image(casestudy$fauna[[1]]$`prionace glauca`$base_movement[[1]])
 
 
 # tune fleet --------------------------------------------------------------
@@ -270,7 +289,7 @@ if (run_blue_water_example == TRUE){
 
       # range shift the preferred habitat, i.e. keep the shape of the habitat the same, but move it northward
       future_hab <- tmp_hab %>%
-        mutate(y = y + .2 * year) %>%
+        mutate(y = y + .33 * year) %>%
         mutate(xy = x * y)
 
       og_habitat <- tmp_hab$habitat %>% sum()
@@ -283,7 +302,6 @@ if (run_blue_water_example == TRUE){
       tmp_hab$habitat <- pmax(0, tmp_hab$habitat)
 
       tmp_hab$habitat <- (tmp_hab$habitat / sum(tmp_hab$habitat)) * og_habitat
-
       new_matrix <- tmp_hab %>%
         select(-xy) %>%
         pivot_wider(names_from = y, values_from = habitat) %>%
@@ -362,7 +380,7 @@ if (run_blue_water_example == TRUE){
   case_study_experiments <-
     expand_grid(
       # placement_strategy = c("target_fishing"),
-      placement_strategy = c("rate", "avoid_fishing", "target_fishing", "area"),
+      placement_strategy = c("rate", "target_fishing"),
       fleet_model = c("open access"),
       prop_mpa = seq(0, 1, by = 0.05),
       critters_considered = length(fauna),
@@ -454,6 +472,7 @@ blue_water_climate_experiments$mpas <- map(blue_water_climate_experiments$result
 
 blue_water_climate_experiments$obj <- map(blue_water_climate_experiments$results, "obj")
 
+blue_fleets <- fleets
 
 
 examine_mpas <- blue_water_experiments %>%
@@ -479,93 +498,134 @@ climate_results <- blue_water_climate_experiments %>%
   mutate(climate = TRUE)
 
 blue_water_results <-static_results %>%
-  bind_rows(climate_results)
+  bind_rows(climate_results) %>%
+  left_join(sci_to_com, by = "critter") %>%
+  select(-critter) %>%
+  rename(critter = common_name)
 
-blue_water_results %>%
-  group_by(placement_strategy, prop_mpa, climate, fleet_model) %>%
-  summarise(biodiv = sum(biodiv), yield = sum(yield)) %>%
-  ggplot(aes(prop_mpa, biodiv, color = climate)) +
+
+fleet_climate_results <- blue_water_results %>%
+  select(placement_strategy,
+         fleet_model,
+         prop_mpa,
+         climate,
+         longline,
+         critter,
+         purseseine) %>%
+  pivot_longer(c(longline,purseseine), names_to = "fleet", values_to = "yield") %>%
+  pivot_wider(names_from = "climate", values_from =  "yield") %>%
+  mutate(delta = `TRUE` - `FALSE`) %>%
+  group_by(placement_strategy, prop_mpa, fleet) %>%
+  summarise(delta = sum(delta))
+
+fleet_climate_impacts <- fleet_climate_results %>%
+  ggplot(aes(prop_mpa, delta, color = fleet)) +
+  geom_hline(yintercept = 0, linetype = 2) +
   geom_line() +
-  facet_grid(fleet_model~placement_strategy)
+  facet_wrap(~placement_strategy) +
+  scale_y_continuous(name = "Difference in Yield") +
+  theme(axis.text.x = element_blank(), axis.title.x = element_blank())
 
 
-blue_water_results %>%
-  mutate(mpa_bin = cut(prop_mpa,4)) %>%
-  ggplot(aes(biodiv, yield, color = climate)) +
-  geom_point() +
-  facet_grid(critter~mpa_bin, scales = "free")
+critter_climate_results <- blue_water_results %>%
+  select(placement_strategy,
+         fleet_model,
+         prop_mpa,
+         climate,
+         critter,
+         biodiv) %>%
+  pivot_wider(names_from = "climate", values_from =  "biodiv") %>%
+  mutate(delta = `TRUE` - `FALSE`)
 
-blue_water_results %>%
-  filter(between(prop_mpa, 0.29, 0.31)) %>%
-  ggplot(aes(biodiv, yield, color = climate)) +
-  geom_point() +
-  facet_wrap(~critter, scales = "free")
 
-blue_water_results %>%
-  ggplot(aes(prop_mpa, biodiv, color = climate)) +
+critter_climate_impacts <- critter_climate_results %>%
+  ggplot(aes(prop_mpa, delta, color = critter)) +
   geom_line() +
-  facet_wrap(~critter, scales = "free_y") +
-  scale_y_continuous(limits = c(0, 1.5))
+  facet_wrap(~placement_strategy) +
+  scale_x_continuous(name = "MPA",labels = scales::label_percent()) +
+  scale_y_continuous(name = "Difference in SSB/SSB0")
 
+fleet_climate_impacts / critter_climate_impacts
 
-# REALLY interesting. the rate strategy looks for places with the highest rates of the most depleted species, sharks and closes those first. But, those are in the far east, since that's the only place sharks are left when the simulation starts. So, you protect the current home of the sharks, while fishing harder in the historic home, driving down the other species that live closer to shore
+linesize <- 0.5
 
+# blue_water_results <- blue_water_results %>%
+#   rename(`purse seine` = purseseine)
 
-blue_water_results %>%
-  ggplot(aes(prop_ssb0_mpa, biodiv, color = climate)) +
-  geom_line() +
-  facet_wrap(~critter) +
-  scale_y_continuous(limits = c(0, 1.5))
-
-
-blue_water_results %>%
-  group_by(prop_mpa, placement_strategy, fleet_model, climate) %>%
-  summarise(yield = sum(yield)) %>%
-  ggplot(aes(prop_mpa, yield, color = climate, linetype = fleet_model)) +
-  geom_line()
-
-blue_water_results %>%
-  ggplot(aes(prop_ssb0_mpa,  yield, color = climate)) +
-  geom_line() +
-  facet_wrap(~critter, scales = "free_y")
-
-
-blue_water_results %>%
-  select(-fleet_model) %>%
-  pivot_longer(names(fleets), names_to = "fleet", values_to = "fleet_yield") %>%
-  ggplot(aes(prop_ssb0_mpa, fleet_yield, color = climate)) +
-  geom_line() +
-  facet_grid(critter ~ fleet, scales = "free")
-
-
-blue_water_results %>%
-  select(-fleet_model) %>%
-  pivot_longer(names(fleets), names_to = "fleet", values_to = "fleet_yield") %>%
-  group_by(prop_mpa, fleet, placement_strategy,climate) %>%
-  summarise(yield = sum(fleet_yield)) %>%
-  ggplot(aes(prop_mpa, yield, color = climate)) +
-  geom_line() +
-  facet_wrap(~ fleet, scales = "free")
-
-
-
-# looking at fleet one, you could get up to a biodiv of near 2 while increasing yield, while fleet one will take a hit or lose severely to get to that level
-blue_water_results %>%
-  select(-fleet_model) %>%
-  pivot_longer(names(fleets), names_to = "fleet", values_to = "fleet_yield") %>%
-  group_by(prop_mpa, fleet, placement_strategy,climate) %>%
+blue_fleet_frontier <- blue_water_results %>%
+  pivot_longer(names(blue_fleets), names_to = "fleet", values_to = "fleet_yield") %>%
+  group_by(prop_mpa, fleet, placement_strategy, climate) %>%
   summarise(yield = sum(fleet_yield),biodiv = sum(unique(biodiv))) %>%
-  ggplot(aes(biodiv, yield, color = climate)) +
-  geom_point() +
-  facet_wrap(~ fleet, scales = "free")
+  ggplot(aes(biodiv, yield, color = placement_strategy, linetype = climate)) +
+  geom_line() +
+  scale_x_continuous(name = "Change in Total SSB/SSB0",limits = c(0, NA)) +
+  scale_y_continuous(name = "Total Yield",limits = c(0, NA)) +
+  facet_wrap(~ fleet, scales = "free_y")
+
+blue_frontier <- blue_water_results %>%
+  filter(climate == FALSE) %>%
+  group_by(prop_mpa, placement_strategy, climate) %>%
+  summarise(biodiv = sum(biodiv), yield = sum(yield)) %>%
+  group_by(placement_strategy) %>%
+  mutate(delta_yield = yield / yield[prop_mpa == 0] - 1,
+         delta_biodiv = biodiv / biodiv[prop_mpa == 0] - 1) %>%
+  ggplot(aes(delta_biodiv, delta_yield, color = placement_strategy, linetype = climate)) +
+  geom_vline(aes(xintercept = 0), linetype = 2) +
+  geom_hline(aes(yintercept = 0), linetype = 2) +
+  geom_line(size = linesize) +
+  scale_x_continuous(name = "Change in Conservation", labels = scales::label_percent(accuracy = 1)) +
+  scale_y_continuous(name = "Change in Yield", labels = scales::label_percent(accuracy = 1)) +
+  theme(legend.position = "top")
+
+
+blue_fleet_yield <- blue_water_results %>%
+  filter(placement_strategy %in% c("target_fishing", "rate")) %>%
+  pivot_longer(names(blue_fleets),
+               names_to = "fleet",
+               values_to = "fleet_yield") %>%
+  group_by(prop_mpa, fleet, placement_strategy, climate) %>%
+  summarise(yield = sum(fleet_yield), biodiv = sum(unique(biodiv))) %>%
+  group_by(fleet, placement_strategy) %>%
+  mutate(delta_yield = yield / yield[prop_mpa == 0] - 1) %>%
+  ggplot(aes(prop_mpa, delta_yield, color = climate)) +
+  geom_hline(aes(yintercept = 0), linetype = 2) +
+  geom_line(size = linesize, show.legend = FALSE) +
+  facet_grid(fleet ~ placement_strategy, scales = "free_y", labeller = labeller(fleet = titler, placement_strategy = titler)) +
+  scale_x_continuous(name = "MPA Size",
+                     labels = scales::label_percent(accuracy = 1)) +
+  scale_y_continuous(name = "Change in Yield",
+                     labels = scales::label_percent(accuracy = 1)) +
+  scale_color_manual(
+    values = c("#63B8FF", "#FF4500"),
+    labels = c("Status Quo", "Range Shift"),
+    name = ''
+  ) +
+  theme(strip.text = element_text(size = 8)) +
+  labs(tag = "A")
 
 
 
-blue_water_results %>%
-  group_by(prop_mpa, placement_strategy, fleet_model,climate) %>%
-  summarise(profits = sum(econ)) %>%
-  ggplot(aes(prop_mpa, profits, color = climate, linetype = fleet_model)) +
-  geom_line()
+blue_critter_bio <- blue_water_results %>%
+  filter(placement_strategy %in% c("target_fishing", "rate")) %>%
+  group_by(prop_mpa, critter, placement_strategy, climate) %>%
+  summarise(biodiv = sum(unique(biodiv))) %>%
+  group_by(critter, placement_strategy) %>%
+  mutate(delta_bio = biodiv) %>%
+  ungroup() %>%
+  mutate(placement_strategy = fct_relabel(as.factor(placement_strategy), titler)) %>%
+  ggplot(aes(prop_mpa, pmin(1,delta_bio), color = climate, linetype = placement_strategy)) +
+  geom_line(size = linesize) +
+  facet_wrap(~critter) +
+  scale_color_manual(values = c("#63B8FF","#FF4500"), labels = c("Status Quo","Range Shift"), name = '') +
+  scale_x_continuous(name = "MPA Size",
+                     labels = scales::label_percent(accuracy = 1), guide = guide_axis(n.dodge = 2)) +
+  scale_y_continuous(name = "SSB/SSB0",limits = c(0, NA)) +
+  scale_linetype(name = "MPA Strategy") +
+  labs(tag = "B")+
+  theme(strip.text = element_text(size = 7),
+        axis.text.y = element_text(size = 6))
 
 
-
+# blue_frontier / blue_critter_bio + plot_layout(heights = c(1,2))
+(blue_fleet_yield /
+    blue_critter_bio) + plot_layout(heights = c(1.5,2))
