@@ -711,8 +711,10 @@ of density dependent recruitment, building off of @babcock2011 :
     recruits are then distributed according to habitat quality
 
 $$
-n_{t,p,s,a = 1} = \left(\frac{0.8{\times}\sum_{p=1}^P{r0_{p,s}}\times{h_s}\times\sum_{p=1}^P{ssb_{t-1,p,s}}}{0.2\times{\sum_{p=1}^Pssb0_{p,s}}\times(1 - h_s)+(h_s - 0.2)\times{\sum_{p=1}^Pssb_{t-1,p,s}}}\right)\times {r0_{p,s} / \sum_p^P{r0_{p,s}}\times \epsilon_{t,s}
+\begin{aligned}
+n_{t,p,s,a = 1} = \left(\frac{0.8{\times}\sum_{p=1}^P{r0_{p,s}}\times{h_s}\times\sum_{p=1}^P{ssb_{t-1,p,s}}}{0.2\times{\sum_{p=1}^Pssb0_{p,s}} \times(1 - h_s)+(h_s - 0.2) \times{\sum_{p=1}^Pssb_{t-1,p,s}}}\right) \times \\ {r0_{p,s} / \sum_p^P{r0_{p,s}}\times \epsilon_{t,s}
 }
+\end{aligned}
 $$ {#eq-dd2}
 
 where $r0$ is is a vector of recruits under unfished conditions in a
@@ -754,7 +756,9 @@ $$ {#eq-dd4}
     distribution of spawning biomass
 
 $$
-n_{t,p,s,a = 1} = \left(\frac{0.8{\times}\sum_{p=1}^P{r0_{p,s}}\times{h_s}\times\sum_{p=1}^P{ssb_{t-1,p,s}}}{0.2\times{\sum_{p=1}^Pssb0_{p,s}}\times(1 - h_s)+(h_s - 0.2)\times{\sum_{p=1}^Pssb_{t-1,p,s}}}\right)\times \frac{ssb_{t-1,p,s}}{\sum_{p=1}^Pssb_{t-1,p,s}} \times \epsilon_{t,s}
+\begin{aligned}
+n_{t,p,s,a = 1} = \left(\frac{0.8{\times}\sum_{p=1}^P{r0_{p,s}}\times{h_s}\times\sum_{p=1}^P{ssb_{t-1,p,s}}}{0.2\times{\sum_{p=1}^Pssb0_{p,s}}\times(1 - h_s)+(h_s - 0.2)\times{\sum_{p=1}^Pssb_{t-1,p,s}}}\right) \times \\ \frac{ssb_{t-1,p,s}}{\sum_{p=1}^Pssb_{t-1,p,s}} \times \epsilon_{t,s}
+\end{aligned}
 $$ {#eq-dd5}
 
 Log-normal recruitment deviates are calculated with the potential for

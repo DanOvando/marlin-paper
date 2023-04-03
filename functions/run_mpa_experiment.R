@@ -162,7 +162,15 @@ run_mpa_experiment <-
         arrange(desc(habitat))
 
 
-    } else {
+    } else if (placement_strategy == "coast"){
+
+      priorities <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
+        mutate(patch = 1:nrow(.)) |>
+        mutate(distance = x - 1) |>
+        arrange(distance)
+
+
+    }else {
       stop("invalid placement strategy")
     }
 
