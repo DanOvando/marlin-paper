@@ -526,8 +526,8 @@ allows users to run anything from a simple Gaussian dispersal kernel up
 to a system governed by species that passively diffuse out from a core
 habitat defined by a dynamic thermal range.
 
-We provide a brief overview of the the general CTMC method here, see
-@thorson2021a for a detailed description. Under this framework, movement
+We provide a brief overview of the the general CTMC method here (see
+@thorson2021a for a detailed description). Under this framework, movement of indivuduals
 from each patch to each other patch in the system in a given timestep
 *t* for life stage *a* of species *s* is defined by a movement matrix
 $\boldsymbol{M}_{t,s,a}$. $\boldsymbol{M}_{t,s,a}$ is calculated as the
@@ -543,11 +543,8 @@ avenues; the number of patches, which effectively scales the resolution
 of the model, and the area of each patch, which scales the spatial
 extent of the simulation.
 
-$$
-\boldsymbol{M}_{t,s,a} = e^{\Delta_{t}(\boldsymbol{D}_{t,s,a} + \boldsymbol{\tau}_{t,s,a})} 
-$$ {#eq-movement}
 
-The individual components (*m*) of the movement matrix are filled based
+The individual components (*M*) of the movement matrix ($\boldsymbol{M}$) are filled based
 on an adjacency matrix, which defines whether two patches are both
 adjacent and water (as opposed to land or another physical barrier), a
 diffusion rate $D$ defined in units of area of a patch per unit of time,
@@ -571,9 +568,9 @@ off-diagonal elements of the movement matrix $\boldsymbol{M}_{t,s,a}$
 are all non-negative, a requirement of the CTMC method.
 
 $$ 
-m_{p1,p2,t,s,a} = \begin{cases}
+M_{p1,p2,t,s,a} = \begin{cases}
       = \frac{\Delta_{t}}{\Delta_{d}^2}De^{\frac{\Delta_t(h(p2,t,s,a) - h(p1,t,s,a))}{\Delta_d}} & \text{if p2 and p1 are adjacent}\\
-     = -\sum_{p' \neq p1} m_{p1,p2,t,s,a} & \text{if p1 = p2}\\
+     = -\sum_{p' \neq p1} M_{p1,p2,t,s,a} & \text{if p1 = p2}\\
      = 0 & \text{otherwise.}
 \end{cases}
 $$ {#eq-diffusion}
@@ -590,6 +587,12 @@ example might be a species that lives and feeds on coastal habitats
 transiting through a patch of open ocean to reach a new feeding ground.
 In contrast, a physical barrier represents something like a peninsula
 that an animal must move around to transit from one side to another.
+
+The movement of individuals across patches is then calculated by matrix multiplication of the pre-movement vector of the number of individuals ($\boldsymbol{n}$) of species *s* at age *a* in time step *t* across all patches *p* times the matrix exponential of the movement matrix $\boldsymbol{M}$
+
+$$
+\boldsymbol{n}_{t+1,s,a} = \boldsymbol{n}_{t,s,a}e^{\boldsymbol{M}_{t,s,a}}
+$$ {#eq-movement}
 
 While this CTMC approach to movement simulation is to date not commonly
 seen in the marine modeling literature, it has numerous advantages that
