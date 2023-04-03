@@ -20,6 +20,7 @@ params:
 header-includes:
   - \usepackage{setspace}\doublespacing
   - \usepackage{lineno}\linenumbers
+  - \usepackage{bm}
 ---
 
 ```{r setup}
@@ -527,49 +528,47 @@ to a system governed by species that passively diffuse out from a core
 habitat defined by a dynamic thermal range.
 
 We provide a brief overview of the the general CTMC method here (see
-@thorson2021a for a detailed description). Under this framework, movement of indivuduals
+@thorson2021a for a detailed description). Under this framework, movement of individuals
 from each patch to each other patch in the system in a given timestep
 *t* for life stage *a* of species *s* is defined by a movement matrix
-$\boldsymbol{M}_{t,s,a}$. $\boldsymbol{M}_{t,s,a}$ is calculated as the
-matrix exponent of a function of the diffusion $\boldsymbol{D}$ and
-taxis $\boldsymbol{\tau}$ matrices scaled by the width of the time step
+$\pmb{M}_{t,s,a}$. $\pmb{M}_{t,s,a}$ is calculated as a function of diffusion $\pmb{D}$ and
+taxis $\pmb{\tau}$ matrices scaled by the width of the time step
 $\Delta_{t}$ and the length of the edge of each patch $\Delta_d$ that
-the model is running under. So for example, if we are running a model on
-a monthly timestep, and we define the units of time in years, then
-$\Delta_{t} = 1/12$. Similarly, if we are running a model where one
-patch equals 100km^2^, then $\Delta_d = 10km$. This parameterization
+the model is running under. This parameterization
 allows users to set the effective area of the spatial domain through two
 avenues; the number of patches, which effectively scales the resolution
 of the model, and the area of each patch, which scales the spatial
 extent of the simulation.
 
 
-The individual components (*M*) of the movement matrix ($\boldsymbol{M}$) are filled based
+The individual components (*M*) of the movement matrix ($\pmb{M}$) are filled based
 on an adjacency matrix, which defines whether two patches are both
 adjacent and water (as opposed to land or another physical barrier), a
 diffusion rate $D$ defined in units of area of a patch per unit of time,
-and a habitat preference function *h* in units of length of a side of a
+and a habitat preference function *H* in units of length of a side of a
 patch per unit time. For example, if we are defining the time units as
 years and the distance units as kilometers, for a tuna $D$ might be
 1,000 $\frac{KM^2}{Year}$. We then use parameters $\Delta_{t}$ and
 $\Delta_{d}$ parameters to translate the diffusion rate $D$ to match the
-time step and patch size used in a simulation. This "scale free"
+time step and patch size used in a simulation. For example, if we were to run a model on
+a monthly timestep given time units of years, then
+$\Delta_{t} = 1/12 years$. If one square patch in the simulation has an area of 100km^2^, then $\Delta_d = 10KM$. This "scale free"
 parameterization means that appropriate value of $D$ can be identified
 for a species and then set, regardless of the time step or patch size
 used in the simulation model itself. The taxis component of the movement
-process is a function of the difference in habitat quality *h*. The
+process is a function of the difference in habitat quality *H*. The
 habitat preference function itself can take any form the user wishes.
 Exponentiating the difference in the habitat preference function between
 patches turns the taxis matrix into a multiplier of the diffusion rate
 *D*. As such, when creating habitat layers for simulation, users can
 tune the scale of the habitat gradient function to result in realistic
 multipliers of the diffusion rate. This parameterization ensure that the
-off-diagonal elements of the movement matrix $\boldsymbol{M}_{t,s,a}$
+off-diagonal elements of the movement matrix $\pmb{M}_{t,s,a}$
 are all non-negative, a requirement of the CTMC method.
 
 $$ 
 M_{p1,p2,t,s,a} = \begin{cases}
-      = \frac{\Delta_{t}}{\Delta_{d}^2}De^{\frac{\Delta_t(h(p2,t,s,a) - h(p1,t,s,a))}{\Delta_d}} & \text{if p2 and p1 are adjacent}\\
+      = \frac{\Delta_{t}}{\Delta_{d}^2}De^{\frac{\Delta_t(H(p2,t,s,a) - H(p1,t,s,a))}{\Delta_d}} & \text{if p2 and p1 are adjacent}\\
      = -\sum_{p' \neq p1} M_{p1,p2,t,s,a} & \text{if p1 = p2}\\
      = 0 & \text{otherwise.}
 \end{cases}
@@ -588,21 +587,20 @@ transiting through a patch of open ocean to reach a new feeding ground.
 In contrast, a physical barrier represents something like a peninsula
 that an animal must move around to transit from one side to another.
 
-The movement of individuals across patches is then calculated by matrix multiplication of the pre-movement vector of the number of individuals ($\boldsymbol{n}$) of species *s* at age *a* in time step *t* across all patches *p* times the matrix exponential of the movement matrix $\boldsymbol{M}$
+The movement of individuals across patches is then calculated by matrix multiplication of the pre-movement vector of the number of individuals ($\pmb{n}$) of species *s* at age *a* in time step *t* across all patches *p* times the matrix exponential of the movement matrix $\pmb{M}$
 
 $$
-\boldsymbol{n}_{t+1,s,a} = \boldsymbol{n}_{t,s,a}e^{\boldsymbol{M}_{t,s,a}}
+\pmb{n}_{t+1,s,a} = \pmb{n}_{t,s,a}e^{\pmb{M}_{t,s,a}}
 $$ {#eq-movement}
 
 While this CTMC approach to movement simulation is to date not commonly
 seen in the marine modeling literature, it has numerous advantages that
-warrant its seeming complexity. First, when only diffusion is present,
+warrant its seeming complexity. First, the parameters of the model have interpretable biological meaning (e.g. the diffusion rate *D*). Second, when only diffusion is present,
 the model will generalize to the familiar dynamics of a Gaussian
-dispersal kernel. However, the time component *t* in @eq-movement allows
-the movement model to be run on arbitrarily fine time steps. Second, the
-taxis model allow for more active habitat choices by species, allowing
+dispersal kernel at whatever spatial and temporal resolution the simulation is set to. Third, the
+taxis model allow for clearly parameterized active habitat choices by species, allowing
 us to simulate preferences of species in space and time efficiently.
-Lastly, this form has the advantage that the parameters are directly
+Lastly, the CTMC form has the advantage that its parameters are directly
 estimable from real data. So, if provided with for example spatial
 abundance data and a tagging study, users can estimate the diffusion and
 taxis movement parameters in the same manner as @thorson2021a, and then
@@ -736,7 +734,7 @@ $$ {#eq-dd1}
     dispersed.
 
 $$
-  n_{t,p,s,a = 1} = \left(\frac{0.8{\times}r0_{p,s}\times{h_s}\times{ssb_{t-1,p,s}}}{0.2\times{ssb0_{p,s}}\times(1 - h_s)+(h_s - 0.2)\times{ssb_{t-1,p,s}}}\right)\times \boldsymbol{d^l_s} \times \epsilon_{t,s}
+  n_{t,p,s,a = 1} = \left(\frac{0.8{\times}r0_{p,s}\times{h_s}\times{ssb_{t-1,p,s}}}{0.2\times{ssb0_{p,s}}\times(1 - h_s)+(h_s - 0.2)\times{ssb_{t-1,p,s}}}\right)\times \pmb{d^l_s} \times \epsilon_{t,s}
 $$ {#eq-dd3}
 
 where **d^l^** is the recruitment movement matrix
@@ -746,7 +744,7 @@ where **d^l^** is the recruitment movement matrix
     the density of spawning biomass at the destination patch.
 
 $$
-  larv_{t,p,s} = ssb_{t-1,p,s} \times\boldsymbol{d^l_s}
+  larv_{t,p,s} = ssb_{t-1,p,s} \times\pmb{d^l_s}
 $$ {#eq-larvmove}
 
 $$
@@ -813,7 +811,7 @@ required by their specific needs.
 
 <!-- $$ -->
 
-<!-- obj_p = \Phi \times scale(\sum_f^F \boldsymbol{\phi_{f,p}}) + (1 - \Phi)  scale(\boldsymbol{\sum_s^S\frac{ssb_s}{ssb0_{s,p}}}) -->
+<!-- obj_p = \Phi \times scale(\sum_f^F \pmb{\phi_{f,p}}) + (1 - \Phi)  scale(\pmb{\sum_s^S\frac{ssb_s}{ssb0_{s,p}}}) -->
 
 <!-- $$ {#eq-obj} -->
 
