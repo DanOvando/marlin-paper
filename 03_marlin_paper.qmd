@@ -23,16 +23,6 @@ header-includes:
   - \usepackage{bm}
 ---
 
-<!-- referees -->
-
-<!-- Maya Tolstoy -->
-
-<!-- Mikaela Provost -->
-
-<!-- Leah Gerber -->
-
-<!-- David M. Kaplan -->
-
 ```{r setup}
 #| echo: false
 #| message: false
@@ -1663,4 +1653,3 @@ https://figshare.com/articles/preprint/marlin-paper/21843582
 
 ::: {#refs}
 :::
-
