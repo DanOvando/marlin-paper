@@ -13,7 +13,7 @@ execute:
   message: false
   warning: false
   cache: false
-csl: chicago-author-date-16th-edition.csl
+csl: apa-6th-edition.csl
 bibliography: references.bib
 params:
   run_name: ["v1.0"]
@@ -59,52 +59,82 @@ walk(rdses,~assign(str_remove(.x,".rds"), read_rds(file.path(results_path,.x)), 
 
 ```
 
-<!-- Single column, double line spaced -->
-
-<!-- Within the word count (no more than 7000-8000 words for Standard Articles, 3000-4000 words for Applications and Practical Tools) -->
-
-<!-- Continuous line and page numbering throughout -->
-
-<!-- Clearly defined manuscript structure as standard: Author details, Abstract (must be numbered 1-4 according to Manuscript Specifications), Keywords, Introduction, Materials and Methods, Results, Discussion, Figures and Tables with captions -->
-
-<!-- Figures and Tables can be embedded within the text where referenced to facilitate reviewing -->
-
-<!--         Author Contributions (if >1 author – see Authorship Policy). -->
-
-<!--         Statement of where you intend to archive your data -->
-
 ## Title Page
 
-Journal Name: Ecological Applications
+Title: Simulating Benefits, Costs, and Tradeoffs of Spatial Management
+in Marine Social-Ecological Systems
 
-Manuscript Type: Article
+Running Title: Spatial Social-Ecological Simulation
 
-Manuscript Title: Simulating Benefits, Costs, and Tradeoffs of Management Policies in Marine Social-Ecological Systems
+Author Names: Daniel Ovando^1,2^, Darcy Bradley^3,4,5^, Echelle
+Burns^3,4,5^,Lennon Thomas^3,4,5^, James Thorson^6^
 
-Author Names: Daniel Ovando^1,2^, Darcy Bradley^3,4,5^, Echelle Burns^3,4,5^,Lennon Thomas^3,4,5^, James Thorson^6^
+Affiliations: ^1^ School of Aquatic and Fishery Sciences, University of
+Washington,1122 NE Boat St Box 355020,Seattle, WA, USA ^3^ Marine
+Science Institute, University of California, Santa Barbara, CA, USA ^4^
+Bren School of Environmental Science & Management, University of
+California, Santa Barbara, CA, USA ^5^ Environmental Markets Lab,
+University of California, Santa Barbara, CA, USA ^6^ Habitat and
+Ecological Processes Research Program, Alaska Fisheries Science Center,
+NOAA, NMFS, NOAA, Seattle, WA, USA
 
-Affiliations:
-^1^ School of Aquatic and Fishery Sciences, University of Washington,1122 NE Boat St Box 355020,Seattle, WA, USA
-^2^ Current Address: Inter-American Tropical Tuna Commission,8901 La Jolla Shores Drive, CA, USA
-La Jolla, CA 92037, USA
-^3^ Marine Science Institute, University of California, Santa Barbara, CA, USA
-^4^ Bren School of Environmental Science & Management, University of California, Santa Barbara, CA, USA
-^5^ Environmental Markets Lab, University of California, Santa Barbara, CA, USA
-^6^ Habitat and Ecological Processes Research Program, Alaska Fisheries Science Center, NOAA, NMFS, NOAA, Seattle, WA, USA
+Corresponding Author: Daniel Ovando
+[dovando\@iattc.org](mailto:dovando@iattc.org){.email}
 
-Corresponding Author: Daniel Ovando <dovando@iattc.org>
+Present Address: \^2 Inter-American Tropical Tuna Commission,8901 La
+Jolla Shores Drive, La Jolla, CA 92037, USA
 
-Open Research Statement: All code and materials needed to reproduce this paper is available at [https://github.com/DanOvando/marlin-paper](https://github.com/DanOvando/marlin-paper).
+Author Contributions: Methods and code written by DO and JT. Results
+produced by DO. Data collected by EB and LT. All authors contributed to
+the conceptualization and writing of the manuscript.
 
-Key Words: 
-Bio-economic modeling, spatio-temporal modeling, marine protected areas, fisheries management, marine spatial planning, conservation planning
+Conflict of Interest Statement: The authors declare no conflicts of
+interest.
 
 \newpage
 
 ## Abstract
 
-Designing effective spatial management strategies is challenging because marine ecosystems are highly dynamic and opaque, and extractive entities such as fishing fleets respond endogenously to ecosystem changes in ways that depend upon ecological and policy context. We present a tool, `marlin`, that can be used to efficiently simulate the bio-economic dynamics of marine systems in support of both management and research. We demonstrate `marlin’s` capabilities by focusing on two case studies on the conservation and food production impacts of marine protected areas (MPAs): a coastal coral reef and a pelagic tuna fishery. In the coastal coral reef example, we explore how heterogeneity in species distributions and fleet preferences can affect distributional outcomes of MPAs. In the pelagic case study, we show how our model can be used to assess the climate resilience of different MPA design strategies, as well as the climate sensitivity of different fishing fleets. This paper demonstrates how intermediate complexity simulation of coupled bio-economic dynamics can help communities predict and potentially manage trade-offs between conservation, fisheries yields, and distributional outcomes of management policies affected by spatial bio-economic dynamics.
+Designing effective spatial management strategies is challenging because
+marine ecosystems are highly dynamic and opaque, and extractive entities
+such as fishing fleets respond endogenously to ecosystem changes in ways
+that depend upon ecological and policy context. We present a tool,
+`marlin`, that can be used to efficiently simulate the bio-economic
+dynamics of marine systems in support of both management and research.
+We demonstrate `marlin’s` capabilities by focusing on two case studies
+on the conservation and food production impacts of marine protected
+areas (MPAs): a coastal coral reef and a pelagic tuna fishery. In the
+coastal coral reef example, we explore how heterogeneity in species
+distributions and fleet preferences can affect distributional outcomes
+of MPAs. In the pelagic case study, we show how our model can be used to
+assess the climate resilience of different MPA design strategies, as
+well as the climate sensitivity of different fishing fleets. This paper
+demonstrates how intermediate complexity simulation of coupled
+bio-economic dynamics can help communities predict and potentially
+manage trade-offs between conservation, fisheries yields, and
+distributional outcomes of management policies affected by spatial
+bio-economic dynamics.
 
+## Keywords
+
+Bio-economic modeling, spatio-temporal modeling, marine protected areas,
+fisheries management, marine spatial planning, conservation planning
+
+## Table of Contents
+
+1.  Introduction
+2.  Methods
+    1.  Model Summary
+    2.  Fleet Dynamics
+    3.  Population Model
+    4.  Case Studies
+3.  Results
+    1.  Coral Reefs
+    2.  Pelagic Systems
+4.  Discussion
+5.  Acknowledgements
+6.  Data Availability Statement
+7.  References
 
 ## Introduction
 
@@ -528,31 +558,31 @@ to a system governed by species that passively diffuse out from a core
 habitat defined by a dynamic thermal range.
 
 We provide a brief overview of the the general CTMC method here (see
-@thorson2021a for a detailed description). Under this framework, movement of individuals
-from each patch to each other patch in the system in a given timestep
-*t* for life stage *a* of species *s* is defined by a movement matrix
-$\pmb{M}_{t,s,a}$. $\pmb{M}_{t,s,a}$ is calculated as a function of diffusion $\pmb{D}$ and
-taxis $\pmb{\tau}$ matrices scaled by the width of the time step
-$\Delta_{t}$ and the length of the edge of each patch $\Delta_d$ that
-the model is running under. This parameterization
-allows users to set the effective area of the spatial domain through two
-avenues; the number of patches, which effectively scales the resolution
-of the model, and the area of each patch, which scales the spatial
-extent of the simulation.
+@thorson2021a for a detailed description). Under this framework,
+movement of individuals from each patch to each other patch in the
+system in a given timestep *t* for life stage *a* of species *s* is
+defined by a movement matrix $\pmb{M}_{t,s,a}$. $\pmb{M}_{t,s,a}$ is
+calculated as a function of diffusion $\pmb{D}$ and taxis $\pmb{\tau}$
+matrices scaled by the width of the time step $\Delta_{t}$ and the
+length of the edge of each patch $\Delta_d$ that the model is running
+under. This parameterization allows users to set the effective area of
+the spatial domain through two avenues; the number of patches, which
+effectively scales the resolution of the model, and the area of each
+patch, which scales the spatial extent of the simulation.
 
-
-The individual components (*M*) of the movement matrix ($\pmb{M}$) are filled based
-on an adjacency matrix, which defines whether two patches are both
-adjacent and water (as opposed to land or another physical barrier), a
-diffusion rate $D$ defined in units of area of a patch per unit of time,
-and a habitat preference function *H* in units of length of a side of a
-patch per unit time. For example, if we are defining the time units as
-years and the distance units as kilometers, for a tuna $D$ might be
-1,000 $\frac{KM^2}{Year}$. We then use parameters $\Delta_{t}$ and
-$\Delta_{d}$ parameters to translate the diffusion rate $D$ to match the
-time step and patch size used in a simulation. For example, if we were to run a model on
-a monthly timestep given time units of years, then
-$\Delta_{t} = 1/12 years$. If one square patch in the simulation has an area of 100km^2^, then $\Delta_d = 10KM$. This "scale free"
+The individual components (*M*) of the movement matrix ($\pmb{M}$) are
+filled based on an adjacency matrix, which defines whether two patches
+are both adjacent and water (as opposed to land or another physical
+barrier), a diffusion rate $D$ defined in units of area of a patch per
+unit of time, and a habitat preference function *H* in units of length
+of a side of a patch per unit time. For example, if we are defining the
+time units as years and the distance units as kilometers, for a tuna $D$
+might be 1,000 $\frac{KM^2}{Year}$. We then use parameters $\Delta_{t}$
+and $\Delta_{d}$ parameters to translate the diffusion rate $D$ to match
+the time step and patch size used in a simulation. For example, if we
+were to run a model on a monthly timestep given time units of years,
+then $\Delta_{t} = 1/12 years$. If one square patch in the simulation
+has an area of 100km^2^, then $\Delta_d = 10KM$. This "scale free"
 parameterization means that appropriate value of $D$ can be identified
 for a species and then set, regardless of the time step or patch size
 used in the simulation model itself. The taxis component of the movement
@@ -563,8 +593,8 @@ patches turns the taxis matrix into a multiplier of the diffusion rate
 *D*. As such, when creating habitat layers for simulation, users can
 tune the scale of the habitat gradient function to result in realistic
 multipliers of the diffusion rate. This parameterization ensure that the
-off-diagonal elements of the movement matrix $\pmb{M}_{t,s,a}$
-are all non-negative, a requirement of the CTMC method.
+off-diagonal elements of the movement matrix $\pmb{M}_{t,s,a}$ are all
+non-negative, a requirement of the CTMC method.
 
 $$ 
 M_{p1,p2,t,s,a} = \begin{cases}
@@ -587,7 +617,11 @@ transiting through a patch of open ocean to reach a new feeding ground.
 In contrast, a physical barrier represents something like a peninsula
 that an animal must move around to transit from one side to another.
 
-The movement of individuals across patches is then calculated by matrix multiplication of the pre-movement vector of the number of individuals ($\pmb{n}$) of species *s* at age *a* in time step *t* across all patches *p* times the matrix exponential of the movement matrix $\pmb{M}$
+The movement of individuals across patches is then calculated by matrix
+multiplication of the pre-movement vector of the number of individuals
+($\pmb{n}$) of species *s* at age *a* in time step *t* across all
+patches *p* times the matrix exponential of the movement matrix
+$\pmb{M}$
 
 $$
 \pmb{n}_{t+1,s,a} = \pmb{n}_{t,s,a}e^{\pmb{M}_{t,s,a}}
@@ -595,18 +629,20 @@ $$ {#eq-movement}
 
 While this CTMC approach to movement simulation is to date not commonly
 seen in the marine modeling literature, it has numerous advantages that
-warrant its seeming complexity. First, the parameters of the model have interpretable biological meaning (e.g. the diffusion rate *D*). Second, when only diffusion is present,
-the model will generalize to the familiar dynamics of a Gaussian
-dispersal kernel at whatever spatial and temporal resolution the simulation is set to. Third, the
-taxis model allow for clearly parameterized active habitat choices by species, allowing
-us to simulate preferences of species in space and time efficiently.
-Lastly, the CTMC form has the advantage that its parameters are directly
-estimable from real data. So, if provided with for example spatial
-abundance data and a tagging study, users can estimate the diffusion and
-taxis movement parameters in the same manner as @thorson2021a, and then
-pass their estimated parameters to `marlin` for simulation (so long as
-the estimating method uses the same functional form as the movement
-model in `marlin`).
+warrant its seeming complexity. First, the parameters of the model have
+interpretable biological meaning (e.g. the diffusion rate *D*). Second,
+when only diffusion is present, the model will generalize to the
+familiar dynamics of a Gaussian dispersal kernel at whatever spatial and
+temporal resolution the simulation is set to. Third, the taxis model
+allow for clearly parameterized active habitat choices by species,
+allowing us to simulate preferences of species in space and time
+efficiently. Lastly, the CTMC form has the advantage that its parameters
+are directly estimable from real data. So, if provided with for example
+spatial abundance data and a tagging study, users can estimate the
+diffusion and taxis movement parameters in the same manner as
+@thorson2021a, and then pass their estimated parameters to `marlin` for
+simulation (so long as the estimating method uses the same functional
+form as the movement model in `marlin`).
 
 #### Population Growth
 
@@ -656,18 +692,15 @@ $$
 minv_{s_a} = (\frac{l_{s,a}}{l_{\infty,s}})^{-1}
 $$ {#eq-minv}
 
-
 $$
 m_{s,a} = \frac{minv_{s,a}}{mean( minv_{s,a})}m_s
 $$ {#eq-mata}
-
 
 Alternatively, users can set mortality at age to be constant
 
 $$
 m_{s,a} = m_s
 $$ {#eq-mata2}
-
 
 Biomass *b* at age is then given by the weight at length equation
 governed by a scaling coefficient $\Omega_s$ and an exponent $\Phi_s$
@@ -1081,7 +1114,7 @@ KM^2^, broadly commensurate with the area of the WCPO.
 
 ```{r}
 #| label: fig-blue-ssb
-#| fig-cap: Spawning biomass divided by unfished spawning biomass in the time period prior to implementation of MPAs for the pelagic case study."
+#| fig-cap: "Spawning biomass divided by unfished spawning biomass in the time period prior to implementation of MPAs for the pelagic case study."
 
 grid <- expand_grid(x = 1:blue_resolution, y= 1:blue_resolution) %>%
   mutate(patch = 1:nrow(.))
@@ -1164,7 +1197,7 @@ patch_biomass %>%
 
 ```
 
-# Results
+## Results
 
 ### Coral Reefs
 
@@ -1509,7 +1542,7 @@ blue_critter_bio <- blue_water_results %>%
 blue_critter_bio) + plot_layout(heights = c(1.5,2))
 ```
 
-# Discussion
+## Discussion
 
 Marine ecosystems are driven by complex social-ecological dynamics.
 Communities must often make decisions on how to manage these systems
@@ -1601,15 +1634,20 @@ equitable marine resource management.
 
 ## Acknowledgements
 
-This project was funded by the Waitt Foundation. We thank Dr. Alexa Fredston for helpful revisions of this manuscript. 
+This project was funded by the Waitt Foundation. We thank Dr. Alexa
+Fredston for helpful revisions of this manuscript.
 
-## Author Contribitions
+## Data Availability Statement
 
-Methods and code written by DO and JT. Results produced by DO. Data collected by EB and LT. All authors contributed to the conceptualization and writing of the manuscript. 
-
-## Conflit of Interest Statement
-
-The authors declare no conflicts of interest. 
+The code, novel code, data, and materials needed to reproduce the
+results and all aspects of this manuscript are publicly available at
+https://github.com/DanOvando/marlin-paper, with supporting novel code
+available at https://github.com/DanOvando/marlin/. Upon acceptance, all
+data, materials, code, and novel code needed to reproduce the results
+and all aspects of this manuscript will be publicly available via GitHub
+at https://github.com/DanOvando/marlin-paper and
+https://github.com/DanOvando/marlin/ and through figshare at
+https://figshare.com/articles/preprint/marlin-paper/21843582
 
 ## References
 
