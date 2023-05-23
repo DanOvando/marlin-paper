@@ -3,9 +3,13 @@ title: "Revealing Benefits, Costs, and Tradeoffs of Spatial Management Arrising 
 author: "Dan Ovando"
 format:
   revealjs:
-    embed-resources: false
+    embed-resources: true
 ---
 
+
+## Testing
+
+Hello
 
 ## Complexity Matters!
 
