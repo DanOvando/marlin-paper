@@ -1,4 +1,5 @@
 # custom things
+*.tex
 __MACOSX/*
 results/
 data/

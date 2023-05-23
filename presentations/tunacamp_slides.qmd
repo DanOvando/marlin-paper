@@ -3,13 +3,95 @@ title: "Revealing Benefits, Costs, and Tradeoffs of Spatial Management Arrising 
 author: "Dan Ovando"
 format:
   revealjs:
-    embed-resources: true
+    embed-resources: false
+    fig-align: center
+    auto-stretch: true
+    theme: moon
 ---
 
+## Acknowledgements
 
-## Testing
+Daniel Ovando^1,2^, Darcy Bradley^3,4,5^, Echelle
+Burns^3,4,5^,Lennon Thomas^3,4,5^, James Thorson^6^
 
-Hello
+Affiliations: ^1^ School of Aquatic and Fishery Sciences, University of
+Washington,1122 NE Boat St Box 355020,Seattle, WA, USA ^3^ Marine
+Science Institute, University of California, Santa Barbara, CA, USA ^4^
+Bren School of Environmental Science & Management, University of
+California, Santa Barbara, CA, USA ^5^ Environmental Markets Lab,
+University of California, Santa Barbara, CA, USA ^6^ Habitat and
+Ecological Processes Research Program, Alaska Fisheries Science Center,
+NOAA, NMFS, NOAA, Seattle, WA, USA
+
+
+## All Models are Wrong
+
+
+:::: {.columns}
+
+::: {.column width="60%"}
+
+- But some are hopefully useful for something?
+
+- 
+
+:::
+
+::: {.column width="40%"}
+Right column
+:::
+
+::::
+
+## Lots of Spatio-Temporal Models Out There
+
+![](imgs/fulton-mpas.jpg)
+
+::: aside
+[Fulton *et al.* 2015](https://royalsocietypublishing.org/doi/10.1098/rstb.2014.0278)
+:::
+
+## The marlin package
+
+[`marlin`](https://danovando.github.io/marlin/) is an R package currently available on GitHub
+
+```{r}
+#| eval: false
+
+remotes::install_github("danovando/marlin")
+
+```
+
+Core Features
+
+- Full age structure of multiple fish(y) critters (automated life history with [FishLife](https://github.com/James-Thorson-NOAA/FishLife))
+
+- Multiple fleets and *métiers* enabling **technical interactions**
+  - Input controls, output controls, bio-economic dynamics
+
+- 2-D spatial structure with scale-free and estimable movement
+
+- Fast! (fractions of a second for 10x10 system over 20 years with quarterly steps)
+
+## The marlin Package
+
+Best suited for *what if* as opposed to *what will* questions
+
+  - 
+  
+## Fish Model
+
+## Movement Model
+
+## Fleet Model
+
+## Manager Model
+
+## Coral Reef Case Study
+
+
+![](../03_marlin_paper_files/figure-pdf/fig-coral-1.png)
+
 
 ## Equations
 
@@ -23,3 +105,19 @@ $$ {#eq-dd2}
 ## Complexity Matters!
 
 ![](imgs/complexity.png)
+
+## Linking to Team Tuna
+
+
+- Still stuck in the dietary dark ages 
+  - Diet data could be used to inform taxis matrix?
+  
+- Humans need to be part of the "diet Renaissance"!
+
+- Provides a direct and mechanistic link between tagging studies and simulation work
+  - Can be linked to advection and environmental covariates as a bonus!
+  
+- Future work adding in more species modules
+  - Seabirds?
+  - Marine mammals?
+  - Turtles?
