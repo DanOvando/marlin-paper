@@ -11,6 +11,15 @@ format:
 
 Hello
 
+## Equations
+
+$$
+\begin{aligned}
+n_{t,p,s,a = 1} = \left(\frac{0.8{\times}\sum_{p=1}^P{r0_{p,s}}\times{h_s}\times\sum_{p=1}^P{ssb_{t-1,p,s}}}{0.2\times{\sum_{p=1}^Pssb0_{p,s}} \times(1 - h_s)+(h_s - 0.2) \times{\sum_{p=1}^Pssb_{t-1,p,s}}}\right) \times \\ {r0_{p,s} / \sum_p^P{r0_{p,s}}\times \epsilon_{t,s}
+}
+\end{aligned}
+$$ {#eq-dd2}
+
 ## Complexity Matters!
 
 ![](imgs/complexity.png)
