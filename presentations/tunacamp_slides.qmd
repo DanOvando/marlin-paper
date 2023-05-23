@@ -1,32 +1,316 @@
 ---
-title: "Revealing Benefits, Costs, and Tradeoffs of Spatial Management Arrising from Coupled Economic and Ecological Dynamics in Marine Systems"
+title: "Simulating Benefits, Costs, and Tradeoffs of Spatial Management in Marine Social-Ecological Systems"
+subtitle: "73rd Annual Tuna Conference"
 author: "Dan Ovando"
 format:
   revealjs:
     embed-resources: true
-editor: visual
+    fig-align: center
+    auto-stretch: true
+    theme: [moon, custom.scss]
 ---
 
-## Quarto
+## Acknowledgements
 
-Quarto enables you to weave together content and executable code into a
-finished presentation. To learn more about Quarto presentations see
-<https://quarto.org/docs/presentations/>.
+**Daniel Ovando^1,2^, Darcy Bradley^3,4,5^, Echelle Burns^3,4,5^,Lennon
+Thomas^3,4,5^, James Thorson^6^**
 
-## Bullets
+**Funding**: Waitt Foundation
 
-When you click the **Render** button a document will be generated that
-includes:
+::: aside
+Affiliations: ^1^ School of Aquatic and Fishery Sciences, University of
+Washington,1122 NE Boat St Box 355020,Seattle, WA, USA ^3^ Marine
+Science Institute, University of California, Santa Barbara, CA, USA ^4^
+Bren School of Environmental Science & Management, University of
+California, Santa Barbara, CA, USA ^5^ Environmental Markets Lab,
+University of California, Santa Barbara, CA, USA ^6^ Habitat and
+Ecological Processes Research Program, Alaska Fisheries Science Center,
+NOAA, NMFS, NOAA, Seattle, WA, USA
+:::
 
--   Content authored with markdown
--   Output from executable code
+## All Models are Wrong
 
-## Code
+But some are hopefully useful for something?
 
-When you click the **Render** button a presentation will be generated
-that includes both content and the output of embedded code. You can
-embed code like this:
+- At the *strategic* level can help provide general insights around *what kinds of things matter*
+
+- At the *tactical* level can help provide *specific answers* when experiments are off the table
+ 
+
+. . . 
+
+What is the best model of an elephant?
+
+. . . 
+
+Depends on objectives
+
+
+## Lots of Spatio-Temporal Models Out There
+
+![](imgs/fulton-mpas.jpg)
+
+::: aside
+[Fulton *et al.*
+2015](https://royalsocietypublishing.org/doi/10.1098/rstb.2014.0278)
+:::
+
+## The marlin package {.smaller}
+
+[`marlin`](https://danovando.github.io/marlin/) is an R package
+currently available on GitHub
 
 ```{r}
-1 + 1
+#| eval: false
+
+remotes::install_github("danovando/marlin")
+
 ```
+
+#### Core Features
+
+-   Full age structure of multiple fish(y) critters (automated life
+    history with
+    [FishLife](https://github.com/James-Thorson-NOAA/FishLife))
+
+-   Multiple fleets and *métiers* enabling **technical interactions**
+
+    -   Input controls, output controls, bio-economic dynamics
+    
+    - Bycatch impacts
+    
+    - Distributional impacts of policies on fish and people
+
+-   2-D spatial structure with scale-free and estimable movement
+
+-   Fast! (fractions of a second for 10x10 system over 20 years with
+    quarterly steps)
+
+
+# Help users test the impacts of bio-economic uncertainties on social-ecological outcomes
+
+. . .
+
+Best suited for *what if* as opposed to *what will* questions
+
+## Fish Model {.smaller}
+
+- Flexible time steps
+
+- Simultaneously simulate *N* age-structured fish(ish) populations
+
+- von Bertalanffy growth
+
+- Flexible fecundity at age
+
+- [Lorenzen natural mortality](https://linkinghub.elsevier.com/retrieve/pii/S0165783622002314) by default
+
+- 6 different timing of Beverton-Holt recruitment
+  - e.g. pre vs. post settlement
+  - With or without potentially auto-correlated recruitment deviates
+
+## Movement Model
+
+Movement simulated using a *continuous-time Markov chain (CTMC)^[[Thorson et al. 2021](https://onlinelibrary.wiley.com/doi/10.1111/faf.12592)]*
+
+- Movement governed by *diffusion* and *taxis* matrices
+  
+  - Can be separate for larvae vs. adults
+  
+  - See later releases for age-specific and *advection*
+
+  - Can be empirically estimated!
+  
+  - Can dodge barriers (e.g. land)
+  
+
+## Movement Model {.smaller}
+
+*Instantaneous* movement matrix is a function of diffusion rate *D*, habitat matrix *H*, and the spatial ($\Delta_d$) and temporal ($\Delta_t$) resolution
+
+$$ 
+M_{p1,p2,t,s,a} = \begin{cases}
+      = \frac{\Delta_{t}}{\Delta_{d}^2}De^{\frac{\Delta_t(H(p2,t,s,a) - H(p1,t,s,a))}{\Delta_d}} & \text{if p2 and p1 are adjacent}\\
+     = -\sum_{p' \neq p1} M_{p1,p2,t,s,a} & \text{if p1 = p2}\\
+     = 0 & \text{otherwise.}
+\end{cases}
+$$ {#eq-diffusion}
+
+. . . 
+
+Numbers at age by patch then distributed each time step via matrix exponential
+
+$$
+\pmb{n}_{t+1,s,a} = \pmb{n}_{t,s,a}e^{\pmb{M}_{t,s,a}}
+$$ {#eq-movement}
+
+
+. . . 
+
+Scale-free parameterization means parameters can be preserved and compared across models with different spatio-temporal resolution
+
+## {background-image=imgs/ctmc.gif background-size=contain}
+
+## Fleet Model
+
+- *N* fleets defined by *M* *metiers*
+
+- Fleets have
+  - Cost per unit effort
+  - Travel costs from ports
+
+- *metier* defined by
+  - Species
+  - Price
+  - Selectivity at age
+  - Catchability in space
+  
+## Fleet Model {.smaller}
+  
+Catch per species calculated by Baranov equation 
+
+$$
+Y_{t,p,s,a} = \frac{u_{t,p,s,a}}{z_{t,p,s,a}} \times b_{t,p,s,a} \times (1 - e^{-z_{t,p,s,a}})
+$$ {#eq-yield}
+
+. . . 
+And then revenues divided to each fleet proportionally
+
+$$
+ R_{t,p,f} = \sum_s^{N_s} \sum_a^{N_a} \Pi_{s,f}\frac{\alpha_{a,s,f}q_{s,f}E_{t,p,f}}{u_{t,p,s,a}} \times Y_{t,p,s,a}
+$$ {#eq-revenue}
+
+. . . 
+
+Fishers then allocate effort in space based on total profits in space in last time step (conditional on management...)^[Allows for economic MPAs!]
+
+## Fleet Model
+
+Absent management fleet can either be *constant effort*^[with or without MPA attrition] or *open access*
+
+When *open access*, fishing effort expands and contracts in response to total profits
+
+. . . 
+
+$$
+E_{t+1,f} = E_{t,f} \times e^{\theta_f log(R_{t,f} / C_{t,f})} 
+$$ {#eq-oa}
+
+
+
+## Manager Model
+
+Managers can set arbitrary combinations of
+
+- Size / slot limits
+
+- Fishing seasons by species
+
+- Effort limits by species
+
+- Catch quotas by species
+
+- MPAs
+
+- "Bycatch" penalties
+
+
+## Coral Reef Case Study
+
+![](imgs/03_marlin_paper_files/figure-pdf/fig-coral-1.png){.absolute left=50 height="600"}
+
+
+## Coral Reef Case Study
+
+![](imgs/03_marlin_paper_files/figure-pdf/fig-coral-results-1.png){.absolute left=50 height="600"}
+
+
+
+## Pelagic Case Study
+
+![](imgs/03_marlin_paper_files/figure-pdf/fig-blue-1.png){.absolute left=50 height="600"}
+
+
+## Pelagic Case Study
+
+
+![](imgs/03_marlin_paper_files/figure-pdf/fig-blue-results-1.png){.absolute top=100 left=200 width="650" height="550"}
+
+
+## Complexity Matters!
+
+. . . 
+
+![](imgs/complexity.png)
+
+## Linking to Team Tuna {.smaller}
+
+-   Many models still stuck in the dietary dark ages
+
+    -   Diet data could be used to inform taxis matrix?
+
+-   Humans need to be part of the "diet Renaissance"!
+
+-   `marlin` provides a mechanistic link between tagging studies and
+    simulation work
+
+    -   Can be linked to advection and environmental covariates as a
+        bonus!
+
+-   Future work adding in more species modules
+
+    -   Seabirds?
+    -   Marine mammals?
+    -   Turtles?
+
+## Of MICE and `marlin`
+
+
+::: columns
+::: {.column width="60%"}
+
+- Spatial stock assessment and management increasingly needed
+
+- BBNJ and 30x30 means that "tunas" are now firmly in the great MPA debate
+
+- Lack of consistent / transparent assumptions can produce inconsistent outcomes
+
+- MICE models like `marlin` can help illuminate drivers of social-ecological outcomes in fisheries
+
+:::
+::: {.column width="40%"}
+
+![](imgs/bbnj.png)
+
+
+![](imgs/medoff.png)
+
+
+![](imgs/hampton.png)
+
+
+:::
+
+:::
+## Questions?
+
+::: columns
+::: {.column width="65%"}
+-   Be on the lookout for `marlin` paper sometime in 2023 (fingers
+    crossed)
+
+-   Check out the model at <br> [https://danovando.github.io/marlin/](https://danovando.github.io/marlin/)
+
+-   Open source! Contributions welcome
+
+-   email: dovando@iattc.org
+
+-   github: danovando
+
+-   twitter: @danovand0
+:::
+
+::: {.column width="35%"}
+![](imgs/IMG_1679.JPG)
+:::
+:::

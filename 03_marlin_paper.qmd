@@ -6,6 +6,8 @@ format:
     mainfont: Times New Roman
     sansfont: Times New Roman
     fontsize: 12pt
+    keep-tex: true
+    fig-format: png
   html: default
   docx: default
 execute:

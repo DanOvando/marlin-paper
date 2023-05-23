@@ -1,4 +1,6 @@
 # custom things
+*.gif
+*.tex
 __MACOSX/*
 results/
 data/
