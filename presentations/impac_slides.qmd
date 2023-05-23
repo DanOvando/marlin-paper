@@ -1,0 +1,327 @@
+---
+title: "Assessing the Population-level Impacts of Marine Protected Areas"
+subtitle: "IMPAC 2023"
+author: "Dan Ovando"
+date: "2023/02/04"
+format:
+  revealjs:
+    fig-align: center
+    auto-stretch: true
+  html: default
+  pptx:
+    reference-doc: "template.pptx"
+execute: 
+  eval: true
+  message: false
+  warning: false
+---
+
+
+```{r}
+#| label: setup
+#| include: false
+library(knitr)
+
+library(tufte)
+
+library(tidyverse)
+
+library(here)
+
+
+```
+
+
+## Population-Effects of MPAs
+
+
+
+:::: {.columns}
+::: {.column width="60%"}
+- Thanks to co-authors and PISCO divers
+- MPAs a growing part of marine management toolkit
+- *Predicting* and *estimating* effects critical for planning and adaptation
+
+**What effects do protected areas have on populations inside and outside of borders?**
+:::
+::: {.column width="40%"}
+![](imgs/paper_cover.png)
+:::
+::::
+
+## MPAs have Complex Effects {.smaller}
+
+
+:::: {.columns}
+::: {.column width="50%"}
+
+Fishing closures have complex impacts beyond borders
+
+
+- "spillover" of adult or larval organisms
+  
+- Displacement of human activities 
+
+- Across multiple species and fleets!
+
+
+**Creates a challenge for both predicting and estimating effects of spatial policies**
+
+
+:::
+
+::: {.column width="50%"}
+![](imgs/IMG_1679.JPG)
+:::
+::::
+
+
+
+## MPAs - The Evidence {.smaller}
+
+:::: {.columns}
+::: {.column width="50%}
+
+:::{.incremental}
+- MPAs seem simple: 
+  - *Less fishing, more fish*
+  
+- Ample evidence of **more everything** inside MPAs than outside (Lester *et al.* 2009)
+
+- Problem solved?
+
+  - Fish and Fishers move
+
+  - What do we do when the **treatment** affects the **control**
+  
+  How do we estimate **net effect** inside and out?
+:::
+:::
+::: {.column width="50%"}
+![](imgs/lester.jpg)
+:::
+::::
+
+
+## Population-Level Effects of MPAs
+
+![](imgs/bio_anim.gif)
+
+
+::: notes
+Relatively sedentary adults, widely dispersed larvae with post-settlement density dependence
+:::
+
+## Population-Level Effects of MPAs
+
+
+![](imgs/fleet_anim.gif)
+
+
+::: notes
+Relatively sedentary adults, widely dispersed larvae with post-settlement density dependence
+:::
+
+## The Challenge of Spatial MPA evaluation
+
+::: {.incremental}
+
+- The goal of a control site is to account for **differences and changes caused by things other than the MPA that you do not directly observe**
+
+- The **closer** your control site, the more risk of spillover and fleet movement affecting your "control" 
+
+
+- The **further** your control site, the less likely it will experience common environmental shocks
+
+
+- Is there an alternative to spatial controls?
+:::
+## Some useful tips here
+
+![](imgs/hilborn.png)
+
+
+
+
+## Case Study: Channel Islands MPAs
+
+![](imgs/ci.png)
+
+
+## What Happend in the Channel Islands?
+
+![](imgs/raw_targ_trend.png){fig.align="center"}
+
+
+## What Happend in the Channel Islands?
+
+![](imgs/raw_trend.png)
+
+## Estimating Population-Level Effects
+
+![](imgs/did.001.jpeg)
+
+
+## Estimating Population-Level Effects
+
+![](imgs/did.002.jpeg)
+
+
+---
+
+
+## Estimating Population-Level Effects
+
+![](imgs/did.003.jpeg)
+
+---
+
+## Estimating Population-Level Effects
+
+### General form
+
+$$(log(D_{MPA=1, T = 1})-log(D_{MPA=0, T = 1}))-(log(D_{MPA = 1,T = 0})-log(D_{MPA =0, T = 0}))$$
+
+
+### Bayesian Gamma GLM 
+
+$$d_{i} \sim Gamma(e^{\beta_0 + \beta_1T_{i} +  \beta_2MPA_{i} + \beta_{3}T_iMPA_i + \mathbf{B^cX_i} + \mathbf{B^sS_i}},shape)$$
+
+
+### Hierarchical clustering of sites by island
+$$\mathbf{B^s} \sim N(\beta_r,\sigma_r)$$ 
+
+
+## Population-Level Effects of MPAs
+
+
+![](imgs/a_priori_plot.png)
+
+
+
+## Population-Level Effects of MPAs {.nostretch}
+
+
+![](imgs/mpa_effect_plot.png)
+
+
+
+## Effects of Protected Areas {.smaller}
+
+::: columns
+::: {.column width="50%"}
+
+- Critical to consider effects **inside** and **outside**
+
+-  **Population** effects may be smaller and harder to find than conventionally thought
+
+- Uncertainty does not preclude action
+
+- Communities should have a clear understanding of full range of possible effects of protected areas
+
+:::
+::: {.column width="50%"}
+![](imgs/IMG_2947.JPG)
+:::
+:::
+
+## The Next Generation of MPA Models
+
+:::: {.columns}
+::: {.column width="60%"}
+Empirical strategies should...
+
+- Acknowledge uncertainty
+- Have a clear and defensible strategy for causal inference
+- Be grounded in theory
+
+:::
+::: {.column width="40%"}
+
+Predictive models should...
+
+- Assess where they fall on the "tactical" to "strategic" spectrum
+- Acknowledge, explore, and communicate key uncertainties
+- Remember that all models are wrong, some are useful
+:::
+::::
+
+
+## Reliable Estimation Matters
+
+![](imgs/complexity.png)
+
+## `marlin`
+
+Be on the lookout for a new MPA modeling tool called [`marlin`](https://danovando.github.io/marlin/) in the coming year. 
+
+- Full age structure
+- 2D spatial structure
+- Multi-species & Multi-fleet
+- Realistic movement dynamics
+
+**Facilitate simulation testing of MPA design outcomes**
+
+## Questions?
+
+:::: {.columns}
+::: {.column width="60%"}
+
+
+**email:** dovando@iattc.org
+
+**website:** [danovando.com](https://www.weirdfishes.blog/)
+
+**twitter:** [@danovand0](https://twitter.com/DanOvand0)
+
+
+  
+**Funding:** NOAA Sea Grant Population and Ecosystem Dynamics Fellowship
+
+:::
+::: {.column width="40%"}
+
+![](imgs/squats.jpg)
+:::
+::::
+
+
+
+# Extras
+
+## Inside vs. Outside = Effect?
+
+
+![](imgs/rr1.jpg)
+
+
+## Inside vs. Outside = Effect?
+
+
+![](https://raw.githubusercontent.com/DanOvando/weird-fishes/master/static/blog/2021-07-06-pop-effects-of-mpas_files/biased_dr_plot.jpg)
+
+## Details Matter
+
+![](imgs/complexity)
+
+## Details Matter
+
+![](imgs/need.png)
+
+
+## Effect Size Matters
+
+![](imgs/ERRORS.PNG)
+
+## MPAs - The Evidence
+
+<br>
+<br>
+<br>
+
+> The jury is in on marine reserves: They work.
+> Research has repeatedly shown that fish numbers quickly climb following well-enforced fishing bans, 
+> creating tangible benefits for fishers who work the surrounding waters.
+
+[NPR 2018](https://www.npr.org/sections/thesalt/2018/09/14/647441547/could-a-ban-on-fishing-in-international-waters-become-a-reality)
+
