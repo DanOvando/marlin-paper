@@ -10,6 +10,8 @@ format:
     theme: [moon, custom.scss]
 ---
 
+## Time for Models! {background-image="https://c.tenor.com/FtuByrhdiwIAAAAC/monty-python.gif" background-size=contain}
+
 ## Acknowledgements
 
 **Daniel Ovando^1,2^, Darcy Bradley^3,4,5^, Echelle Burns^3,4,5^,Lennon
@@ -36,7 +38,6 @@ But some are hopefully useful for something?
 
 - At the *tactical* level can help provide *specific answers* when experiments are off the table
  
-
 . . . 
 
 What is the best model of an elephant?
@@ -85,6 +86,9 @@ remotes::install_github("danovando/marlin")
 
 -   Fast! (fractions of a second for 10x10 system over 20 years with
     quarterly steps)
+      - R in the front, C++ in the back
+    
+- Recursive (you can pass it to itself) for customized applications (e.g. MSE)
 
 
 # Help users test the impacts of bio-economic uncertainties on social-ecological outcomes
@@ -94,6 +98,9 @@ remotes::install_github("danovando/marlin")
 Best suited for *what if* as opposed to *what will* questions
 
 ## Fish Model {.smaller}
+
+::: columns
+::: {.column width="60%"}
 
 - Flexible time steps
 
@@ -108,6 +115,17 @@ Best suited for *what if* as opposed to *what will* questions
 - 6 different timing of Beverton-Holt recruitment
   - e.g. pre vs. post settlement
   - With or without potentially auto-correlated recruitment deviates
+  
+- Flexible spawning seasons
+
+- We'll get to movement...
+:::
+::: {.column width="40%"}
+
+![](imgs/fishy.jpeg)
+
+:::
+:::
 
 ## Movement Model
 
@@ -117,7 +135,7 @@ Movement simulated using a *continuous-time Markov chain (CTMC)^[[Thorson et al.
   
   - Can be separate for larvae vs. adults
   
-  - See later releases for age-specific and *advection*
+  - See later releases for age-specific and *advection* (aka oceanography!)
 
   - Can be empirically estimated!
   
@@ -137,6 +155,14 @@ M_{p1,p2,t,s,a} = \begin{cases}
 $$ {#eq-diffusion}
 
 . . . 
+
+This is the important part
+
+$$ 
+\frac{\Delta_{t}}{\Delta_{d}^2}De^{\frac{\Delta_t(H(p2,t,s,a) - H(p1,t,s,a))}{\Delta_d}} 
+$$ {#eq-diffusion2}
+
+## Movement Model
 
 Numbers at age by patch then distributed each time step via matrix exponential
 
@@ -186,7 +212,7 @@ Fishers then allocate effort in space based on total profits in space in last ti
 
 ## Fleet Model
 
-Absent management fleet can either be *constant effort*^[with or without MPA attrition] or *open access*
+Conditional on management management fleet can either be *constant effort*^[with or without MPA attrition] or *open access*
 
 When *open access*, fishing effort expands and contracts in response to total profits
 
@@ -219,6 +245,38 @@ Managers can set arbitrary combinations of
 
 ![](imgs/03_marlin_paper_files/figure-pdf/fig-coral-1.png){.absolute left=50 height="600"}
 
+::: {.notes}
+
+Fleet One primarily targets the grouper and near-shore snapper populations, but will land
+any incidentally captured sharks. Fleet One has a logistic selectivity
+pattern for all species, as they retain any fish caught for consumption
+or sale. both grouper and shallow-reef snapper due to demand for "plate
+sized" fish , and logistic selectivity for sharks, as any shark caught
+is retained. Fleet One is totally dependent on fishing for their
+livelihood, meaning the local community takes advantage of every
+possible opportunity to fish, and as such we model it as a "constant
+effort" fishery. Do to having less efficient boats, Fleet One has a
+higher cost per distance coefficient than Fleet Two. Fleet One's home
+port is located on the site of the grouper spawning aggregation.
+
+Fleet Two is a more commercial fleet that primarily targets the
+deep-water snapper population. This fleet primarily sells their catch to
+local restaurants and distributors where plate-sized fish are prized,
+and so for both snapper and grouper Fleet Two has a dome-shaped
+selectivity pattern [@kindsvater2017]. While plate-sized deep snapper
+are the primary target of Fleet Two, we model Fleet Two's selectivity
+for deep snapper as logistic due to high levels of discard mortality for
+deep-water snapper resulting from barotrauma. Fleet Two catches
+groupers, though less than Fleet One, and receives no price for sharks
+due to the requirements of a certification program through which they
+sell their deep-water snapper. Accidental captures (bycatch) of sharks
+do occur, which results in mortality. Fleet Two operates under
+open-access dynamics, as fishing is not the only means of subsistence
+for this community; short-term effort expands and contracts in response
+to profitability of the primarily grouper-driven fishery. Fleet two's
+home port is located further north from Fleet One.
+
+:::
 
 ## Coral Reef Case Study
 
@@ -234,10 +292,10 @@ Managers can set arbitrary combinations of
 ## Pelagic Case Study
 
 
-![](imgs/03_marlin_paper_files/figure-pdf/fig-blue-results-1.png){.absolute top=100 left=200 width="650" height="550"}
+![](imgs/03_marlin_paper_files/figure-pdf/fig-blue-results-1.png){.absolute top=100 left=200 width="750" height="600"}
 
 
-## Complexity Matters!
+## Complexity Matters! (but it's costly)
 
 . . . 
 
@@ -263,7 +321,7 @@ Managers can set arbitrary combinations of
     -   Marine mammals?
     -   Turtles?
 
-## Of MICE and `marlin`
+## Of MICE and `marlin` {.smaller}
 
 
 ::: columns
@@ -275,7 +333,7 @@ Managers can set arbitrary combinations of
 
 - Lack of consistent / transparent assumptions can produce inconsistent outcomes
 
-- MICE models like `marlin` can help illuminate drivers of social-ecological outcomes in fisheries
+- [MICE(ish)](https://research.csiro.au/mice/) models like `marlin` can help illuminate drivers of social-ecological outcomes in fisheries
 
 :::
 ::: {.column width="40%"}
@@ -308,6 +366,8 @@ Managers can set arbitrary combinations of
 -   github: danovando
 
 -   twitter: @danovand0
+
+- website: [danovando.com](https://www.weirdfishes.blog/)
 :::
 
 ::: {.column width="35%"}
