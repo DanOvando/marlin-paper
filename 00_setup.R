@@ -23,6 +23,8 @@ library(furrr)
 
 library(gamm4)
 
+library(lme4)
+
 library(patchwork)
 
 library(ggrepel)
@@ -30,8 +32,6 @@ library(ggrepel)
 library(ggdist)
 
 library(rmarkdown)
-
-library(quarto)
 
 library(extrafont)
 

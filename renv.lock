@@ -1758,18 +1758,6 @@
       ],
       "Hash": "273a6bb4a9844c296a459d2176673270"
     },
-    "packrat": {
-      "Package": "packrat",
-      "Version": "0.9.1",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "R",
-        "tools",
-        "utils"
-      ],
-      "Hash": "481428983c19a7c443f7ea1beff0a2de"
-    },
     "parallelly": {
       "Package": "parallelly",
       "Version": "1.36.0",
@@ -1993,23 +1981,6 @@
         "R"
       ],
       "Hash": "5f919ae5e7f83a6f91dcf2288943370d"
-    },
-    "quarto": {
-      "Package": "quarto",
-      "Version": "1.2",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "jsonlite",
-        "later",
-        "processx",
-        "rmarkdown",
-        "rsconnect",
-        "rstudioapi",
-        "utils",
-        "yaml"
-      ],
-      "Hash": "298a252816cabed120391c955aced484"
     },
     "ragg": {
       "Package": "ragg",
@@ -2307,24 +2278,6 @@
         "jsonlite"
       ],
       "Hash": "a4466aed026e3da00aac7159322f99b9"
-    },
-    "rsconnect": {
-      "Package": "rsconnect",
-      "Version": "0.8.29",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "R",
-        "curl",
-        "digest",
-        "jsonlite",
-        "openssl",
-        "packrat",
-        "rstudioapi",
-        "tools",
-        "yaml"
-      ],
-      "Hash": "fe178fc15af80952f546aafedf655b36"
     },
     "rstudioapi": {
       "Package": "rstudioapi",

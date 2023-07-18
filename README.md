@@ -39,6 +39,12 @@ The best way to reproduce the results is through the `make` commands
 described below. To reproduce results manually, first open 00_setup.R
 and set parameters as desired. Then, run 01\_.. 02\_… and 03\_.
 
+## Knitting to PDF
+
+Note that if you want to knit to PDF you’ll need to have appropriate
+LaTeX style software installed. I recommend
+[`tinytex`](https://yihui.org/tinytex/).
+
 ## Reproducing results on UNIX machines
 
 This repo is equipped with a `make` file. To reproduce results this way
@@ -51,9 +57,9 @@ This repo is equipped with a `make` file. To reproduce results this way
 3.  Make sure you have all dependencies installed by opening R and
     running `renv::restore()`
 
-4.  In the terminal, run `RUN_NAME:MyRunName FORMAT:MyFormat make` where
-    MyRunName is the name of the folder you want to create to store
-    results (e.g. v0.1) and FORMAT is one of pdf, html, or docx
+4.  In the terminal, run `RUN_NAME="MyRunName" FORMAT="MyFormat" make`
+    where MyRunName is the name of the folder you want to create to
+    store results (e.g. v0.1) and FORMAT is one of pdf, html, or docx
 
 5.  Wait for a bit! This command will run all the required scripts and
     knit the paper. Shouldn’t take more than an hour on a reasonable

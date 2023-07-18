@@ -45,6 +45,10 @@ THe main scripts needed to reproduce results are
 The best way to reproduce the results is through the `make` commands described below. To reproduce results manually, first open 00_setup.R and set parameters as desired. Then, run 01_.. 02_... and 03_. 
 
 
+## Knitting to PDF
+
+Note that if you want to knit to PDF you'll need to have appropriate LaTeX style software installed. I recommend [`tinytex`](https://yihui.org/tinytex/). 
+
 ## Reproducing results on UNIX machines
 
 
