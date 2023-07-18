@@ -1,4 +1,5 @@
 # custom things
+presentations/*.html
 *.gif
 *.tex
 __MACOSX/*
