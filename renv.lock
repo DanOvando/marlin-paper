@@ -3,6 +3,26 @@
     "Version": "4.3.1",
     "Repositories": [
       {
+        "Name": "BioCsoft",
+        "URL": "https://bioconductor.org/packages/3.17/bioc"
+      },
+      {
+        "Name": "BioCann",
+        "URL": "https://bioconductor.org/packages/3.17/data/annotation"
+      },
+      {
+        "Name": "BioCexp",
+        "URL": "https://bioconductor.org/packages/3.17/data/experiment"
+      },
+      {
+        "Name": "BioCworkflows",
+        "URL": "https://bioconductor.org/packages/3.17/workflows"
+      },
+      {
+        "Name": "BioCbooks",
+        "URL": "https://bioconductor.org/packages/3.17/books"
+      },
+      {
         "Name": "CRAN",
         "URL": "https://cran.rstudio.com"
       }
@@ -582,22 +602,6 @@
       ],
       "Hash": "bb097fccb22d156624fd07cd2894ddb6"
     },
-    "contentid": {
-      "Package": "contentid",
-      "Version": "0.0.17",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "R",
-        "curl",
-        "fs",
-        "httr",
-        "methods",
-        "openssl",
-        "tools"
-      ],
-      "Hash": "b7c2140e8be06feccc068600db35c1ce"
-    },
     "cpp11": {
       "Package": "cpp11",
       "Version": "0.4.4",
@@ -796,19 +800,6 @@
         "vctrs"
       ],
       "Hash": "54ed3ea01b11e81a86544faaecfef8e2"
-    },
-    "duckdb": {
-      "Package": "duckdb",
-      "Version": "0.8.0",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "DBI",
-        "R",
-        "methods",
-        "utils"
-      ],
-      "Hash": "d22ebf42c6176a7863d44587e88a84d9"
     },
     "e1071": {
       "Package": "e1071",
@@ -1583,14 +1574,14 @@
     },
     "marlin": {
       "Package": "marlin",
-      "Version": "0.4.0",
+      "Version": "0.4.1",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteUsername": "danovando",
       "RemoteRepo": "marlin",
       "RemoteRef": "main",
-      "RemoteSha": "37d11b59e145b208214c1e83cbb30c556ba53d13",
+      "RemoteSha": "b19bc9316421b96e327e74808378a072c2978343",
       "Requirements": [
         "R",
         "R6",
@@ -1606,11 +1597,10 @@
         "parallel",
         "purrr",
         "ranger",
-        "rfishbase",
         "taxize",
         "tidyr"
       ],
-      "Hash": "ee9ae3d38caa88b46476002d3bc413ac"
+      "Hash": "0a5d8f58699656b8da169efeec62f5c8"
     },
     "memoise": {
       "Package": "memoise",
@@ -2135,36 +2125,6 @@
         "lazyeval"
       ],
       "Hash": "ae34cd56890607370665bee5bd17812f"
-    },
-    "rfishbase": {
-      "Package": "rfishbase",
-      "Version": "4.1.2",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "DBI",
-        "R",
-        "contentid",
-        "dbplyr",
-        "dplyr",
-        "duckdb",
-        "fs",
-        "glue",
-        "jsonlite",
-        "magrittr",
-        "memoise",
-        "methods",
-        "progress",
-        "purrr",
-        "readr",
-        "rlang",
-        "rstudioapi",
-        "stringr",
-        "tibble",
-        "tools",
-        "utils"
-      ],
-      "Hash": "a6926904a0ffce6a1c80014cfb9e8a38"
     },
     "ritis": {
       "Package": "ritis",
