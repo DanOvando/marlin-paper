@@ -1035,7 +1035,7 @@ coral_sim <- simmar(
 
 patch_biomass <-
   map_df(coral_sim, ~ map_df(.x, ~tibble(biomass = rowSums(.x$ssb_p_a), patch = 1:nrow(.x$ssb_p_a)), .id = "critter"), .id = "step") %>%
-  mutate(step = as.numeric(step)) %>%
+  mutate(step = marlin::clean_steps(step)) %>%
   left_join(grid, by = "patch")
 
  patch_biomass %>%
@@ -1133,7 +1133,7 @@ blue_sim <- simmar(
 
 critter_biomass <-
   map_df(blue_sim, ~ map_df(.x, ~tibble(ssb = rowSums(.x$ssb_p_a), patch = 1:nrow(.x$ssb_p_a)), .id = "critter"), .id = "step") %>%
-  mutate(step = as.numeric(step)) %>%
+  mutate(step = marlin::clean_steps(step)) %>%
   left_join(grid, by = "patch") %>% 
   group_by(critter, step) %>% 
   summarise(ssb = sum(ssb)) %>% 
@@ -1171,7 +1171,7 @@ blue_climate_sim <- simmar(
 
 patch_biomass <-
   map_df(blue_climate_sim, ~ map_df(.x, ~tibble(biomass = rowSums(.x$ssb_p_a), patch = 1:nrow(.x$ssb_p_a)), .id = "critter"), .id = "step") %>%
-  mutate(step = as.numeric(step)) %>%
+  mutate(step = marlin::clean_steps(step)) %>%
   left_join(grid, by = "patch")
 
 
@@ -1287,7 +1287,7 @@ coral_frontier <- tmp %>%
   ggplot(aes(delta_biodiv, delta_yield)) + 
   geom_hline(aes(yintercept = 0), linetype = 2) +
   geom_line(alpha = 0.8, aes(color = placement_strategy),size = 1.1) + 
-  geom_text_repel(data = frontier_labels, aes(label = pmpa, color = placement_strategy), min.segment.length = 0, box.padding = 0.2, show.legend = FALSE) +
+  geom_text_repel(data = frontier_labels, aes(label = pmpa, color = placement_strategy), min.segment.length = 0, box.padding = 0, show.legend = FALSE, nudge_x = .25, size = 5) +
   scale_x_continuous(name = "Change in Total SSB/SSB0", labels = scales::label_percent(accuracy = 1), guide = guide_axis(n.dodge = 2)) +
   scale_y_continuous(name = "Change in Yield", labels = scales::label_percent(accuracy = 1)) + 
   scale_color_manual(values = c("tomato", "steelblue"),name = '') +

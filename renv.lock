@@ -1574,14 +1574,14 @@
     },
     "marlin": {
       "Package": "marlin",
-      "Version": "0.4.1",
+      "Version": "0.4.11",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteUsername": "danovando",
       "RemoteRepo": "marlin",
       "RemoteRef": "main",
-      "RemoteSha": "b19bc9316421b96e327e74808378a072c2978343",
+      "RemoteSha": "a8ab8e8ef3922662d02a037599e89017f93ef598",
       "Requirements": [
         "R",
         "R6",
@@ -1600,7 +1600,7 @@
         "taxize",
         "tidyr"
       ],
-      "Hash": "0a5d8f58699656b8da169efeec62f5c8"
+      "Hash": "d66446ea8690ffb7bffd4fc0afa09702"
     },
     "memoise": {
       "Package": "memoise",

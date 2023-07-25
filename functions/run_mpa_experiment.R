@@ -197,7 +197,11 @@ run_mpa_experiment <-
     #
     # run MPA simulation
 
-    starting_step = as.numeric(last(names(starting_conditions)))
+    # starting_step = as.numeric(last(names(starting_conditions)))
+
+    starting_step = as.numeric(gsub("step_","",last(names(starting_conditions))))
+
+
     mpa_sim <- simmar(
       fauna = fauna,
       fleets = fleets,

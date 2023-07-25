@@ -219,7 +219,7 @@ reef_shark <- create_critter(
   max_hab_mult = max_hab_mult,
   patch_area = patch_area,
   lorenzen_m = FALSE,
-  ssb0 = 10
+  ssb0 = 100
 )
 
 # critters
@@ -372,7 +372,7 @@ patch_biomass <-
     biomass = rowSums(.x$b_p_a),
     patch = 1:nrow(.x$b_p_a)
   ), .id = "critter"), .id = "step") %>%
-  mutate(step = as.numeric(step)) %>%
+  mutate(step = marlin::clean_steps(step)) |>
   left_join(grid, by = "patch")
 
 patch_biomass %>%
@@ -388,7 +388,7 @@ patch_biomass %>%
 
 biomass <-
   map_df(reef_sim, ~ map_df(.x, ~ tibble(biomass = sum(.x$b_p_a)), .id = "critter"), .id = "step") %>%
-  mutate(step = as.numeric(step))
+  mutate(step = marlin::clean_steps(step))
 
 
 biomass %>%
@@ -411,7 +411,7 @@ biomass %>%
 
 fleet_catch <-
   map_df(reef_sim, ~ map_df(.x, ~ colSums(.x$c_p_fl), .id = "critter"), .id = "step") %>%
-  mutate(step = as.numeric(step)) |>
+  mutate(step = marlin::clean_steps(step)) |>
   pivot_longer(starts_with("fleet_"),
                names_to = "fleet",
                values_to = "catch")
@@ -438,7 +438,7 @@ patch_effort %>%
 
 effort <-
   map_df(reef_sim, ~ data.frame(effort = sum(.x$grouper$e_p_fl$fleet_two)), .id = "step") %>%
-  mutate(step = as.numeric(step))
+  mutate(step = marlin::clean_steps(step))
 
 effort %>%
   ungroup() %>%
@@ -448,7 +448,7 @@ effort %>%
 
 profits <-
   map_df(reef_sim, ~ map_df(.x, ~ tibble(profit = colSums(.x$prof_p_fl)), .id = "critter"), .id = "step") %>%
-  mutate(step = as.numeric(step))
+  mutate(step = marlin::clean_steps(step))
 
 profits %>%
   ungroup() %>%
@@ -469,7 +469,7 @@ patch_biomass <-
     biomass = rowSums(.x$ssb_p_a),
     patch = 1:nrow(.x$ssb_p_a)
   ), .id = "critter"), .id = "step") %>%
-  mutate(step = as.numeric(step)) %>%
+  mutate(step = clean_steps(step)) %>%
   left_join(grid, by = "patch")
 
 patch_biomass %>%
@@ -487,7 +487,7 @@ patch_biomass <-
     biomass = rowSums(.x$ssb_p_a),
     patch = 1:nrow(.x$ssb_p_a)
   ), .id = "critter"), .id = "step") %>%
-  mutate(step = as.numeric(step)) %>%
+  mutate(step = clean_steps(step)) %>%
   left_join(grid, by = "patch")
 
 patch_biomass %>%
@@ -506,7 +506,7 @@ patch_recruits <-
     recruits = .x$n_p_a[, 1],
     patch = 1:nrow(.x$ssb_p_a)
   ), .id = "critter"), .id = "step") %>%
-  mutate(step = as.numeric(step)) %>%
+  mutate(step = clean_steps(step)) %>%
   left_join(grid, by = "patch")
 
 patch_recruits %>%
@@ -550,7 +550,7 @@ starting_conditions <-
 proc_starting_conditions <-
   process_marlin(starting_conditions, keep_age = FALSE)
 
-starting_step = as.numeric(last(names(starting_conditions)))
+starting_step = clean_steps(last(names(starting_conditions)))
 
 
 # running mpa experiments -------------------------------------------------
@@ -592,7 +592,7 @@ patch_biomass <-
     biomass = rowSums(.x$ssb_p_a),
     patch = 1:nrow(.x$ssb_p_a)
   ), .id = "critter"), .id = "step") %>%
-  mutate(step = as.numeric(step)) %>%
+  mutate(step = clean_steps(step)) %>%
   left_join(grid, by = "patch")
 
 titler <- function(x) {
@@ -731,7 +731,7 @@ patch_effort %>%
 
 patch_biomass <-
   map_df(mpa_test, ~ map_df(.x, ~tibble(biomass = rowSums(.x$b_p_a), patch = 1:nrow(.x$b_p_a)), .id = "critter"), .id = "step") %>%
-  mutate(step = as.numeric(step)) %>%
+  mutate(step = clean_steps(step)) %>%
   left_join(grid, by = "patch")
 
 patch_biomass %>%
@@ -747,7 +747,7 @@ patch_biomass %>%
 
 fleet_catch <-
   map_df(mpa_test, ~ map_df(.x, ~ colSums(.x$c_p_fl), .id = "critter"), .id = "step") %>%
-  mutate(step = as.numeric(step)) |>
+  mutate(step = clean_steps(step)) |>
   pivot_longer(starts_with("fleet_"), names_to = "fleet", values_to = "catch")
 
 fleet_catch |>
