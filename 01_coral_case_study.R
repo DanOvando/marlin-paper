@@ -5,7 +5,7 @@ library(tictoc)
 tic()
 set.seed(42)
 
-resolution <- 20
+resolution <- 12
 
 patches <- resolution ^ 2
 
@@ -17,7 +17,7 @@ simulation_area <- patch_area * patches #km2
 
 seasons <- 4
 
-tune_type <- "explt"
+tune_type <- "depletion"
 
 experiment_workers <- 8
 
@@ -68,15 +68,6 @@ long_reef_habitat$habitat <-
   scales::rescale(long_reef_habitat$habitat, c(0, log(20)))
 
 
-long_spawning_ground %>%
-  ggplot(aes(x, y, fill = habitat)) +
-  geom_tile()
-
-long_reef_habitat %>%
-  ggplot(aes(x, y, fill = habitat)) +
-  geom_tile() +
-  scale_fill_viridis()
-
 reef_habitat <- long_reef_habitat %>%
   pivot_wider(names_from = y, values_from = habitat) %>%
   select(-x) %>%
@@ -91,8 +82,6 @@ deep_reef_habitat <- long_reef_habitat %>%
   as.matrix()
 
 
-image(deep_reef_habitat)
-
 
 shallow_reef_habitat <- long_reef_habitat %>%
   mutate(habitat = habitat * (1 - 1 / (1 + exp(
@@ -103,21 +92,14 @@ shallow_reef_habitat <- long_reef_habitat %>%
   select(-x) %>%
   as.matrix()
 
-image(shallow_reef_habitat)
-
 spawning_ground <- long_spawning_ground %>%
   pivot_wider(names_from = y, values_from = habitat) %>%
   select(-x) %>%
   as.matrix()
 
-check <-
-  outer((long_reef_habitat$habitat),
-        (long_reef_habitat$habitat),
-        '-')
-
 
 ports <-  data.frame(x =  c(1, 1),
-                     y = c(2, 15),
+                     y = c(2, resolution),
                      fleet = c(1, 2))
 write_rds(ports, file.path(results_path, "coral_ports.rds"))
 
@@ -147,6 +129,7 @@ snapper <- create_critter(
   seasons = seasons,
   resolution = resolution,
   init_explt = 0.125,
+  fished_depletion = 0.3,
   ssb0 = 4000,
   max_hab_mult = max_hab_mult,
   patch_area = patch_area
@@ -167,6 +150,7 @@ deep_snapper <- create_critter(
   seasons = seasons,
   resolution = resolution,
   init_explt = 0.075,
+  fished_depletion = 0.6,
   ssb0 = 5000,
   steepness = 0.6,
   max_hab_mult = max_hab_mult,
@@ -193,6 +177,7 @@ grouper <- create_critter(
   seasons = seasons,
   resolution = resolution,
   init_explt = 0.1,
+  fished_depletion = 0.2,
   steepness = 0.6,
   spawning_seasons = c(4),
   max_hab_mult = 20,
@@ -215,6 +200,7 @@ reef_shark <- create_critter(
   fec_form = "pups",
   resolution = resolution,
   init_explt = 0.2,
+  fished_depletion = 0.2,
   pups = 6,
   max_hab_mult = max_hab_mult,
   patch_area = patch_area,
@@ -231,19 +217,6 @@ fauna <-
     "grouper" = grouper,
     "reef_shark" = reef_shark
   )
-
-
-fauna$deep_snapper$plot()
-
-
-fauna$snapper$plot()
-
-fauna$grouper$plot()
-
-fauna$reef_shark$plot()
-
-
-map_dbl(fauna, "ssb0")  |> sort() |> scales::comma()
 
 
 # create fleet ------------------------------------------------------------
@@ -286,7 +259,7 @@ fleet_one = create_fleet(
   ),
   ports = ports[1, ],
   cost_per_unit_effort = 1,
-  cost_per_distance = 100,
+  cost_per_distance = 5,
   responsiveness = 0.5,
   cr_ratio = 1,
   resolution = resolution,
@@ -332,7 +305,7 @@ fleet_two <- create_fleet(
   ),
   ports = ports[2, ],
   cost_per_unit_effort = 1,
-  cost_per_distance = 50,
+  cost_per_distance = 5,
   responsiveness = 0.05,
   cr_ratio = 1,
   resolution = resolution,
@@ -342,20 +315,74 @@ fleet_two <- create_fleet(
 )
 
 
+fleet_three <- create_fleet(
+  list(
+    snapper = Metier$new(
+      critter = fauna$snapper,
+      price = 50,
+      sel_form = "logistic",
+      sel_start = 0.5,
+      sel_delta = 1,
+      p_explt = 2
+    ),
+    deep_snapper = Metier$new(
+      critter = fauna$deep_snapper,
+      price = 75,
+      sel_form = "logistic",
+      sel_start = 0.5,
+      sel_delta = .1,
+      p_explt = 2
+    ),
+    grouper = Metier$new(
+      critter = fauna$grouper,
+      price = 50,
+      sel_form = "logistic",
+      sel_start = 0.5,
+      sel_delta = 1,
+      p_explt = 1.5
+    ),
+    reef_shark = Metier$new(
+      critter = fauna$reef_shark,
+      price = 0,
+      sel_form = "logistic",
+      sel_start = 0.25,
+      sel_delta = .2,
+      p_explt = 1
+    )
+  ),
+  ports = ports[2, ],
+  cost_per_unit_effort = 1,
+  cost_per_distance = 5,
+  responsiveness = 0.05,
+  cr_ratio = 1,
+  resolution = resolution,
+  mpa_response = "stay",
+  fleet_model = "open access",
+  spatial_allocation = "ppue"
+)
+
 fleets <- list(fleet_one = fleet_one,
                fleet_two = fleet_two)
 
-fleets$fleet_one$metiers$snapper$sel_at_age %>% plot()
-
-
-fleets$fleet_one$metiers$grouper$sel_at_age %>% plot()
-
-fleets$fleet_one$metiers$reef_shark$sel_at_age %>% plot()
-
+logistic_fleets <- list(fleet_one = fleet_one,
+                        fleet_two = fleet_three)
 
 fleets <-
   tune_fleets(fauna, fleets, tune_type = tune_type, tune_costs = TRUE) # tunes the catchability by fleet to achieve target depletion
 
+logistic_fleets <- tune_fleets(fauna, logistic_fleets, tune_type = tune_type, tune_costs = TRUE) # tunes the catchability by fleet to achieve target depletion
+
+logistic_fleets$fleet_two$metiers$snapper$sel_at_age %>% plot()
+
+logistic_fleets$fleet_two$metiers$grouper$sel_at_age %>% plot()
+
+logistic_fleets$fleet_two$metiers$reef_shark$sel_at_age %>% plot()
+
+fleets$fleet_two$metiers$snapper$sel_at_age %>% plot()
+
+fleets$fleet_two$metiers$grouper$sel_at_age %>% plot()
+
+fleets$fleet_two$metiers$reef_shark$sel_at_age %>% plot()
 
 # run simulation ----------------------------------------------------------
 
@@ -363,6 +390,25 @@ reef_sim <- simmar(fauna = fauna,
                    fleets = fleets,
                    years = years)
 
+
+logistic_reef_sim <- simmar(fauna = fauna,
+                            fleets = logistic_fleets,
+                            years = years)
+
+prs <- process_marlin(reef_sim, keep_age = FALSE)
+
+
+plrs <- process_marlin(logistic_reef_sim, keep_age = FALSE)
+
+plot_marlin(prs = prs, plrs = plrs, plot_var = "ssb")
+
+prs$fleets |>
+  filter(step == max(step)) |>
+  group_by(fleet) |>
+  # mutate(effort = effort / max(effort)) |>
+  ggplot(aes(x,y,fill = effort)) +
+  geom_tile() +
+  facet_wrap(~fleet)
 
 grid <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
   mutate(patch = 1:nrow(.))
@@ -375,39 +421,9 @@ patch_biomass <-
   mutate(step = marlin::clean_steps(step)) |>
   left_join(grid, by = "patch")
 
-patch_biomass %>%
-  group_by(critter, step) %>%
-  mutate(sbiomass = biomass) %>%
-  ungroup() %>%
-  filter(critter == "grouper", step == max(step)) %>%
-  ggplot(aes(x, y, fill = sbiomass)) +
-  geom_tile() +
-  facet_wrap( ~ step) +
-  scale_fill_viridis_c()
-
-
 biomass <-
   map_df(reef_sim, ~ map_df(.x, ~ tibble(biomass = sum(.x$b_p_a)), .id = "critter"), .id = "step") %>%
   mutate(step = marlin::clean_steps(step))
-
-
-biomass %>%
-  ungroup() %>%
-  ggplot(aes(step, biomass, color = critter)) +
-  geom_line() +
-  facet_wrap( ~ critter, scales = "free_y") +
-  scale_y_continuous(limits = c(0, NA))
-
-biomass %>%
-  ungroup() %>%
-  group_by(critter) |>
-  mutate(dep = biomass / biomass[step == min(step)]) |>
-  ggplot(aes(step, dep, color = critter)) +
-  geom_line() +
-  scale_y_continuous(limits = c(0, 1))
-
-
-
 
 fleet_catch <-
   map_df(reef_sim, ~ map_df(.x, ~ colSums(.x$c_p_fl), .id = "critter"), .id = "step") %>%
@@ -416,53 +432,25 @@ fleet_catch <-
                names_to = "fleet",
                values_to = "catch")
 
-fleet_catch |>
-  ggplot(aes(step, catch, fill = critter)) +
-  geom_area() +
-  facet_wrap( ~ fleet)
 
 
 patch_effort <-
   tidyr::expand_grid(x = 1:resolution, y = 1:resolution) %>%
   dplyr::mutate(effort = reef_sim[[length(reef_sim)]]$grouper$e_p_fl$fleet_two)
 
-patch_effort %>%
-  ggplot() +
-  geom_tile(aes(x, y, fill = effort)) +
-  geom_point(data = ports,
-             aes(x = x, y = y),
-             color = "red",
-             size = 4)
-
-
-
 effort <-
   map_df(reef_sim, ~ data.frame(effort = sum(.x$grouper$e_p_fl$fleet_two)), .id = "step") %>%
   mutate(step = marlin::clean_steps(step))
-
-effort %>%
-  ungroup() %>%
-  ggplot(aes(step, effort)) +
-  geom_line()
 
 
 profits <-
   map_df(reef_sim, ~ map_df(.x, ~ tibble(profit = colSums(.x$prof_p_fl)), .id = "critter"), .id = "step") %>%
   mutate(step = marlin::clean_steps(step))
 
-profits %>%
-  ungroup() %>%
-  ggplot(aes(step, profit, color = critter)) +
-  geom_line()
-
 old_profits <- profits %>%
   group_by(step) %>%
   summarise(profit = sum(profit))
 
-old_profits %>%
-  ungroup() %>%
-  ggplot(aes(step, profit)) +
-  geom_line()
 
 patch_biomass <-
   map_df(reef_sim, ~ map_df(.x, ~ tibble(
@@ -472,15 +460,6 @@ patch_biomass <-
   mutate(step = clean_steps(step)) %>%
   left_join(grid, by = "patch")
 
-patch_biomass %>%
-  group_by(critter, step) %>%
-  mutate(sbiomass = biomass / sum(biomass)) %>%
-  ungroup() %>%
-  filter(critter == "grouper", step < 10) %>%
-  ggplot(aes(x, y, fill = sbiomass)) +
-  geom_tile() +
-  facet_wrap( ~ step) +
-  scale_fill_viridis_c()
 
 patch_biomass <-
   map_df(reef_sim, ~ map_df(.x, ~ tibble(
@@ -489,16 +468,6 @@ patch_biomass <-
   ), .id = "critter"), .id = "step") %>%
   mutate(step = clean_steps(step)) %>%
   left_join(grid, by = "patch")
-
-patch_biomass %>%
-  group_by(critter, step) %>%
-  mutate(sbiomass = biomass / sum(biomass)) %>%
-  ungroup() %>%
-  filter(critter == "snapper", step == max(step)) %>%
-  ggplot(aes(x, y, fill = biomass)) +
-  geom_tile() +
-  facet_wrap( ~ critter) +
-  scale_fill_viridis_c(limits = c(0, NA))
 
 
 patch_recruits <-
@@ -509,40 +478,11 @@ patch_recruits <-
   mutate(step = clean_steps(step)) %>%
   left_join(grid, by = "patch")
 
-patch_recruits %>%
-  group_by(critter, step) %>%
-  ungroup() %>%
-  filter(critter == "grouper", step < 10) %>%
-  ggplot(aes(x, y, fill = recruits)) +
-  geom_tile() +
-  facet_wrap( ~ step) +
-  scale_fill_viridis_c(limits = c(0, NA))
-
-
-
-
 processed_reef_sim <-
   process_marlin(reef_sim[round(0.8 * length(reef_sim)):length(reef_sim)])
 
-
-plot_marlin(processed_reef_sim,
-            max_scale = FALSE,
-            plot_var = "ssb")
-
-plot_marlin(processed_reef_sim,
-            max_scale = FALSE,
-            plot_var = "c")
-
-
-
-
-plot_marlin(
-  processed_reef_sim,
-  max_scale = FALSE,
-  plot_var = "ssb",
-  plot_type = "space"
-)
-
+processed_logistic_reef_sim <-
+  process_marlin(logistic_reef_sim[round(0.8 * length(logistic_reef_sim)):length(logistic_reef_sim)])
 
 starting_conditions <-
   reef_sim[(length(reef_sim) - seasons + 1):length(reef_sim)]
@@ -550,13 +490,20 @@ starting_conditions <-
 proc_starting_conditions <-
   process_marlin(starting_conditions, keep_age = FALSE)
 
+logistic_starting_conditions <-
+  logistic_reef_sim[(length(logistic_reef_sim) - seasons + 1):length(logistic_reef_sim)]
+
+proc_logistic_starting_conditions <-
+  process_marlin(logistic_starting_conditions, keep_age = FALSE)
+
+
 starting_step = clean_steps(last(names(starting_conditions)))
 
 
 # running mpa experiments -------------------------------------------------
 
 write_rds(
-  list(fauna = fauna, fleets = fleets),
+  list(fauna = fauna, fleets = fleets, logistic_fleets = logistic_fleets),
   file = file.path(results_path, "coral_fauna_and_fleets.rds")
 )
 
@@ -583,8 +530,6 @@ coral_sim <- simmar(
   )),
   years = 50
 )
-
-
 
 
 patch_biomass <-
@@ -675,10 +620,41 @@ if (run_coral_example == TRUE){
 
   Sys.time() - a
 
+  a <- Sys.time()
+  logistic_coral_mpa_experiments <- case_study_experiments %>%
+    ungroup() %>%
+    mutate(
+      results = future_pmap(
+        list(
+          placement_strategy = placement_strategy,
+          prop_mpa = prop_mpa,
+          critters_considered = critters_considered,
+          placement_error = placement_error,
+          mpa_response = mpa_response
+        ),
+        run_mpa_experiment,
+        starting_conditions = logistic_starting_conditions,
+        proc_starting_conditions = proc_logistic_starting_conditions,
+        resolution = resolution,
+        fleet_model = NA,
+        fauna = fauna,
+        fleets = logistic_fleets,
+        effort_cap = effort_cap,
+        spawning_ground = long_spawning_ground,
+        years = 20,
+        .options = furrr_options(seed = 42),
+        .progress = TRUE
+      )
+    ) %>%
+    mutate(prop_ssb0_mpa = map_dbl(results, ~sum(.x$mpa$ssb0[.x$mpa$mpa == TRUE], na.rm = TRUE) / sum(.x$mpa$ssb0)))
+
+  Sys.time() - a
+
   future::plan(future::sequential)
 
   write_rds(coral_mpa_experiments, file = file.path(results_path, "coral_mpa_experiments.rds"))
 
+  write_rds(logistic_coral_mpa_experiments, file = file.path(results_path, "logistic_coral_mpa_experiments.rds"))
 
 } else {
 
@@ -692,14 +668,61 @@ coral_mpa_experiments$mpas <- map(coral_mpa_experiments$results, "mpa")
 coral_mpa_experiments$obj <- map(coral_mpa_experiments$results, "obj")
 
 
+coral_results <- coral_mpa_experiments %>%
+  unnest(cols = obj) |>
+  mutate(experiment = "dome")
+
+
+
+logistic_coral_mpa_experiments$mpas <- map(logistic_coral_mpa_experiments$results, "mpa")
+
+logistic_coral_mpa_experiments$obj <- map(logistic_coral_mpa_experiments$results, "obj")
+
+
+logistic_coral_results <- logistic_coral_mpa_experiments %>%
+  unnest(cols = obj) |>
+  mutate(experiment = "logistic")
+
+sel_experiments <- logistic_coral_results |>
+  bind_rows(coral_results)
+
+sel_experiments |>
+  group_by(critter, experiment, placement_strategy) |>
+  mutate(biodiv = biodiv / biodiv[prop_mpa == 0]) |>
+  ggplot(aes(prop_mpa, biodiv, color = experiment)) +
+  geom_line() +
+  facet_grid(placement_strategy ~ critter) +
+  scale_y_continuous(limits = c(0,1))
+
+sel_experiments |>
+  group_by(experiment, critter, placement_strategy) |>
+  mutate(yield = yield / max(yield)) |>
+
+  ggplot(aes(prop_mpa, yield, color = experiment)) +
+  geom_line() +
+  facet_grid(placement_strategy ~ critter)
+
+sel_experiments |>
+  group_by(experiment, critter, placement_strategy) |>
+  mutate(fleet_one = fleet_one / max(fleet_one)) |>
+  ggplot(aes(prop_mpa, fleet_one, color = experiment)) +
+  geom_line() +
+  facet_grid(placement_strategy ~ critter)
+
+sel_experiments |>
+  group_by(experiment, critter, placement_strategy) |>
+  mutate(fleet_two = fleet_two / max(fleet_two)) |>
+  ggplot(aes(prop_mpa, fleet_two, color = experiment)) +
+  geom_line() +
+  facet_grid(placement_strategy ~ critter)
+
+
+
+
+
+
 examine_mpas <- coral_mpa_experiments %>%
   unnest(cols = mpas)
-
-examine_mpas |>
-  filter(placement_strategy == "spawning_ground") |>
-  ggplot(aes(x,y,fill = mpa)) +
-  geom_tile() +
-  facet_wrap(~prop_mpa)
 
 big_mpa <- examine_mpas |>
   filter(between(prop_mpa, 0.1, .11),
@@ -719,30 +742,14 @@ mpa_test <- simmar(
 )
 
 
-
 patch_effort <- tidyr::expand_grid(x = 1:resolution, y = 1:resolution) %>%
   dplyr::mutate(effort = mpa_test[[length(mpa_test)]]$grouper$e_p_fl$fleet_two)
 
-patch_effort %>%
-  ggplot() +
-  geom_tile(aes(x,y, fill = effort)) +
-  geom_point(data = ports, aes(x = x, y = y), color = "red", size = 4) +
-  scale_fill_viridis(limits = c(0, NA))
 
 patch_biomass <-
   map_df(mpa_test, ~ map_df(.x, ~tibble(biomass = rowSums(.x$b_p_a), patch = 1:nrow(.x$b_p_a)), .id = "critter"), .id = "step") %>%
   mutate(step = clean_steps(step)) %>%
   left_join(grid, by = "patch")
-
-patch_biomass %>%
-  group_by(critter, step) %>%
-  mutate(sbiomass = biomass) %>%
-  ungroup() %>%
-  filter(critter == "snapper", step == max(step)) %>%
-  ggplot(aes(x,y, fill = sbiomass))+
-  geom_tile() +
-  facet_wrap(~step) +
-  scale_fill_viridis_c()
 
 
 fleet_catch <-
@@ -750,17 +757,8 @@ fleet_catch <-
   mutate(step = clean_steps(step)) |>
   pivot_longer(starts_with("fleet_"), names_to = "fleet", values_to = "catch")
 
-fleet_catch |>
-  ggplot(aes(step, catch, fill = critter)) +
-  geom_area()+
-  facet_wrap(~fleet)
 
 
-
-
-
-coral_results <- coral_mpa_experiments %>%
-  unnest(cols = obj)
 
 coral_fleet_frontier <- coral_results %>%
   pivot_longer(starts_with("fleet_"), names_to = "fleet", values_to = "fleet_yield") %>%
@@ -782,6 +780,7 @@ tmp <- coral_results %>%
   mutate(placement_strategy= fct_relabel(placement_strategy, titler))
 
 frontier_labels <- tmp %>%
+  filter(prop_mpa < 0.7) |>
   mutate(delta_50 = (delta_yield - -0.5)^2,
          delta_0 = delta_yield^2) %>%
   group_by(placement_strategy) %>%
@@ -791,9 +790,11 @@ frontier_labels <- tmp %>%
   mutate(pmpa = scales::percent(prop_mpa))
 
 coral_frontier <- tmp %>%
+  filter(prop_mpa < 0.7) |>
   ggplot(aes(delta_biodiv, delta_yield)) +
   geom_hline(aes(yintercept = 0), linetype = 2) +
-  geom_line(alpha = 0.8, aes(color = placement_strategy),size = 1.1) +
+  geom_path(alpha = 0.8, aes(color = placement_strategy),size = 1.1) +
+  geom_point(aes(color = placement_strategy)) +
   geom_text_repel(data = frontier_labels, aes(label = pmpa), min.segment.length = 0, box.padding = 0.5) +
   scale_x_continuous(name = "Change in Total SSB/SSB0", labels = scales::label_percent(accuracy = 1), guide = guide_axis(n.dodge = 2)) +
   scale_y_continuous(name = "Change in Yield", labels = scales::label_percent(accuracy = 1)) +
