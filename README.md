@@ -57,8 +57,8 @@ This repo is equipped with a `make` file. To reproduce results this way
 3.  Make sure you have all dependencies installed by opening R and
     running `renv::restore()`
 
-4.  In the terminal, run `RUN_NAME="MyRunName" FORMAT="MyFormat" make`
-    where MyRunName is the name of the folder you want to create to
+4.  In the terminal, run `RUN_NAME="MYRUNNAME" FORMAT="FORMAT" make`
+    where MYRUNNAME is the name of the folder you want to create to
     store results (e.g. v0.1) and FORMAT is one of pdf, html, or docx
 
 5.  Wait for a bit! This command will run all the required scripts and

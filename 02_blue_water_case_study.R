@@ -289,7 +289,7 @@ if (run_blue_water_example == TRUE){
 
       # range shift the preferred habitat, i.e. keep the shape of the habitat the same, but move it northward
       future_hab <- tmp_hab %>%
-        mutate(y = y + .33 * year) %>%
+        mutate(y = y + .2 * year) %>%
         mutate(xy = x * y)
 
       og_habitat <- tmp_hab$habitat %>% sum()
