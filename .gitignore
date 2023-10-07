@@ -43,3 +43,6 @@ vignettes/*.pdf
 .Renviron
 .Rproj.user
 referee-replies.qmd -> marlin_paper_replies.qmd
+marlin_paper_ff_reviews.qmd
+marlin_paper_ff_reviews.html
+marlin_paper_cover_letter_2.qmd
