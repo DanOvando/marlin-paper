@@ -19,7 +19,7 @@ seasons <- 4
 
 tune_type <- "depletion"
 
-experiment_workers <- 8
+experiment_workers <- parallel::detectCores() - 2
 
 years <- 100
 
@@ -402,6 +402,13 @@ plrs <- process_marlin(logistic_reef_sim, keep_age = FALSE)
 
 plot_marlin(prs = prs, plrs = plrs, plot_var = "ssb")
 
+prs$fauna |>
+  filter(year == max(year)) |>
+  group_by(critter) |>
+  summarise(b = sum(b)) |>
+  ggplot(aes(reorder(critter, b),b)) +
+  geom_col()
+
 prs$fleets |>
   filter(step == max(step)) |>
   group_by(fleet) |>
@@ -409,6 +416,14 @@ prs$fleets |>
   ggplot(aes(x,y,fill = effort)) +
   geom_tile() +
   facet_wrap(~fleet)
+
+prs$fleets |>
+  filter(step == max(step)) |>
+  group_by(x,y) |>
+  summarise(catch = sum(catch)) |>
+  ggplot(aes(x,y,fill = catch)) +
+  geom_tile()
+
 
 grid <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
   mutate(patch = 1:nrow(.))
@@ -667,6 +682,32 @@ coral_mpa_experiments$mpas <- map(coral_mpa_experiments$results, "mpa")
 
 coral_mpa_experiments$obj <- map(coral_mpa_experiments$results, "obj")
 
+coral_mpa_experiments$response_ratios <- map(coral_mpa_experiments$results, "response_ratio")
+
+rrs <- coral_mpa_experiments |>
+  select(placement_strategy, prop_mpa, response_ratios) |>
+  unnest(cols = response_ratios)
+
+rrs |>
+  filter(placement_strategy == "target_fishing", prop_mpa > 0, prop_mpa < 1) |>
+  group_by(placement_strategy, prop_mpa) |>
+  mutate(rr = biomass[mpa == TRUE] / biomass[mpa == FALSE]) |>
+  ungroup() |>
+  ggplot(aes(prop_mpa, rr, color = mpa)) +
+  geom_line() +
+  facet_wrap(~placement_strategy) +
+  scale_x_continuous(labels = scales::label_percent(accuracy = 1), breaks = seq(0,1, by = .1)) +
+  scale_y_continuous(limits = c(0, NA), name = "Ratio of biomass inside MPA relative to Outside")
+
+
+mpa_trajectories <- coral_mpa_experiments |>
+  select(placement_strategy, prop_mpa, iter, mpas) |>
+  unnest(cols = mpas)
+
+mpa_trajectories |>
+  ggplot(aes(x,y,fill = mpa)) +
+  geom_tile() +
+  facet_grid(prop_mpa~placement_strategy)
 
 coral_results <- coral_mpa_experiments %>%
   unnest(cols = obj) |>
@@ -685,6 +726,8 @@ logistic_coral_results <- logistic_coral_mpa_experiments %>%
 
 sel_experiments <- logistic_coral_results |>
   bind_rows(coral_results)
+
+write_rds(sel_experiments, file.path(results_path, "sel_experiments.rds"))
 
 sel_experiments |>
   group_by(critter, experiment, placement_strategy) |>
@@ -729,7 +772,8 @@ big_mpa <- examine_mpas |>
          placement_strategy == "target_fishing")
 
 mpa_locations <- big_mpa |>
-  select(x,y,mpa)
+  select(x,y,mpa) |>
+  mutate(mpa = FALSE)
 
 mpa_test <- simmar(
   fauna = coral_fauna,
@@ -744,6 +788,10 @@ mpa_test <- simmar(
 
 patch_effort <- tidyr::expand_grid(x = 1:resolution, y = 1:resolution) %>%
   dplyr::mutate(effort = mpa_test[[length(mpa_test)]]$grouper$e_p_fl$fleet_two)
+
+patch_effort |>
+  ggplot(aes(x,y,fill = effort)) +
+  geom_tile()
 
 
 patch_biomass <-

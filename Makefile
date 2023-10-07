@@ -1,3 +1,7 @@
+results/$(RUN_NAME)/marlin_paper_si_$(RUN_NAME).$(FORMAT):  results/$(RUN_NAME)/marlin_paper_$(RUN_NAME).$(FORMAT) results/$(RUN_NAME)/blue_water_experiments.rds results/$(RUN_NAME)/coral_mpa_experiments.rds
+	quarto render 04_marlin_paper_si.qmd --no-cache -P run_name:$(RUN_NAME) --to $(FORMAT) --output marlin_paper_si_$(RUN_NAME).$(FORMAT)
+	mv marlin_paper_si_$(RUN_NAME).$(FORMAT) results/$(RUN_NAME)/
+
 results/$(RUN_NAME)/marlin_paper_$(RUN_NAME).$(FORMAT): results/$(RUN_NAME)/blue_water_experiments.rds results/$(RUN_NAME)/coral_mpa_experiments.rds
 	quarto render 03_marlin_paper.qmd --no-cache -P run_name:$(RUN_NAME) --to $(FORMAT) --output marlin_paper_$(RUN_NAME).$(FORMAT)
 	mv marlin_paper_$(RUN_NAME).$(FORMAT) results/$(RUN_NAME)/

@@ -1,0 +1,229 @@
+---
+title: "Simulating Benefits, Costs, and Tradeoffs of Spatial Management in Marine Social-Ecological Systems"
+subtitle: "Supporting Information"
+format: 
+  pdf:
+    toc: false
+    fig-pos: 'H'
+    mainfont: Times New Roman
+    sansfont: Times New Roman
+    fontsize: 12pt
+    keep-tex: true
+    fig-format: png
+  html: default
+  docx: default
+execute:
+  echo: false
+  message: false
+  warning: false
+  cache: false
+csl: apa-6th-edition.csl
+bibliography: references.bib
+params:
+  run_name: ["v1.1"]
+header-includes:
+  - \usepackage{setspace}\doublespacing
+  - \usepackage{lineno}\linenumbers
+  - \usepackage{bm}
+editor: 
+  markdown: 
+    wrap: 80
+---
+
+
+
+```{r setup}
+#| echo: false
+#| message: false
+#| include: false
+
+source(here::here("00_setup.R"))
+
+theme_set(theme_classic(base_size = 10, base_family = "Helvetica") + theme(strip.background = element_blank()))
+
+if (!file.exists(here("data","sci_to_com.csv"))){
+  sci_to_com <- taxize::sci2comm(unique(marlin_inputs$scientific_name),simplify= TRUE,db='ncbi') %>% 
+  bind_rows(.id = "critter") %>% 
+  pivot_longer(everything(),names_to = "critter",values_to = "common_name") %>% 
+  mutate(common_name = stringr::str_to_title(common_name))
+
+  write_csv(sci_to_com, file = here("data","sci_to_com.csv"))
+
+} else{
+ sci_to_com <-  read_csv(file = here("data","sci_to_com.csv"))
+
+}
+
+print(results_path)
+results_files <- list.files(file.path(results_path))
+
+rdses <- results_files[str_detect(results_files,'.rds')]
+
+walk(rdses,~assign(str_remove(.x,".rds"), read_rds(file.path(results_path,.x)), envir = .GlobalEnv)) #load and assign all .rds objects in the appropriate results folder
+
+coral_mpa_experiments$mpas <- map(coral_mpa_experiments$results, "mpa")
+
+coral_mpa_experiments$obj <- map(coral_mpa_experiments$results, "obj")
+
+
+```
+
+
+\renewcommand{\thefigure}{S\arabic{figure}}
+
+\renewcommand{\thetable}{S\arabic{table}}
+
+Author Names: Daniel Ovando^1,2^, Darcy Bradley^3,4,5^, Echelle
+Burns^3,4,5^,Lennon Thomas^3,4,5^, James Thorson^6^
+
+Affiliations: ^1^ School of Aquatic and Fishery Sciences, University of
+Washington,1122 NE Boat St Box 355020,Seattle, WA, USA ^3^ Marine Science
+Institute, University of California, Santa Barbara, CA, USA ^4^ Bren School of
+Environmental Science & Management, University of California, Santa Barbara, CA,
+USA ^5^ Environmental Markets Lab, University of California, Santa Barbara, CA,
+USA ^6^ Habitat and Ecological Processes Research Program, Alaska Fisheries
+Science Center, NOAA, NMFS, NOAA, Seattle, WA, USA
+
+```{r}
+#| label: fig-coral-fleet
+#| fig-cap: "Distribution of annual catches by fishing fleet prior to MPAs under the coral reef case study simulation."
+coral_fauna <- coral_fauna_and_fleets$fauna
+
+coral_fleets <- coral_fauna_and_fleets$fleets
+
+resolution <- sqrt((coral_fauna[[1]]$patches))
+
+grid <- expand_grid(x = 1:resolution, y= 1:resolution) %>%
+  mutate(patch = 1:nrow(.))
+
+
+mpa_locations <- expand_grid(x = 1:resolution, y = 1:resolution) %>%
+  mutate(mpa = FALSE)
+
+coral_sim <- simmar(
+  fauna = coral_fauna,
+  fleets = coral_fleets,
+  manager = list(mpas = list(
+    locations = mpa_locations,
+    mpa_year = 1
+  )),
+  years = 20
+)
+
+pcsim <- process_marlin(coral_sim, keep_age = FALSE)
+
+pcsim$fleets |>
+  filter(year == max(year)) |>
+  group_by(fleet, x, y) |>
+  summarise(catch = sum(catch)) |>
+  group_by(fleet) |>
+  mutate(catch = catch / sum(catch)) |>
+  ggplot(aes(x, y, fill = catch)) +
+  geom_tile() +
+  facet_wrap( ~ fleet) +
+  scale_fill_viridis_c(name = "% of Annual Catch", labels = scales::percent) +
+  scale_x_continuous(name = "Longitude", expand = expansion()) +
+  scale_y_continuous(name = "Latitude", expand = expansion()) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    strip.text.y = element_text(size = 8)
+  )
+
+
+```
+
+
+
+```{r}
+#| label: fig-coral-mpas
+#| fig-cap: "Location of MPAs under the *Spawning Ground* and *Target Fishing* placement strategies for the coral reef case study simulations. Columns indicate whether MPA was designed around location of spawning grounds, or locations where the most biomass of fish was caught. Rows indicate the percent of the simulation grid placed in a no-take MPA. MPA sizes between 10% and 90% plotted."
+mpa_trajectories <- coral_mpa_experiments |>
+  select(placement_strategy, prop_mpa, iter, mpas) |>
+  unnest(cols = mpas)
+
+mpa_trajectories |>
+  filter(prop_mpa %in% seq(0.1,0.9, by = .1)) |> 
+  mutate(p_prop_mpa = glue::glue("{prop_mpa * 100}%")) |> 
+  mutate(p_prop_mpa = reorder(p_prop_mpa, prop_mpa)) |> 
+  ggplot(aes(x,y,fill = mpa)) +
+  geom_tile() +
+  facet_grid(p_prop_mpa~placement_strategy) + 
+  scale_x_continuous(name = "Longitude",expand = expansion()) + 
+  scale_y_continuous(name = "Latitude",expand = expansion()) +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        strip.text.y = element_text(size = 8)) + 
+  scale_fill_discrete(name = "", labels = c("Fished",'MPA'))
+
+```
+
+
+```{r}
+#| label: fig-select-biodiv
+#| fig-cap: "Change in SSB/SSB0 of simulated coral reef species relative to pre-MPA levels under alternative contact selectivity assumptions. 'dome' indicates that the contact selectivity of Fleet Two is assumed to be dome shaped for the snapper and grouper species (the default value presented in the main results). Logistic indicates that the contact selectivity of Fleet Two is assumed to be logistic (asymptotic) for all species."
+sel_experiments |>
+  group_by(critter, experiment, placement_strategy) |>
+  mutate(biodiv = biodiv / biodiv[prop_mpa == 0] -1) |>
+  ggplot(aes(prop_mpa, 100 * pmin(2,biodiv), color = experiment)) +
+  geom_hline(aes(yintercept = 0), linetype = 2) +
+  geom_line() +
+  facet_grid(placement_strategy ~ critter) +
+  scale_y_continuous(name = "% Change from Baseline SSB/SSB0",
+                     breaks = c(-25,seq(0,200, by = 50)),
+                     labels = c(as.character(c(-25,seq(0,150, by = 50))),expression("">=200))) + 
+  scale_color_discrete("Fleet Two Selectivity ") + 
+  scale_x_continuous(name = "MPA Size", labels = scales::percent)
+
+```
+
+
+```{r}
+#| label: fig-select-yield
+#| fig-cap: "Change in total yield (biomass of fish caught) of simulated coral reef fishing fleets relative to pre-MPA levels under alternative contact selectivity assumptions. 'dome' indicates that the contact selectivity of Fleet Two is assumed to be dome shaped for the snapper and grouper species (the default value presented in the main results). Logistic indicates that the contact selectivity of Fleet Two is assumed to be logistic (asymptotic) for all species."
+sel_experiments |>
+  select(critter, prop_mpa, placement_strategy, starts_with("fleet_"), experiment) |> 
+  pivot_longer(starts_with("fleet_"), names_to = "fleet", values_to = "catch") |> 
+  group_by(prop_mpa, placement_strategy, fleet, experiment) |> 
+  summarise(catch = sum(catch)) |> 
+  ungroup() |> 
+  group_by(fleet, experiment, placement_strategy) |>
+  mutate(catch = catch / catch[prop_mpa == 0] -1) |>
+  ggplot(aes(prop_mpa, 100 * pmin(2,catch), color = experiment)) +
+  geom_hline(aes(yintercept = 0), linetype = 2) +
+  geom_line() +
+  facet_grid(fleet ~ placement_strategy ) +
+  scale_y_continuous(name = "% Change from Baseline Yields") + 
+  scale_color_discrete("Fleet Two Selectivity ") + 
+  scale_x_continuous(name = "MPA Size", labels = scales::percent)
+
+```
+
+
+```{r}
+#| label: fig-rr
+#| fig-cap: "Ratio of mean biomass inside MPAs relative to mean biomass outside MPAs as a function of MPA size. Only *Target Fishing* strategy is shown as biomass is roughly perfectly confounded with MPA location in the *Spawning Ground* design strategy."
+
+coral_mpa_experiments$response_ratios <- map(coral_mpa_experiments$results, "response_ratio")
+
+rrs <- coral_mpa_experiments |>
+  select(placement_strategy, prop_mpa, response_ratios) |>
+  unnest(cols = response_ratios)
+
+
+
+rrs |>
+  filter(placement_strategy == "target_fishing", prop_mpa > 0, prop_mpa < 1) |>
+  group_by(placement_strategy, prop_mpa) |>
+  mutate(rr = biomass[mpa == TRUE] / biomass[mpa == FALSE]) |>
+  ungroup() |>
+  ggplot(aes(prop_mpa, rr, color = mpa)) +
+  geom_line() +
+  facet_wrap(~placement_strategy) +
+  scale_x_continuous(name = "MPA",labels = scales::label_percent(accuracy = 1), breaks = seq(0,1, by = .1)) +
+  scale_y_continuous(limits = c(0, NA), name = "Ratio of biomass inside MPA relative to Outside")
+
+```
+

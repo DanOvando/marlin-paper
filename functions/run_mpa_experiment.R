@@ -250,6 +250,23 @@ run_mpa_experiment <-
 
     # process results
 
+    distance_to_mpa <- marlin::get_distance_to_mpas(mpas, resolution = resolution)
+
+    final_step <- mpa_sim[[length(mpa_sim)]]
+
+    b_p = map_df(final_step, ~ data.frame(b_p = rowSums(.x$b_p_a), patch = 1:nrow(.x$b_p_a)), .id = "critter")
+
+    response_ratio <- b_p |>
+      group_by(patch) |>
+      summarise(biomass = sum(b_p)) |>
+      left_join(mpas |> select(x,y,patch, mpa, ssb0), by = "patch") |>
+      group_by(mpa) |>
+      summarise(biomass = mean(biomass))
+
+    # browser()
+
+    # rr <- broom::tidy(lm(log(biomass) ~ mpa + ssb0, data = response_ratio))
+
     biodiv <-
       (map_df(mpa_sim[[length(mpa_sim)]], ~ sum(.x$ssb_p_a) / .x$ssb0)) %>%
       pivot_longer(everything(), names_to = "critter",values_to = "biodiv")
@@ -283,6 +300,8 @@ run_mpa_experiment <-
     outcomes$obj <- objective_outcomes
 
     outcomes$mpa <- mpas
+
+    outcomes$response_ratio <- response_ratio
 
     return(outcomes)
 
