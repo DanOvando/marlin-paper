@@ -662,7 +662,7 @@ growth, death, and recruitment
 $$
 N_{t,p,s,a} = \begin{cases}
       = BH(SSB_{t-1,p,s,a}) & \text{if $a = 1$}\\
-     = N_{t-1,p,s,a-1}e^{-(z_{t-1,p,s,a-1}}, & \text{if $1< a < max(age)$}\\
+     = N_{t-1,p,s,a-1}e^{-(z_{t-1,p,s,a-1})}, & \text{if $1< a < max(age)$}\\
      =  N_{t-1,p,s,a}e^{-(z_{t-1,p,s,a})} + N_{t-1,a-1}e^{-(z_{t-1,p,s,a-1})}, & \text{if $a = max(a)$}
   \end{cases}
 $$ {#eq-pop}
@@ -1890,3 +1890,5 @@ https://figshare.com/articles/preprint/marlin-paper/21843582
 
 ::: {#refs}
 :::
+
+## Figure Legends
