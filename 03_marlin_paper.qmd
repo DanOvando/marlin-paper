@@ -16,7 +16,7 @@ execute:
   message: false
   warning: false
   cache: false
-csl: apa-6th-edition.csl
+csl: fish-and-fisheries.csl
 bibliography: references.bib
 params:
   run_name: ["v1.1"]
