@@ -19,7 +19,7 @@ execute:
 csl: fish-and-fisheries.csl
 bibliography: references.bib
 params:
-  run_name: ["v1.1"]
+  run_name: ["v1.2"]
 header-includes:
   - \usepackage{setspace}\doublespacing
   - \usepackage{lineno}\linenumbers
