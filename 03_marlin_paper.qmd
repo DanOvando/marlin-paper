@@ -16,7 +16,7 @@ execute:
   message: false
   warning: false
   cache: false
-csl: fish-and-fisheries.csl
+csl: apa.csl
 bibliography: references.bib
 params:
   run_name: ["v1.2"]
@@ -768,9 +768,9 @@ Log-normal recruitment deviates are calculated with the potential for
 autocorrelation defined with strength $\rho$
 
 $$ 
-log(\epsilon_{t,s}) \sim \begin{cases}
+\upsilon_{t,s} \sim \begin{cases}
        N(0,\sigma_{r,s}), & \text{if $t = 1$}\\
-       \rho_s log(\epsilon_{t-1,s}) + \sqrt{1 - \rho_s^2} N(0,\sigma_{r,s}), & \text{if $t > 1$}
+       \rho_s \upsilon_{t-1,s} + \sqrt{1 - \rho_s^2} N(0,\sigma_{r,s}), & \text{if $t > 1$}
   \end{cases}
 $$ {#eq-recdev}
 
@@ -778,7 +778,7 @@ And log recruitment deviates are converted to raw units using the bias
 correction factor
 
 $$
-\epsilon_{t,s} = e^{log(\epsilon_{t,s}) - \sigma_{r,s}^2/2}
+\epsilon_{t,s} = e^{\upsilon_{t,s} - \sigma_{r,s}^2/2}
 $$ {#eq-bias}
 
 #### Reference Points
