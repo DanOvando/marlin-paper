@@ -18,8 +18,6 @@ execute:
   cache: false
 csl: apa.csl
 bibliography: references.bib
-params:
-  run_name: ["v1.2"]
 header-includes:
   - \usepackage{setspace}\doublespacing
   - \usepackage{lineno}\linenumbers
@@ -1487,13 +1485,15 @@ patch_biomass <-
   mutate(step = marlin::clean_steps(step)) %>%
   left_join(grid, by = "patch")
 
+patch_biomass <- bind_cols(patch_biomass,marlin::process_step(patch_biomass$step))
+
+
  fig_1 <- patch_biomass %>%
   group_by(critter, step) %>%
   mutate(sbiomass = biomass / max(biomass)) %>%
   ungroup() %>%
-  filter(between(step,1,2)) %>%
-  mutate(step = fct_recode(as.factor(step), "2" = "1.25", "3" = "1.5", "4" = "1.75")) %>% 
-  mutate(Season = step) %>% 
+  filter(between(year,1,2)) %>%
+  mutate(Season = season) %>% 
   ggplot()+
   geom_tile(aes(x,y, fill = sbiomass),show.legend = FALSE) +
   geom_text_repel(data = coral_ports, aes(x, y, label = fleet), color = "red") +
@@ -1512,6 +1512,14 @@ patch_biomass <-
    width = small_width,
    units = "mm"
  )
+ 
+  ggsave(
+   filename = file.path(results_path, "fig_1.png"),
+   fig_1,
+   width = small_width,
+   units = "mm"
+ )
+ 
  
  fig_1
  
@@ -1533,22 +1541,23 @@ blue_sim <- simmar(
   fleets = blue_fleets,
   years = 50
 )
-
 critter_biomass <-
-  map_df(blue_sim, ~ map_df(.x, ~tibble(ssb = rowSums(.x$ssb_p_a), patch = 1:nrow(.x$ssb_p_a)), .id = "critter"), .id = "step") %>%
+  map_df(blue_sim, ~ map_df(.x, ~tibble(ssb = rowSums(.x$ssb_p_a), patch = 1:nrow(.x$ssb_p_a)), .id = "critter"), .id = "step") 
+
+critter_biomass <- bind_cols(critter_biomass,marlin::process_step(critter_biomass$step)) %>%
   mutate(step = marlin::clean_steps(step)) %>%
   left_join(grid, by = "patch") %>% 
-  group_by(critter, step) %>% 
+  group_by(critter, year, season,time_step) %>% 
   summarise(ssb = sum(ssb)) %>% 
   group_by(critter) %>% 
-  mutate(depletion = ssb / ssb[step == 0])
+  mutate(depletion = ssb / ssb[time_step == min(time_step)])
 
 fig_2 <- critter_biomass %>%
   ungroup() %>% 
   left_join(sci_to_com, by = "critter") %>%
   select(-critter) %>%
   rename(critter = common_name) %>%
-  filter(step == max(step)) %>% 
+  filter(time_step == max(time_step)) %>% 
   ggplot(aes(reorder(critter, depletion), depletion)) +
   geom_col() +
   scale_y_continuous(limits = c(0, 1), name = "SSB/SSB0", expand = expansion(mult = c(0.0,0.05))) +
@@ -1557,6 +1566,13 @@ fig_2 <- critter_biomass %>%
 
  ggsave(
    filename = file.path(results_path, "fig_2.pdf"),
+   fig_2,
+   width = small_width,
+   units = "mm"
+ )
+ 
+  ggsave(
+   filename = file.path(results_path, "fig_2.png"),
    fig_2,
    width = small_width,
    units = "mm"
@@ -1644,11 +1660,19 @@ range_shift_plot <- fit_3 <- sq_habitat | rs_habitat
 
 
  ggsave(
-   filename = file.path(results_path, "fit_3.pdf"),
+   filename = file.path(results_path, "fig_3.pdf"),
    fit_3,
    width = big_width,
    units = "mm"
  )
+ 
+  ggsave(
+   filename = file.path(results_path, "fig_3.png"),
+   fit_3,
+   width = big_width,
+   units = "mm"
+ )
+ 
  
 range_shift_plot
 
@@ -1757,7 +1781,14 @@ fig_4 <- ((coral_fleet_yield / coral_critter_bio) | (coral_frontier + plot_layou
    units = "mm"
  )
  
-
+ ggsave(
+   filename = file.path(results_path, "fig_4.png"),
+   fig_4,
+   width = big_width,
+   units = "mm"
+ )
+ 
+ 
 fig_4
 
 ```
@@ -1859,6 +1890,13 @@ blue_critter_bio) + plot_layout(heights = c(1.5,2))
    units = "mm"
  )
 
+  ggsave(
+   filename = file.path(results_path, "fig_5.png"),
+   fig_5,
+   width = big_width,
+   units = "mm"
+ )
+ 
 fig_5
 ```
 

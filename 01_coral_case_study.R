@@ -555,6 +555,8 @@ patch_biomass <-
   mutate(step = clean_steps(step)) %>%
   left_join(grid, by = "patch")
 
+patch_biomass <- bind_cols(patch_biomass,marlin::process_step(patch_biomass$step))
+
 titler <- function(x) {
   stringr::str_to_title(stringr::str_replace_all(x, "_", " "))
 
@@ -562,17 +564,11 @@ titler <- function(x) {
 
 
 patch_biomass %>%
-  group_by(critter, step) %>%
+  group_by(critter, time_step) %>%
   mutate(sbiomass = biomass / max(biomass)) %>%
   ungroup() %>%
-  filter(between(step, 1, 2)) %>%
-  mutate(step = fct_recode(
-    as.factor(step),
-    "2" = "1.25",
-    "3" = "1.5",
-    "4" = "1.75"
-  )) %>%
-  mutate(Season = step) %>%
+  filter(between(year, 1, 2)) %>%
+  mutate(Season = season) %>%
   ggplot() +
   geom_tile(aes(x, y, fill = sbiomass)) +
   geom_text_repel(data = ports, aes(x, y, label = fleet), color = "red") +

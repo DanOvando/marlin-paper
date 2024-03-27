@@ -4,7 +4,8 @@ presentations/*.html
 *.tex
 __MACOSX/*
 results/
-data/
+data/*
+!data/README
 *.pdf
 *.docx
 # History files

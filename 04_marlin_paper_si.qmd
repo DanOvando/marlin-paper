@@ -232,18 +232,21 @@ rrs |>
 #| label: fig-coral-ssb
 #| fig-cap: "Spawning biomass divided by unfished spawning biomass in the time period prior to implementation of MPAs for the coral reef case study."
 
+
 critter_biomass <-
-  map_df(coral_sim, ~ map_df(.x, ~tibble(ssb = rowSums(.x$ssb_p_a), patch = 1:nrow(.x$ssb_p_a)), .id = "critter"), .id = "step") %>%
+  map_df(coral_sim, ~ map_df(.x, ~tibble(ssb = rowSums(.x$ssb_p_a), patch = 1:nrow(.x$ssb_p_a)), .id = "critter"), .id = "step") 
+
+critter_biomass <- bind_cols(critter_biomass,marlin::process_step(critter_biomass$step)) %>%
   mutate(step = marlin::clean_steps(step)) %>%
   left_join(grid, by = "patch") %>% 
-  group_by(critter, step) %>% 
+  group_by(critter, year, season,time_step) %>% 
   summarise(ssb = sum(ssb)) %>% 
   group_by(critter) %>% 
-  mutate(depletion = ssb / ssb[step == 0])
+  mutate(depletion = ssb / ssb[time_step == min(time_step)])
 
 fig_s2 <- critter_biomass %>%
   ungroup() %>% 
-  filter(step == max(step)) %>% 
+  filter(time_step == max(time_step)) %>% 
   ggplot(aes(reorder(critter, depletion), depletion)) +
   geom_col() +
   scale_y_continuous(limits = c(0, 1), name = "SSB/SSB0", expand = expansion(mult = c(0.0,0.05))) +

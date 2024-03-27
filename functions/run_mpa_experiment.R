@@ -197,18 +197,17 @@ run_mpa_experiment <-
     #
     # run MPA simulation
 
-    # starting_step = as.numeric(last(names(starting_conditions)))
+    starting_step = marlin::clean_steps(last(names(starting_conditions)))
 
-    starting_step = as.numeric(gsub("step_","",last(names(starting_conditions))))
-
+    processed_step <- marlin::process_step(last(names(starting_conditions)))
 
     mpa_sim <- simmar(
       fauna = fauna,
       fleets = fleets,
       years = years,
       manager = list(mpas = list(locations = mpas,
-                  mpa_year = ceiling(starting_step)),
-                  effort_cap = effort_cap),
+                                 mpa_year = processed_step$year + 1),
+                     effort_cap = effort_cap),
       habitat = future_habitat,
       starting_step = starting_step,
       keep_starting_step = FALSE,

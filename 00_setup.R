@@ -42,7 +42,6 @@ foos <- list.files(here("functions"))
 
 walk(foos, ~ source(here("functions", .x)))
 
-print(Sys.getenv("RUN_NAME"))
 if (Sys.getenv("RUN_NAME") == ''){
   run_name <- "v1.1"
 
