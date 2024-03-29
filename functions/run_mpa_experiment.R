@@ -204,7 +204,7 @@ run_mpa_experiment <-
     mpa_sim <- simmar(
       fauna = fauna,
       fleets = fleets,
-      years = years,
+      steps = years * seasons + 1,
       manager = list(mpas = list(locations = mpas,
                                  mpa_year = processed_step$year + 1),
                      effort_cap = effort_cap),
@@ -253,7 +253,7 @@ run_mpa_experiment <-
 
     final_step <- mpa_sim[[length(mpa_sim)]]
 
-    b_p = map_df(final_step, ~ data.frame(b_p = rowSums(.x$b_p_a), patch = 1:nrow(.x$b_p_a)), .id = "critter")
+    b_p <-  map_df(final_step, ~ data.frame(b_p = rowSums(.x$b_p_a), patch = 1:nrow(.x$b_p_a)), .id = "critter")
 
     response_ratio <- b_p |>
       group_by(patch) |>

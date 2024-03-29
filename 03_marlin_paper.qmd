@@ -1722,7 +1722,7 @@ coral_frontier <- tmp %>%
   scale_fill_viridis(name = "% MPA", labels = scales::label_percent(accuracy = 1),guide = guide_colorbar(ticks.colour = "black",frame.colour = "black"), option = "cividis") +
   labs(tag = "C")  +
   theme(
-    legend.position = c(0.73, .73),
+    legend.position = c(0.7, .73),
     legend.background = element_rect(fill = "transparent"),
     legend.text = element_text(size = 10)
   )
